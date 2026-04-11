@@ -25,6 +25,7 @@
       },
       "skills": [
         "./skills/pulse-setup",
+        "./skills/pulse-agent-levi",
         "./skills/pulse-track-start",
         "./skills/pulse-track-done",
         "./skills/pulse-dashboard"
