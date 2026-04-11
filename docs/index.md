@@ -12,12 +12,12 @@
 
 ### AI Leverage Ratio
 
-```
+```text
 leverage = estimated_hours / actual_hours
 ```
 
-- >= 3.0x: Exceptional
-- >= 1.8x: Solid
+- \>= 3.0x: Exceptional
+- \>= 1.8x: Solid
 - < 1.2x: Warning
 
 ### First-Pass Rate
@@ -27,6 +27,7 @@ Percentage of stories approved with `review_cycles == 1`.
 ### Process Health
 
 Composite score based on:
+
 - Complete BMAD flow (create-story → dev-story → code-review → done)
 - HALT count
 - Available skills that were not used

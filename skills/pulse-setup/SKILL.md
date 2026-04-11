@@ -55,6 +55,24 @@ Both scripts output JSON to stdout with results. If either exits non-zero, surfa
 
 Run `./scripts/merge-config.py --help` or `./scripts/merge-help-csv.py --help` for full usage.
 
+## Register Agent in Manifest
+
+After writing config and help CSV, register the Levi agent in the project's agent manifest so it appears in Party Mode and other agent-aware features.
+
+Check if `{project-root}/_bmad/_config/agent-manifest.csv` exists:
+- If **yes**: merge the PULSE agent entry using the same anti-zombie pattern (remove existing rows with `name="pulse"`, then append)
+- If **no**: skip this step and inform the user that the agent manifest was not found — Levi will still work via direct skill invocation but won't appear in Party Mode
+
+To merge, reuse the `merge-help-csv.py` script since it handles generic CSV merge with anti-zombie:
+
+```bash
+python3 ./scripts/merge-help-csv.py --target "{project-root}/_bmad/_config/agent-manifest.csv" --source ./assets/agent-manifest-fragment.csv --module-code pulse
+```
+
+Note: the `--module-code` flag scopes the anti-zombie removal to rows where the first column matches "pulse", which corresponds to the `name` column in agent-manifest.csv.
+
+If successful, inform the user: "Agent Levi registered in agent-manifest.csv — available in Party Mode and agent-aware features."
+
 ## Create Output Directories
 
 After writing config, create any output directories that were configured. For filesystem operations only (such as creating directories), resolve the `{project-root}` token to the actual project root and create each path-type value from `config.yaml` that does not yet exist — this includes `output_folder` and any module variable whose value starts with `{project-root}/`. The paths stored in the config files must continue to use the literal `{project-root}` token; only the directories on disk should use the resolved paths. Use `mkdir -p` or equivalent to create the full path.

@@ -62,11 +62,13 @@ Load the config from the `pulse` section of `{main_config}` and resolve all modu
 **Estimate conversion by configured method:**
 
 If `pulse_estimation_method` is `story_points`:
+
 ```text
 estimated_hours = story_points * pulse_story_point_hours_factor
 ```
 
 If `pulse_estimation_method` is `t-shirt`:
+
 ```text
 Standard conversion table (t-shirt → hours):
   S  = 2h
@@ -77,11 +79,13 @@ estimated_hours = table value corresponding to the registered size
 ```
 
 If `pulse_estimation_method` is `hours`:
+
 ```text
 estimated_hours = value recorded directly in hours
 ```
 
 **Leverage calculation:**
+
 ```text
 elapsed_minutes = (end_ts - start_ts) in minutes
 actual_hours = effective_hours ?? (elapsed_minutes / 60)
