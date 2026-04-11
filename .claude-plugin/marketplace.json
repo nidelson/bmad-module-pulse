@@ -10,7 +10,7 @@
       "name": "bmad-module-pulse",
       "source": "./",
       "description": "Measures AI-assisted development efficiency with AI Leverage Ratio, first-pass rate and Process Health.",
-      "version": "1.0.0",
+      "version": "0.1.0",
       "author": { "name": "Nidelson Gimenez" },
       "skills": [
         "./skills/pulse-setup",

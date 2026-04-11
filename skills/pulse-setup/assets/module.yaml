@@ -3,7 +3,7 @@ name: "PULSE — AI Leverage Monitor"
 header: "PULSE: Process Utilization & Leverage Statistics Engine"
 subheader: "Measures AI-assisted development efficiency with AI Leverage Ratio and Process Health"
 description: "Metrics module that calculates AI Leverage Ratio, first-pass rate, and process health per story. Generates cumulative dashboards with trends and capacity forecasts."
-module_version: 1.0.0
+module_version: 0.1.0
 default_selected: false
 module_greeting: >
   PULSE installed successfully! Against facts, there are no arguments.
