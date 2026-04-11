@@ -1,19 +1,22 @@
 {
-  "name": "my-module",
-  "owner": { "name": "Your Name" },
+  "name": "bmad-module-pulse",
+  "owner": { "name": "Nidelson Gimenez" },
   "license": "MIT",
-  "homepage": "https://github.com/your-org/my-module",
-  "repository": "https://github.com/your-org/my-module",
-  "keywords": ["bmad"],
+  "homepage": "https://github.com/nidelson/bmad-module-pulse",
+  "repository": "https://github.com/nidelson/bmad-module-pulse",
+  "keywords": ["bmad", "metrics", "ai-leverage", "efficiency", "pulse", "process-health"],
   "plugins": [
     {
-      "name": "my-module",
+      "name": "bmad-module-pulse",
       "source": "./",
-      "description": "TODO: What your module does in one sentence.",
-      "version": "1.0.0",
-      "author": { "name": "Your Name" },
+      "description": "Measures AI-assisted development efficiency with AI Leverage Ratio, first-pass rate and Process Health.",
+      "version": "0.1.0",
+      "author": { "name": "Nidelson Gimenez" },
       "skills": [
-        "./skills/my-skill"
+        "./skills/pulse-setup",
+        "./skills/pulse-track-start",
+        "./skills/pulse-track-done",
+        "./skills/pulse-dashboard"
       ]
     }
   ]
