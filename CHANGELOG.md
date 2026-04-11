@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0](https://github.com/nidelson/bmad-module-pulse/compare/v0.1.0...v0.2.0) (2026-04-11)
+
+
+### Features
+
+* **agent:** register Levi via bmad-skill-manifest.yaml for auto-discovery ([ae2fbfd](https://github.com/nidelson/bmad-module-pulse/commit/ae2fbfd2e69b3ecda36e72c43615a21fbcb8c8f4))
+
+
+### Bug Fixes
+
+* **setup:** register Levi in agent-manifest.csv for Party Mode ([7ed422c](https://github.com/nidelson/bmad-module-pulse/commit/7ed422cee78018c6f97262f7563e8dd58b68b941))
+
 ## 0.1.0 (2026-04-11)
 
 
