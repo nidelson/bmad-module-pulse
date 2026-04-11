@@ -1,15 +1,36 @@
-# My Module
+# PULSE — Documentation
 
-TODO: Replace with your module's documentation.
+## Quick Start
 
-## Getting Started
+1. Install the module: `npx bmad-method install --custom-source https://github.com/nidelson/bmad-module-pulse`
+2. Configure: `/pulse-setup`
+3. When starting a story: `/pulse-track-start`
+4. When completing: `/pulse-track-done`
+5. To view the dashboard: `/pulse-dashboard`
 
-Describe how to install and use your module.
+## Metrics Reference
 
-## Skills
+### AI Leverage Ratio
 
-List your module's skills and what they do.
+```
+leverage = estimated_hours / actual_hours
+```
 
-## Configuration
+- >= 3.0x: Exceptional
+- >= 1.8x: Solid
+- < 1.2x: Warning
 
-Describe any configuration options (if applicable).
+### First-Pass Rate
+
+Percentage of stories approved with `review_cycles == 1`.
+
+### Process Health
+
+Composite score based on:
+- Complete BMAD flow (create-story → dev-story → code-review → done)
+- HALT count
+- Available skills that were not used
+
+## Advanced Configuration
+
+See [module.yaml](../skills/pulse-setup/assets/module.yaml) for the full list of configurable variables.
