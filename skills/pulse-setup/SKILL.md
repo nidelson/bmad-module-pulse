@@ -71,6 +71,60 @@ The script verifies that every skill in the legacy directories exists at `.claud
 
 Check `directories_removed` and `files_removed_count` in the JSON output for the confirmation step. Run `./scripts/cleanup-legacy.py --help` for full usage.
 
+## Integrate with Dev Story (Auto-Tracking)
+
+After cleanup, check if `{project-root}/.claude/skills/bmad-dev-story/workflow.md` exists. If it does, inject PULSE tracking steps automatically so that every story execution tracks metrics without manual intervention.
+
+### Detection
+
+1. Check if `{project-root}/.claude/skills/bmad-dev-story/workflow.md` exists
+2. If **not found**: skip this section and inform the user that automatic tracking is not available — they can use `/pulse-track-start` and `/pulse-track-done` manually
+3. If **found**: check if PULSE markers already exist in the file (search for `<!-- PULSE:auto-inject:start -->`)
+   - If markers exist: this is an **update** — remove content between markers before re-injecting
+   - If no markers: this is a **fresh injection**
+
+### Injection
+
+Insert the following block **at the very beginning** of the workflow execution steps (after the initialization/setup section, before the first implementation step):
+
+```markdown
+<!-- PULSE:auto-inject:start -->
+### PULSE — Track Start
+
+Before starting implementation, register this story for efficiency tracking:
+
+1. Run `/pulse-track-start {story_id}` where `{story_id}` is the current story identifier
+2. This records the start timestamp and extracts estimation data from the story file
+3. If track-start has already been registered for this story, skip this step
+
+> This step was automatically added by PULSE setup. Remove the markers to disable.
+<!-- PULSE:auto-inject:end -->
+```
+
+Insert the following block **at the very end** of the workflow (after code review / final steps, before any cleanup or exit):
+
+```markdown
+<!-- PULSE:auto-inject:start -->
+### PULSE — Track Done
+
+After the story is complete and reviewed, register completion and calculate metrics:
+
+1. Run `/pulse-track-done {story_id}` where `{story_id}` is the current story identifier
+2. This calculates AI Leverage Ratio, Process Health, and displays the Efficiency Pulse
+3. Answer Levi's questions about review cycles and effective time
+
+> This step was automatically added by PULSE setup. Remove the markers to disable.
+<!-- PULSE:auto-inject:end -->
+```
+
+### Post-Injection
+
+Inform the user:
+- "PULSE auto-tracking integrated with `/bmad-dev-story`. Every story will now automatically track start and completion metrics."
+- "To disable: remove the `<!-- PULSE:auto-inject -->` blocks from the dev-story workflow."
+
+If the injection fails for any reason (file permissions, unexpected format), do NOT block the setup — inform the user and suggest manual integration.
+
 ## Confirm
 
 Use the script JSON output to display what was written — config values set (written to `config.yaml` at root for core, module section for module values), user settings written to `config.user.yaml` (`user_keys` in result), help entries added, fresh install vs update. If legacy files were deleted, mention the migration. If legacy directories were removed, report the count and list (e.g. "Cleaned up 106 installer package files from pulse/, core/ — skills are installed at .claude/skills/"). Then display the `module_greeting` from `./assets/module.yaml` to the user.
