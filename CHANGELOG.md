@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/nidelson/bmad-module-pulse/compare/v0.3.1...v0.3.2) (2026-04-16)
+
+
+### Bug Fixes
+
+* **ci:** configure release-please jsonpath for marketplace.json and module.yaml ([3fc83a5](https://github.com/nidelson/bmad-module-pulse/commit/3fc83a5483cb70bfd3a60398fe8ba2abd3ce2020))
+
 ## [0.3.1](https://github.com/nidelson/bmad-module-pulse/compare/v0.3.0...v0.3.1) (2026-04-16)
 
 
