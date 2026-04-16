@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/nidelson/bmad-module-pulse/compare/v0.3.0...v0.3.1) (2026-04-16)
+
+
+### Bug Fixes
+
+* **ci:** bump patch for fix commits in pre-major releases ([#9](https://github.com/nidelson/bmad-module-pulse/issues/9)) ([959de34](https://github.com/nidelson/bmad-module-pulse/commit/959de3465da6b3acab697d3ee6642cfb70d9f3ce))
+* **pulse-setup:** detect workflow format and inject XML or Markdown ([a36e514](https://github.com/nidelson/bmad-module-pulse/commit/a36e514dae472e3aba7c40e2d5a195042662e34f))
+
 ## [0.3.0](https://github.com/nidelson/bmad-module-pulse/compare/v0.2.0...v0.3.0) (2026-04-12)
 
 
