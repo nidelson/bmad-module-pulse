@@ -101,9 +101,39 @@ After cleanup, check if `{project-root}/.claude/skills/bmad-dev-story/workflow.m
    - If markers exist: this is an **update** — remove content between markers before re-injecting
    - If no markers: this is a **fresh injection**
 
-### Injection
+### Format Detection
 
-Insert the following block **at the very beginning** of the workflow execution steps (after the initialization/setup section, before the first implementation step):
+Before injecting, detect which format the workflow uses:
+
+1. Search the workflow file for `<step ` or `<action>` tags
+2. If found: the workflow uses **XML format** (BMAD step-file architecture with `<step>`, `<action>`, `<check>`, `<note>` tags)
+3. If not found: the workflow uses **Markdown format** (headings, numbered lists)
+
+### Injection — Track Start
+
+Insert the following block **after the step that marks the story as in-progress** (typically Step 4 in BMAD workflows) and **before the first implementation step** (typically Step 5).
+
+**Insertion point detection:**
+- XML format: find `</step>` that closes the "Mark story in-progress" step, insert after it
+- Markdown format: find the heading for the implementation step, insert before it
+
+**XML format** (when `<step>` tags are detected):
+
+```xml
+  <!-- PULSE:auto-inject:start -->
+  <step n="4.5" goal="PULSE — Track Start">
+    <action>Before starting implementation, register this story for efficiency tracking.</action>
+    <action>Run `/pulse-track-start {{story_key}}` with the current story identifier.</action>
+    <action>This records the start timestamp and extracts estimation data from the story file.</action>
+    <check if="track-start has already been registered for this story">
+      <action>Skip this step</action>
+    </check>
+    <note>This step was automatically added by PULSE setup. Remove the PULSE:auto-inject markers to disable.</note>
+  </step>
+  <!-- PULSE:auto-inject:end -->
+```
+
+**Markdown format** (fallback when no XML tags are detected):
 
 ```markdown
 <!-- PULSE:auto-inject:start -->
@@ -119,7 +149,25 @@ Before starting implementation, register this story for efficiency tracking:
 <!-- PULSE:auto-inject:end -->
 ```
 
-Insert the following block **at the very end** of the workflow (after code review / final steps, before any cleanup or exit):
+### Injection — Track Done
+
+Insert the following block **at the very end** of the workflow (after the last step, before `</workflow>` in XML format or before the end of the file in Markdown format).
+
+**XML format:**
+
+```xml
+  <!-- PULSE:auto-inject:start -->
+  <step n="10.5" goal="PULSE — Track Done">
+    <action>After the story is complete and reviewed, register completion and calculate metrics.</action>
+    <action>Run `/pulse-track-done {{story_key}}` with the current story identifier.</action>
+    <action>This calculates AI Leverage Ratio, Process Health, and displays the Efficiency Pulse.</action>
+    <action>Answer Levi's questions about review cycles and effective time.</action>
+    <note>This step was automatically added by PULSE setup. Remove the PULSE:auto-inject markers to disable.</note>
+  </step>
+  <!-- PULSE:auto-inject:end -->
+```
+
+**Markdown format:**
 
 ```markdown
 <!-- PULSE:auto-inject:start -->
