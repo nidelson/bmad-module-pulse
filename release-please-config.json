@@ -7,8 +7,16 @@
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
       "extra-files": [
-        "skills/pulse-setup/assets/module.yaml",
-        ".claude-plugin/marketplace.json"
+        {
+          "path": "skills/pulse-setup/assets/module.yaml",
+          "type": "yaml",
+          "jsonpath": "$.module_version"
+        },
+        {
+          "path": ".claude-plugin/marketplace.json",
+          "type": "json",
+          "jsonpath": "$.plugins[0].version"
+        }
       ],
       "changelog-sections": [
         { "type": "feat", "section": "Features" },
