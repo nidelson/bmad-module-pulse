@@ -2,7 +2,7 @@
 
 If this test fails, a template was edited without regenerating its golden
 snapshot — or vice versa. Either fix:
-  cp skills/pulse-setup/assets/customize-templates/<skill>.toml \
+  cp skills/bmad-pulse-setup/assets/customize-templates/<skill>.toml \
      tests/fixtures/golden/customize-<skill>.toml
 or, if the golden was the intended source of truth, copy in the other
 direction.
@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).parents[1]
-TEMPLATES = REPO_ROOT / "skills/pulse-setup/assets/customize-templates"
+TEMPLATES = REPO_ROOT / "skills/bmad-pulse-setup/assets/customize-templates"
 GOLDEN = REPO_ROOT / "tests/fixtures/golden"
 
 

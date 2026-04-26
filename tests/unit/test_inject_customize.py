@@ -1,4 +1,4 @@
-"""Unit tests for skills/pulse-setup/scripts/inject_customize.py."""
+"""Unit tests for skills/bmad-pulse-setup/scripts/inject_customize.py."""
 from __future__ import annotations
 
 import hashlib
@@ -6,7 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-SCRIPT = Path(__file__).parents[2] / "skills/pulse-setup/scripts/inject_customize.py"
+SCRIPT = Path(__file__).parents[2] / "skills/bmad-pulse-setup/scripts/inject_customize.py"
 GOLDEN = Path(__file__).parents[1] / "fixtures/golden"
 
 

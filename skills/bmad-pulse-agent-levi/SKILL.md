@@ -1,5 +1,5 @@
 ---
-name: pulse-agent-levi
+name: bmad-pulse-agent-levi
 description: 'Levi — Hyper-Efficiency Analyst & SDLC Optimizer. Chat about AI leverage metrics, process health, and development efficiency.'
 ---
 

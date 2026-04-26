@@ -39,15 +39,15 @@ agent:
       action: chat_mode
 
     - trigger: "TS or fuzzy match on track-start"
-      skill: "pulse-track-start"
+      skill: "bmad-pulse-track-start"
       description: "[TS] Track Start: Register story start"
 
     - trigger: "TD or fuzzy match on track-done"
-      skill: "pulse-track-done"
+      skill: "bmad-pulse-track-done"
       description: "[TD] Track Done: Register completion and calculate metrics"
 
-    - trigger: "PD or fuzzy match on pulse-dashboard"
-      skill: "pulse-dashboard"
+    - trigger: "PD or fuzzy match on bmad-pulse-dashboard"
+      skill: "bmad-pulse-dashboard"
       description: "[PD] Dashboard: Generate cumulative dashboard"
 
     - trigger: "DA or fuzzy match on dismiss-agent"

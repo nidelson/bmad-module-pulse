@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-SCRIPTS = Path(__file__).parents[2] / "skills/pulse-setup/scripts"
+SCRIPTS = Path(__file__).parents[2] / "skills/bmad-pulse-setup/scripts"
 GOLDEN = Path(__file__).parents[1] / "fixtures/golden"
 
 
@@ -31,7 +31,7 @@ def run(*args: str) -> subprocess.CompletedProcess[str]:
 
 @pytest.mark.integration
 def test_e2e_fresh_install_on_bmad_64(bmad_64_consumer: Path):
-    """Test full pulse-setup script chain on BMAD 6.4.0 consumer."""
+    """Test full bmad-pulse-setup script chain on BMAD 6.4.0 consumer."""
     # 1. Capability gate
     detect = run(str(SCRIPTS / "detect_bmad_capability.py"),
                  "--project-root", str(bmad_64_consumer))

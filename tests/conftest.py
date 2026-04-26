@@ -1,4 +1,4 @@
-"""Shared pytest fixtures for the pulse-setup test suite."""
+"""Shared pytest fixtures for the bmad-pulse-setup test suite."""
 from __future__ import annotations
 
 import shutil

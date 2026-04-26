@@ -27,7 +27,7 @@ jobs:
 
       - name: Verify golden snapshots match templates
         run: |
-          diff -q skills/pulse-setup/assets/customize-templates/bmad-dev-story.toml \
+          diff -q skills/bmad-pulse-setup/assets/customize-templates/bmad-dev-story.toml \
                   tests/fixtures/golden/customize-bmad-dev-story.toml
-          diff -q skills/pulse-setup/assets/customize-templates/bmad-code-review.toml \
+          diff -q skills/bmad-pulse-setup/assets/customize-templates/bmad-code-review.toml \
                   tests/fixtures/golden/customize-bmad-code-review.toml

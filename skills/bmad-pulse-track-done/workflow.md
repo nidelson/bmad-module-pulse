@@ -1,5 +1,5 @@
 ---
-name: pulse-track-done
+name: bmad-pulse-track-done
 description: 'Record story completion and calculate PULSE efficiency metrics'
 standalone: true
 main_config: '{project-root}/_bmad/config.yaml'

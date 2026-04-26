@@ -1,5 +1,5 @@
 ---
-name: pulse-setup
+name: bmad-pulse-setup
 description: Installs and configures the PULSE module in a BMAD project. Use when the user requests 'install PULSE', 'configure PULSE', or 'setup PULSE'.
 ---
 
@@ -113,7 +113,7 @@ and prints a JSON payload to stdout describing the detection.
   Detected BMAD ≤6.3.x. Either upgrade BMAD (`npx bmad-method install`) or
   pin to PULSE v0.3.x via `--version`."
 - **Exit 2** — abort: "BMAD is not installed in this project root. Run
-  `npx bmad-method install` first, then re-run `/pulse-setup`."
+  `npx bmad-method install` first, then re-run `/bmad-pulse-setup`."
 
 ### Cleanup Legacy Markers
 
@@ -175,7 +175,7 @@ Inform the user:
   track start (during `/bmad-dev-story`) and completion (after
   `/bmad-code-review`)."
 - "To disable: delete the two `.toml` files from `_bmad/custom/`."
-- "To customize: edit the files manually. Re-running `/pulse-setup` will
+- "To customize: edit the files manually. Re-running `/bmad-pulse-setup` will
   abort if you changed them — pass `--force` only if you want PULSE's
   defaults restored."
 

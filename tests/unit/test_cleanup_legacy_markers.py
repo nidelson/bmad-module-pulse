@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-SCRIPT = Path(__file__).parents[2] / "skills/pulse-setup/scripts/cleanup-legacy.py"
+SCRIPT = Path(__file__).parents[2] / "skills/bmad-pulse-setup/scripts/cleanup-legacy.py"
 
 
 def run(consumer: Path) -> subprocess.CompletedProcess[str]:

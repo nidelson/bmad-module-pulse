@@ -31,10 +31,10 @@ npx bmad-method install --custom-source https://github.com/nidelson/bmad-module-
 
 | Skill | Command | Function |
 |---|---|---|
-| `pulse-setup` | `/pulse-setup` | Configure the module in your project |
-| `pulse-track-start` | `/pulse-track-start [story_id]` | Register story start |
-| `pulse-track-done` | `/pulse-track-done [story_id]` | Register completion + calculate metrics |
-| `pulse-dashboard` | `/pulse-dashboard` | Generate cumulative dashboard |
+| `bmad-pulse-setup` | `/bmad-pulse-setup` | Configure the module in your project |
+| `bmad-pulse-track-start` | `/bmad-pulse-track-start [story_id]` | Register story start |
+| `bmad-pulse-track-done` | `/bmad-pulse-track-done [story_id]` | Register completion + calculate metrics |
+| `bmad-pulse-dashboard` | `/bmad-pulse-dashboard` | Generate cumulative dashboard |
 
 ## Agent
 
@@ -42,7 +42,7 @@ npx bmad-method install --custom-source https://github.com/nidelson/bmad-module-
 
 ## Configuration
 
-PULSE offers 25 configurable variables with opinionated defaults. During setup (`/pulse-setup`), you can customize:
+PULSE offers 25 configurable variables with opinionated defaults. During setup (`/bmad-pulse-setup`), you can customize:
 
 - **Estimation methodology** — hours, story points or t-shirt sizes
 - **Field mapping** — adapts field names from your project

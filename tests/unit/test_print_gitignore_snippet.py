@@ -1,11 +1,11 @@
-"""Tests for skills/pulse-setup/scripts/print_gitignore_snippet.py."""
+"""Tests for skills/bmad-pulse-setup/scripts/print_gitignore_snippet.py."""
 from __future__ import annotations
 
 import subprocess
 import sys
 from pathlib import Path
 
-SCRIPT = Path(__file__).parents[2] / "skills/pulse-setup/scripts/print_gitignore_snippet.py"
+SCRIPT = Path(__file__).parents[2] / "skills/bmad-pulse-setup/scripts/print_gitignore_snippet.py"
 
 
 def run(consumer: Path) -> subprocess.CompletedProcess[str]:

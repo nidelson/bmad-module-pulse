@@ -13,8 +13,8 @@ default_selected: false
 module_greeting: >
   PULSE installed successfully! Against facts, there are no arguments.
 
-  Use /pulse-track-start when starting a story and /pulse-track-done when
-  finishing. Use /pulse-dashboard to view accumulated metrics.
+  Use /bmad-pulse-track-start when starting a story and /bmad-pulse-track-done when
+  finishing. Use /bmad-pulse-dashboard to view accumulated metrics.
 
   For questions and suggestions: https://github.com/nidelson/bmad-module-pulse
 pulse_estimation_method:

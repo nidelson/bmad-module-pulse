@@ -14,8 +14,8 @@ npx bmad-method install
 # 2. Upgrade PULSE
 npx bmad-method install --custom-source https://github.com/nidelson/bmad-module-pulse
 
-# 3. Re-run pulse-setup
-/pulse-setup
+# 3. Re-run bmad-pulse-setup
+/bmad-pulse-setup
 
 # 4. Append the printed snippet to your .gitignore (manual)
 
@@ -32,7 +32,7 @@ git commit -m "chore(pulse): migrate to v0.4.0 customize.toml integration"
 | Track-done injected at end of `bmad-dev-story` workflow | `_bmad/custom/bmad-code-review.toml` (track-done in `on_complete`) |
 | Auto-tracking broken silently on every BMAD ≥6.4.0 install | Auto-tracking survives BMAD core upgrades |
 
-## What `pulse-setup` does for you
+## What `bmad-pulse-setup` does for you
 
 1. **Capability check** — verifies BMAD ≥6.4.0 is installed; aborts with a
    clear message otherwise.
@@ -45,14 +45,14 @@ git commit -m "chore(pulse): migrate to v0.4.0 customize.toml integration"
 ## Conflict policy
 
 If `_bmad/custom/bmad-dev-story.toml` or `_bmad/custom/bmad-code-review.toml`
-already exists in your project (e.g. you customized it), `pulse-setup`
+already exists in your project (e.g. you customized it), `bmad-pulse-setup`
 **aborts** with a message naming the file. Choose one:
 
 - **Keep your version** — do nothing, ignore the abort, your file is untouched.
 - **Restore PULSE defaults** — re-run with `--force` (passed through to the
   inject script). This overwrites your customization.
 - **Merge manually** — diff against the template at
-  `node_modules/.../bmad-module-pulse/skills/pulse-setup/assets/customize-templates/<skill>.toml`,
+  `node_modules/.../bmad-module-pulse/skills/bmad-pulse-setup/assets/customize-templates/<skill>.toml`,
   apply the PULSE bits to your file, then move on.
 
 The conflict policy guarantees byte-stability: without `--force`, the file
@@ -71,5 +71,5 @@ the correct moment.
 
 Open an issue at https://github.com/nidelson/bmad-module-pulse/issues with:
 - BMAD version (`cat _bmad/_config/files-manifest.csv | head -1`)
-- Output of `python3 .claude/skills/pulse-setup/scripts/detect_bmad_capability.py --project-root .`
+- Output of `python3 .claude/skills/bmad-pulse-setup/scripts/detect_bmad_capability.py --project-root .`
 - Contents of `_bmad/custom/` (if any)

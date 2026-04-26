@@ -1,4 +1,4 @@
-"""Unit tests for skills/pulse-setup/scripts/detect_bmad_capability.py."""
+"""Unit tests for skills/bmad-pulse-setup/scripts/detect_bmad_capability.py."""
 from __future__ import annotations
 
 import json
@@ -6,7 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-SCRIPT = Path(__file__).parents[2] / "skills/pulse-setup/scripts/detect_bmad_capability.py"
+SCRIPT = Path(__file__).parents[2] / "skills/bmad-pulse-setup/scripts/detect_bmad_capability.py"
 
 
 def run(consumer: Path) -> subprocess.CompletedProcess[str]:
