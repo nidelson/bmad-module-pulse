@@ -39,3 +39,19 @@ def test_silent_when_allowlist_already_present(tmp_consumer_project: Path):
     assert result.returncode == 0
     assert "!_bmad/custom/" not in result.stdout
     assert "already" in result.stdout.lower() or result.stdout.strip() == ""
+
+
+def test_prints_snippet_when_allowlist_is_only_commented_out(tmp_consumer_project: Path):
+    """Regression: I2 — a commented `# !_bmad/custom/` line must NOT count
+    as an active allowlist. Otherwise a user who decided NOT to allowlist
+    would be silently told nothing to do, and their .toml files would be
+    git-ignored without warning.
+    """
+    (tmp_consumer_project / ".gitignore").write_text(
+        "node_modules/\n_bmad/*\n# !_bmad/custom/\n# !_bmad/custom/*.toml\n"
+    )
+    result = run(tmp_consumer_project)
+    assert result.returncode == 0
+    assert "!_bmad/custom/" in result.stdout, (
+        "commented-out allowlist must be ignored; snippet should be printed"
+    )

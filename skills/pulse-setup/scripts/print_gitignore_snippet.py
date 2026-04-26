@@ -20,11 +20,19 @@ _bmad/custom/*.user.toml
 
 
 def is_allowlisted(gitignore: Path) -> bool:
+    """Return True if the .gitignore has an active (non-commented) allowlist
+    entry for `_bmad/custom/`. Comment lines starting with `#` are skipped
+    so a commented-out rule does not mask a missing real one.
+    """
     if not gitignore.exists():
         return False
-    text = gitignore.read_text()
-    # Heuristic: presence of the un-ignore for the directory is the load-bearing line.
-    return "!_bmad/custom/" in text
+    for raw in gitignore.read_text().splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line == "!_bmad/custom/" or line == "!_bmad/custom/*.toml":
+            return True
+    return False
 
 
 def main() -> int:
