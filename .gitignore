@@ -26,3 +26,6 @@ _bmad-output/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# Implementation plans — controller's working tool, not product artifact
+docs/plans/
