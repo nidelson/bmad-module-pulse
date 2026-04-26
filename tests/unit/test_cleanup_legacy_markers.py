@@ -59,3 +59,32 @@ def test_idempotent_when_no_markers_present(bmad_63_consumer: Path):
     assert workflow.read_text() == content_after_first
     # Allow 1s slack for filesystems with low resolution.
     assert workflow.stat().st_mtime - mtime_after_first < 2
+
+
+def test_preserves_separation_between_user_steps_around_block(tmp_path: Path):
+    """Regression: I1 — adjacent user-edited steps must keep at least one
+    line break of separation after a PULSE block is removed between them.
+    Earlier versions of the regex consumed the trailing newline on both
+    sides, which collapsed `</step>\\n<step>` into `</step><step>`.
+    """
+    workflow_dir = tmp_path / ".claude/skills/bmad-dev-story"
+    workflow_dir.mkdir(parents=True)
+    workflow = workflow_dir / "workflow.md"
+    workflow.write_text(
+        '<step n="4">user step before</step>\n'
+        "<!-- PULSE:auto-inject:start -->\n"
+        '<step n="4.5">PULSE</step>\n'
+        "<!-- PULSE:auto-inject:end -->\n"
+        '<step n="5">user step after</step>\n'
+    )
+
+    result = run(tmp_path)
+    assert result.returncode == 0, result.stderr
+
+    after = workflow.read_text()
+    assert "PULSE:auto-inject" not in after
+    assert '<step n="4">user step before</step>' in after
+    assert '<step n="5">user step after</step>' in after
+    assert "</step><step" not in after, (
+        "adjacent user steps were collapsed without separator"
+    )

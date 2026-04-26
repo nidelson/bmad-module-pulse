@@ -193,7 +193,13 @@ def remove_pulse_markers(project_root: Path) -> dict:
         }
 
     original = workflow.read_text()
-    cleaned, count = _PULSE_BLOCK_RE.subn("", original)
+    # Substitute by a single newline (not the empty string) so that user
+    # content immediately above and below the PULSE block stays separated
+    # by at least one line break. Collapse runs of 3+ newlines (which would
+    # arise when the surrounding lines were already separated by a blank
+    # line) back to the standard "blank line" of two newlines.
+    cleaned, count = _PULSE_BLOCK_RE.subn("\n", original)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
     if count > 0 and cleaned != original:
         workflow.write_text(cleaned)
     return {
