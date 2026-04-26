@@ -20,9 +20,17 @@ Exit codes: 0=success (including nothing to remove), 1=validation error, 2=runti
 
 import argparse
 import json
+import re
 import shutil
 import sys
 from pathlib import Path
+
+# Matches a complete PULSE auto-inject block, including a single surrounding
+# newline on each side so the resulting text does not accumulate blank lines.
+_PULSE_BLOCK_RE = re.compile(
+    r"\n?<!-- PULSE:auto-inject:start -->.*?<!-- PULSE:auto-inject:end -->\n?",
+    re.DOTALL,
+)
 
 
 def parse_args():
@@ -31,13 +39,12 @@ def parse_args():
     )
     parser.add_argument(
         "--bmad-dir",
-        required=True,
-        help="Path to the _bmad/ directory",
+        help="Path to the _bmad/ directory (required for legacy directory cleanup)",
     )
     parser.add_argument(
         "--module-code",
-        required=True,
-        help="Module code being cleaned up (e.g. 'bmb')",
+        help="Module code being cleaned up, e.g. 'bmb' "
+        "(required for legacy directory cleanup)",
     )
     parser.add_argument(
         "--also-remove",
@@ -49,6 +56,18 @@ def parse_args():
         "--skills-dir",
         help="Path to .claude/skills/ — enables safety verification that skills "
         "are installed before removing legacy copies",
+    )
+    parser.add_argument(
+        "--remove-pulse-markers",
+        action="store_true",
+        help="Strip legacy PULSE auto-inject blocks from "
+        ".claude/skills/bmad-dev-story/workflow.md "
+        "under --project-root (standalone mode)",
+    )
+    parser.add_argument(
+        "--project-root",
+        help="Path to the consumer project root "
+        "(required when --remove-pulse-markers is set)",
     )
     parser.add_argument(
         "--verbose",
@@ -146,6 +165,43 @@ def count_files(path: Path) -> int:
     return count
 
 
+def remove_pulse_markers(project_root: Path) -> dict:
+    """Strip legacy PULSE auto-inject blocks from bmad-dev-story workflow.md.
+
+    The legacy installer (pre-customize.toml) injected PULSE step blocks into
+    `.claude/skills/bmad-dev-story/workflow.md` between
+    `<!-- PULSE:auto-inject:start -->` and `<!-- PULSE:auto-inject:end -->`
+    markers. This function removes every such block, preserving all surrounding
+    content. The file is rewritten only when at least one block was removed,
+    making repeated invocations idempotent.
+
+    Args:
+        project_root: Path to the consumer project root.
+
+    Returns:
+        Dict with keys:
+            path: Resolved path to the workflow file (string).
+            removed: Number of marker blocks removed (0 if file absent or clean).
+            skipped: Optional reason string when nothing was done.
+    """
+    workflow = project_root / ".claude/skills/bmad-dev-story/workflow.md"
+    if not workflow.exists():
+        return {
+            "removed": 0,
+            "skipped": "workflow.md not found",
+            "path": str(workflow),
+        }
+
+    original = workflow.read_text()
+    cleaned, count = _PULSE_BLOCK_RE.subn("", original)
+    if count > 0 and cleaned != original:
+        workflow.write_text(cleaned)
+    return {
+        "removed": count,
+        "path": str(workflow),
+    }
+
+
 def cleanup_directories(
     bmad_dir: str, dirs_to_remove: list, verbose: bool = False
 ) -> tuple:
@@ -199,6 +255,37 @@ def cleanup_directories(
 
 def main():
     args = parse_args()
+
+    # Standalone mode: strip PULSE auto-inject blocks from workflow.md.
+    # This branch is mutually exclusive with the legacy directory cleanup.
+    if args.remove_pulse_markers:
+        if not args.project_root:
+            print(
+                json.dumps(
+                    {
+                        "status": "error",
+                        "error": "--project-root is required with --remove-pulse-markers",
+                    },
+                    indent=2,
+                )
+            )
+            sys.exit(1)
+        result = remove_pulse_markers(Path(args.project_root))
+        print(json.dumps(result, indent=2))
+        return
+
+    # Legacy directory cleanup mode requires --bmad-dir and --module-code.
+    if not args.bmad_dir or not args.module_code:
+        print(
+            json.dumps(
+                {
+                    "status": "error",
+                    "error": "--bmad-dir and --module-code are required for legacy directory cleanup",
+                },
+                indent=2,
+            )
+        )
+        sys.exit(1)
 
     bmad_dir = args.bmad_dir
     module_code = args.module_code
