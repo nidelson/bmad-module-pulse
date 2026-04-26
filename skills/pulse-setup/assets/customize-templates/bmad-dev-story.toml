@@ -11,5 +11,5 @@
 [workflow]
 
 persistent_facts = [
-  "PULSE auto-tracking enabled. After workflow Step 1 identifies the in-progress story (resolving its story_id from sprint-status.yaml or the explicit {story_path}), invoke the bmad-pulse-track-start skill, passing the story_id as argument (e.g. /bmad-pulse-track-start 15.3) BEFORE starting implementation. The skill is idempotent — if a start_ts already exists in pulse_metrics: for this story, it asks before overwriting. Skip the invocation for read-only or exploratory stories without real implementation.",
+  "PULSE auto-tracking enabled. After workflow Step 1 identifies the in-progress story (resolving its story_id from sprint-status.yaml or the explicit {story_path}), invoke the pulse-track-start skill, passing the story_id as argument (e.g. /pulse-track-start 15.3) BEFORE starting implementation. The skill is idempotent — if a start_ts already exists in pulse_metrics: for this story, it asks before overwriting. Skip the invocation for read-only or exploratory stories without real implementation.",
 ]

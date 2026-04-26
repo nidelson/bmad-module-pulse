@@ -12,4 +12,4 @@
 
 [workflow]
 
-on_complete = "PULSE auto-tracking: invoke the bmad-pulse-track-done skill, passing the story_id of the just-reviewed story as argument (e.g. /bmad-pulse-track-done 15.3). The skill records end_ts, calculates the AI Leverage Ratio, and displays the Efficiency Pulse. It will interactively prompt for review_cycles and (optionally) effective_hours — wait for the user's response. Pre-requisite: a start_ts must exist in pulse_metrics: for this story (recorded by bmad-dev-story); if absent, the skill warns and suggests running track-start first."
+on_complete = "PULSE auto-tracking: invoke the pulse-track-done skill, passing the story_id of the just-reviewed story as argument (e.g. /pulse-track-done 15.3). The skill records end_ts, calculates the AI Leverage Ratio, and displays the Efficiency Pulse. It will interactively prompt for review_cycles and (optionally) effective_hours — wait for the user's response. Pre-requisite: a start_ts must exist in pulse_metrics: for this story (recorded by bmad-dev-story); if absent, the skill warns and suggests running track-start first."
