@@ -3,8 +3,10 @@
 > Prove the ROI of AI-Assisted Development
 
 [![BMAD Module](https://img.shields.io/badge/BMAD-Module-blue)](https://docs.bmad-method.org/)
-[![Python Version](https://img.shields.io/badge/python-%3E%3D3.9-blue?logo=python&logoColor=white)](https://www.python.org)
+[![BMAD Version](https://img.shields.io/badge/BMAD-%3E%3D6.4.0-blue)](https://docs.bmad-method.org/)
+[![GitHub release](https://img.shields.io/github/v/release/nidelson/bmad-module-pulse)](https://github.com/nidelson/bmad-module-pulse/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/nidelson/bmad-module-pulse?style=social)](https://github.com/nidelson/bmad-module-pulse/stargazers)
 
 At some point, every developer who works with AI has lived this moment: looked at the clock, realized they did in two hours what they estimated for two days, and didn't quite know what to do with that feeling.
 
@@ -50,13 +52,17 @@ PULSE offers 25 configurable variables with opinionated defaults. During setup (
 
 ## Requirements
 
-- BMAD Method >= 6.3.0
+- BMAD Method >= 6.4.0 (see [MIGRATION.md](docs/MIGRATION.md) if upgrading from v0.3.x)
 - Python >= 3.9 (for setup scripts)
 
 ## Community
 
 - [Discord](https://discord.gg/gk8jAdXWmj) — BMad Method community
 - [Issues](https://github.com/nidelson/bmad-module-pulse/issues) — Bug reports and feature requests
+
+## Star history
+
+[View star history on star-history.com](https://star-history.com/#nidelson/bmad-module-pulse)
 
 ## License
 
