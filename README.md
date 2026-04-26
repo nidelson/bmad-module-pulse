@@ -29,6 +29,8 @@ npx bmad-method install --custom-source https://github.com/nidelson/bmad-module-
 
 ## Included Skills
 
+> ⚠ **Upgrading from v0.3.x?** Slash commands were renamed from `pulse-*` to `bmad-pulse-*` in v0.4.0. Read **[MIGRATION.md](docs/MIGRATION.md)** before upgrading — v0.4.0 has BREAKING CHANGES.
+
 | Skill | Command | Function |
 |---|---|---|
 | `bmad-pulse-setup` | `/bmad-pulse-setup` | Configure the module in your project |

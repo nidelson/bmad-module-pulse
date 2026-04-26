@@ -1,9 +1,26 @@
 # Migrating to PULSE v0.4.0
 
-PULSE v0.4.0 drops support for BMAD <6.4.0 and migrates auto-tracking
-integration from `workflow.md` markers to BMAD v6.4.0's `customize.toml`
-framework. This is a one-time migration. After upgrading, PULSE
-auto-tracking will survive future BMAD core upgrades transparently.
+PULSE v0.4.0 ships **two breaking changes** in a single release:
+
+1. **Drops support for BMAD <6.4.0** — auto-tracking is now wired through
+   BMAD v6.4.0's `customize.toml` framework instead of `workflow.md` markers.
+   After upgrading, PULSE auto-tracking will survive future BMAD core
+   upgrades transparently.
+2. **Skill folders and slash commands renamed** from `pulse-*` to
+   `bmad-pulse-*` to align with the most recent BMAD ecosystem reference
+   pattern. Re-running `/bmad-pulse-setup` is sufficient — old `pulse-*`
+   folders can be deleted manually after the upgrade.
+
+This is a one-time migration.
+
+## Slash command rename
+
+| Before (v0.3.x) | After (v0.4.0) |
+|---|---|
+| `/pulse-setup` | `/bmad-pulse-setup` |
+| `/pulse-track-start` | `/bmad-pulse-track-start` |
+| `/pulse-track-done` | `/bmad-pulse-track-done` |
+| `/pulse-dashboard` | `/bmad-pulse-dashboard` |
 
 ## TL;DR
 

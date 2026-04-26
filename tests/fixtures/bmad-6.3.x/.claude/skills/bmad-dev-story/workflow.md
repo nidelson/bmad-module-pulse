@@ -1,5 +1,11 @@
 # Dev Story Workflow
 
+<!-- INTENTIONALLY LEGACY (BMAD 6.3.x fixture). Do NOT migrate the `/pulse-track-*`
+     references below to `/bmad-pulse-track-*`. This file simulates a pre-v0.4.0
+     consumer project where PULSE auto-injected workflow steps with the old
+     slash commands. The cleanup-legacy.py regression test asserts these strings
+     are removed; "fixing" the names here would falsify that test. -->
+
 <workflow>
   <step n="1" goal="Find next ready story">
     <action>Read sprint-status.yaml</action>
