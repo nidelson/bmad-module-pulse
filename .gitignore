@@ -20,3 +20,9 @@ build/
 _bmad/
 _bmad-output/
 .*/skills
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
