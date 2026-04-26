@@ -128,6 +128,12 @@ python3 ./scripts/cleanup-legacy.py \
     --project-root "{project-root}"
 ```
 
+The script exits 0 in all normal cases and prints `{"removed": <int>, "path": "..."}`
+on stdout (or `{"removed": 0, "skipped": "workflow.md not found", "path": "..."}` when
+the file is absent — this is the common case on fresh BMAD 6.4.0 installs and is NOT
+a failure). A non-zero exit indicates `--project-root` is missing or the file system
+is broken; surface the error and stop.
+
 ### Emit Override Files
 
 Emit the two override files. The conflict policy is **abort + `--force`**:

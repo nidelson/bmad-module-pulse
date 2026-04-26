@@ -4,6 +4,7 @@
 
 [![BMAD Module](https://img.shields.io/badge/BMAD-Module-blue)](https://docs.bmad-method.org/)
 [![BMAD Version](https://img.shields.io/badge/BMAD-%3E%3D6.4.0-blue)](https://docs.bmad-method.org/)
+[![Tests](https://github.com/nidelson/bmad-module-pulse/actions/workflows/test.yaml/badge.svg)](https://github.com/nidelson/bmad-module-pulse/actions/workflows/test.yaml)
 [![GitHub release](https://img.shields.io/github/v/release/nidelson/bmad-module-pulse)](https://github.com/nidelson/bmad-module-pulse/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub stars](https://img.shields.io/github/stars/nidelson/bmad-module-pulse?style=social)](https://github.com/nidelson/bmad-module-pulse/stargazers)
