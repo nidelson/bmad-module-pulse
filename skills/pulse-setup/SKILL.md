@@ -89,107 +89,92 @@ The script verifies that every skill in the legacy directories exists at `.claud
 
 Check `directories_removed` and `files_removed_count` in the JSON output for the confirmation step. Run `./scripts/cleanup-legacy.py --help` for full usage.
 
-## Integrate with Dev Story (Auto-Tracking)
+## Generate Customize Overrides (Auto-Tracking)
 
-After cleanup, check if `{project-root}/.claude/skills/bmad-dev-story/workflow.md` exists. If it does, inject PULSE tracking steps automatically so that every story execution tracks metrics without manual intervention.
+After cleanup, configure auto-tracking by emitting two `customize.toml`
+overrides in the consumer project. Auto-tracking now uses BMAD v6.4.0's
+TOML-based customization framework instead of injecting steps into
+`workflow.md`. This survives BMAD core upgrades because the override files
+live in `_bmad/custom/`, which BMAD never overwrites.
 
-### Detection
+### Capability Gate
 
-1. Check if `{project-root}/.claude/skills/bmad-dev-story/workflow.md` exists
-2. If **not found**: skip this section and inform the user that automatic tracking is not available — they can use `/pulse-track-start` and `/pulse-track-done` manually
-3. If **found**: check if PULSE markers already exist in the file (search for `<!-- PULSE:auto-inject:start -->`)
-   - If markers exist: this is an **update** — remove content between markers before re-injecting
-   - If no markers: this is a **fresh injection**
+Run the capability detector first:
 
-### Format Detection
-
-Before injecting, detect which format the workflow uses:
-
-1. Search the workflow file for `<step ` or `<action>` tags
-2. If found: the workflow uses **XML format** (BMAD step-file architecture with `<step>`, `<action>`, `<check>`, `<note>` tags)
-3. If not found: the workflow uses **Markdown format** (headings, numbered lists)
-
-### Injection — Track Start
-
-Insert the following block **after the step that marks the story as in-progress** (typically Step 4 in BMAD workflows) and **before the first implementation step** (typically Step 5).
-
-**Insertion point detection:**
-- XML format: find `</step>` that closes the "Mark story in-progress" step, insert after it
-- Markdown format: find the heading for the implementation step, insert before it
-
-**XML format** (when `<step>` tags are detected):
-
-```xml
-  <!-- PULSE:auto-inject:start -->
-  <step n="4.5" goal="PULSE — Track Start">
-    <action>Before starting implementation, register this story for efficiency tracking.</action>
-    <action>Run `/pulse-track-start {{story_key}}` with the current story identifier.</action>
-    <action>This records the start timestamp and extracts estimation data from the story file.</action>
-    <check if="track-start has already been registered for this story">
-      <action>Skip this step</action>
-    </check>
-    <note>This step was automatically added by PULSE setup. Remove the PULSE:auto-inject markers to disable.</note>
-  </step>
-  <!-- PULSE:auto-inject:end -->
+```bash
+python3 ./scripts/detect_bmad_capability.py --project-root "{project-root}"
 ```
 
-**Markdown format** (fallback when no XML tags are detected):
+The script exits 0 (BMAD ≥6.4.0), 1 (BMAD ≤6.3.x), or 2 (BMAD not installed)
+and prints a JSON payload to stdout describing the detection.
 
-```markdown
-<!-- PULSE:auto-inject:start -->
-### PULSE — Track Start
+- **Exit 0** — proceed with override emission below.
+- **Exit 1** — abort with this message: "PULSE v0.4.0 requires BMAD ≥6.4.0.
+  Detected BMAD ≤6.3.x. Either upgrade BMAD (`npx bmad-method install`) or
+  pin to PULSE v0.3.x via `--version`."
+- **Exit 2** — abort: "BMAD is not installed in this project root. Run
+  `npx bmad-method install` first, then re-run `/pulse-setup`."
 
-Before starting implementation, register this story for efficiency tracking:
+### Cleanup Legacy Markers
 
-1. Run `/pulse-track-start {story_id}` where `{story_id}` is the current story identifier
-2. This records the start timestamp and extracts estimation data from the story file
-3. If track-start has already been registered for this story, skip this step
+Even on a fresh BMAD ≥6.4.0 install, scan for stale `<!-- PULSE:auto-inject -->`
+blocks in `workflow.md` left over from previous PULSE versions. The script
+silently skips when `workflow.md` is absent (BMAD 6.4.0 removed it from
+`bmad-dev-story`).
 
-> This step was automatically added by PULSE setup. Remove the markers to disable.
-<!-- PULSE:auto-inject:end -->
+```bash
+python3 ./scripts/cleanup-legacy.py \
+    --remove-pulse-markers \
+    --project-root "{project-root}"
 ```
 
-### Injection — Track Done
+### Emit Override Files
 
-Insert the following block **at the very end** of the workflow (after the last step, before `</workflow>` in XML format or before the end of the file in Markdown format).
+Emit the two override files. The conflict policy is **abort + `--force`**:
+if either destination already exists, the script exits 3 and the file is
+left untouched (sha256-stable). The user can re-run with `--force` after
+inspecting the conflict.
 
-**XML format:**
-
-```xml
-  <!-- PULSE:auto-inject:start -->
-  <step n="10.5" goal="PULSE — Track Done">
-    <action>After the story is complete and reviewed, register completion and calculate metrics.</action>
-    <action>Run `/pulse-track-done {{story_key}}` with the current story identifier.</action>
-    <action>This calculates AI Leverage Ratio, Process Health, and displays the Efficiency Pulse.</action>
-    <action>Answer Levi's questions about review cycles and effective time.</action>
-    <note>This step was automatically added by PULSE setup. Remove the PULSE:auto-inject markers to disable.</note>
-  </step>
-  <!-- PULSE:auto-inject:end -->
+```bash
+python3 ./scripts/inject_customize.py \
+    --project-root "{project-root}" \
+    --skill bmad-dev-story
+python3 ./scripts/inject_customize.py \
+    --project-root "{project-root}" \
+    --skill bmad-code-review
 ```
 
-**Markdown format:**
+If either invocation exits 3, surface the message to the user verbatim
+(it includes the destination path and instructs how to re-run with
+`--force`). Do NOT auto-retry with `--force` — the choice is the user's.
 
-```markdown
-<!-- PULSE:auto-inject:start -->
-### PULSE — Track Done
+### .gitignore Allowlist Snippet
 
-After the story is complete and reviewed, register completion and calculate metrics:
+Print a copy-paste-ready snippet for the consumer's `.gitignore` so that
+`_bmad/custom/*.toml` is committed (team overrides) while `*.user.toml`
+stays private. The script is read-only — never modifies the file.
 
-1. Run `/pulse-track-done {story_id}` where `{story_id}` is the current story identifier
-2. This calculates AI Leverage Ratio, Process Health, and displays the Efficiency Pulse
-3. Answer Levi's questions about review cycles and effective time
-
-> This step was automatically added by PULSE setup. Remove the markers to disable.
-<!-- PULSE:auto-inject:end -->
+```bash
+python3 ./scripts/print_gitignore_snippet.py --project-root "{project-root}"
 ```
+
+Surface the script's stdout to the user.
 
 ### Post-Injection
 
 Inform the user:
-- "PULSE auto-tracking integrated with `/bmad-dev-story`. Every story will now automatically track start and completion metrics."
-- "To disable: remove the `<!-- PULSE:auto-inject -->` blocks from the dev-story workflow."
 
-If the injection fails for any reason (file permissions, unexpected format), do NOT block the setup — inform the user and suggest manual integration.
+- "PULSE auto-tracking integrated via `_bmad/custom/bmad-dev-story.toml` and
+  `_bmad/custom/bmad-code-review.toml`. Every story will now automatically
+  track start (during `/bmad-dev-story`) and completion (after
+  `/bmad-code-review`)."
+- "To disable: delete the two `.toml` files from `_bmad/custom/`."
+- "To customize: edit the files manually. Re-running `/pulse-setup` will
+  abort if you changed them — pass `--force` only if you want PULSE's
+  defaults restored."
+
+If any step above failed, do NOT block the rest of the setup. Report the
+failure clearly and continue — the user can rerun the failing piece later.
 
 ## Confirm
 
