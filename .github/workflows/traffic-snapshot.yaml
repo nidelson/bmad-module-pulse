@@ -20,8 +20,10 @@ jobs:
         run: |
           clones=$(gh api repos/${{ github.repository }}/traffic/clones)
           views=$(gh api repos/${{ github.repository }}/traffic/views)
-          jq -n --argjson clones "$clones" --argjson views "$views" \
-            '{clones: $clones, views: $views}' > /tmp/traffic.json
+          # Unwrap GitHub's envelope ({count, uniques, clones: [...]}) so the
+          # inner timestamped arrays are what reaches the merge script.
+          jq -n --argjson c "$clones" --argjson v "$views" \
+            '{clones: $c.clones, views: $v.views}' > /tmp/traffic.json
 
       - name: Merge into _metrics/traffic.json
         run: python3 scripts/traffic-snapshot.py < /tmp/traffic.json
