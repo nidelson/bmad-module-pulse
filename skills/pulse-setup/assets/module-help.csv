@@ -1,4 +1,0 @@
-module,skill,display-name,menu-code,description,action,args,phase,after,before,required,output-location,outputs
-PULSE,pulse-track-start,Track Start,TS,"Record start of story implementation",track-start,"[story_id]",anytime,,,false,pulse_data_folder,"pulse_metrics entry"
-PULSE,pulse-track-done,Track Done,TD,"Record completion and calculate metrics",track-done,"[story_id]",anytime,pulse-track-start:track-start,,false,pulse_data_folder,"leverage_ratio first_pass process_health"
-PULSE,pulse-dashboard,Dashboard,PD,"Generate cumulative efficiency dashboard",dashboard,"",anytime,pulse-track-done:track-done,,false,pulse_dashboard_folder,"dashboard markdown"

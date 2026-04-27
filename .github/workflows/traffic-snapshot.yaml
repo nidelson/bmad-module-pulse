@@ -1,0 +1,41 @@
+name: Traffic snapshot
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"  # Every Monday at 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch traffic data
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          clones=$(gh api repos/${{ github.repository }}/traffic/clones)
+          views=$(gh api repos/${{ github.repository }}/traffic/views)
+          # Unwrap GitHub's envelope ({count, uniques, clones: [...]}) so the
+          # inner timestamped arrays are what reaches the merge script.
+          jq -n --argjson c "$clones" --argjson v "$views" \
+            '{clones: $c.clones, views: $v.views}' > /tmp/traffic.json
+
+      - name: Merge into _metrics/traffic.json
+        run: python3 scripts/traffic-snapshot.py < /tmp/traffic.json
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- _metrics/traffic.json; then
+            echo "No changes; skipping commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add _metrics/traffic.json
+          git commit -m "chore(metrics): weekly traffic snapshot"
+          git push

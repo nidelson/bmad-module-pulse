@@ -1,0 +1,221 @@
+code: pulse
+name: PULSE — AI Leverage Monitor
+header: 'PULSE: Process Utilization & Leverage Statistics Engine'
+subheader: >-
+  Measures AI-assisted development efficiency with AI Leverage Ratio and Process
+  Health
+description: >-
+  Metrics module that calculates AI Leverage Ratio, first-pass rate, and process
+  health per story. Generates cumulative dashboards with trends and capacity
+  forecasts.
+module_version: 0.3.2
+default_selected: false
+module_greeting: >
+  PULSE installed successfully! Against facts, there are no arguments.
+
+  Use /bmad-pulse-track-start when starting a story and /bmad-pulse-track-done when
+  finishing. Use /bmad-pulse-dashboard to view accumulated metrics.
+
+  For questions and suggestions: https://github.com/nidelson/bmad-module-pulse
+pulse_estimation_method:
+  prompt: What estimation methodology does your team use?
+  default: hours
+  result: '{value}'
+  single-select:
+    - value: hours
+      label: Hours (Recommended — greater precision)
+    - value: story_points
+      label: Story Points (requires calibration factor)
+    - value: tshirt
+      label: T-Shirt Sizes (S/M/L/XL — normalized automatically)
+pulse_story_point_hours_factor:
+  prompt: How many hours on average equal 1 story point in your team?
+  default: '4.0'
+  result: '{value}'
+  single-select:
+    - value: '2.0'
+      label: 2h/point — fast sprints
+    - value: '4.0'
+      label: 4h/point — market average (Recommended)
+    - value: '6.0'
+      label: 6h/point — complex domain
+    - value: '8.0'
+      label: 8h/point — research work
+pulse_field_estimated_hours:
+  prompt: Name of the estimated hours/points field in story files?
+  default: estimated_hours
+  result: '{value}'
+pulse_field_actual_hours:
+  prompt: Name of the actual hours spent field?
+  default: actual_hours
+  result: '{value}'
+pulse_field_dev_count:
+  prompt: Name of the developer count field in the story?
+  default: dev_count
+  result: '{value}'
+pulse_field_review_cycles:
+  prompt: Name of the review cycles field?
+  default: review_cycles
+  result: '{value}'
+pulse_field_category:
+  prompt: Name of the category field in the story?
+  default: category
+  result: '{value}'
+pulse_dev_categories:
+  prompt: What work categories does your project use?
+  default: standard_4
+  result: '{value}'
+  single-select:
+    - value: standard_4
+      label: 'Standard 4: backend / web / mobile / fullstack (Recommended)'
+    - value: standard_2
+      label: 'Standard 2: backend / frontend'
+    - value: standard_3
+      label: 'Standard 3: backend / frontend / mobile'
+    - value: data_heavy
+      label: 'Data Heavy: backend / data-eng / ml / frontend'
+    - value: custom
+      label: Custom (specify comma-separated list)
+pulse_default_category:
+  prompt: Default category when a story does not specify one?
+  default: fullstack
+  result: '{value}'
+pulse_leverage_threshold_exceptional:
+  prompt: Above which ratio is AI Leverage considered EXCEPTIONAL?
+  default: '3.0'
+  result: '{value}'
+  single-select:
+    - value: '2.5'
+      label: 2.5x — Accessible (teams getting started with AI)
+    - value: '3.0'
+      label: 3.0x — Standard (Recommended)
+    - value: '4.0'
+      label: 4.0x — Demanding (mature workflows)
+    - value: '5.0'
+      label: 5.0x — Elite (research workflows)
+pulse_leverage_threshold_solid:
+  prompt: Above which ratio is AI Leverage considered SOLID?
+  default: '1.8'
+  result: '{value}'
+  single-select:
+    - value: '1.5'
+      label: 1.5x — Generous
+    - value: '1.8'
+      label: 1.8x — Standard (Recommended)
+    - value: '2.0'
+      label: 2.0x — Strict
+pulse_leverage_warning_threshold:
+  prompt: Below which ratio should an insufficient leverage alert be issued?
+  default: '1.2'
+  result: '{value}'
+pulse_data_strategy:
+  prompt: How should PULSE store metrics data?
+  default: embedded
+  result: '{value}'
+  single-select:
+    - value: embedded
+      label: Embedded in sprint-status.yaml (Recommended — zero dependencies)
+    - value: dedicated
+      label: Dedicated pulse-data.yaml file per sprint
+    - value: central
+      label: Central cumulative pulse-history.yaml file
+pulse_sprint_status_filename:
+  prompt: Sprint status filename?
+  default: sprint-status.yaml
+  result: '{value}'
+pulse_data_folder:
+  prompt: Folder where sprint status files are stored?
+  default: '{output_folder}/implementation-artifacts'
+  result: '{project-root}/{value}'
+pulse_dashboard_folder:
+  prompt: Where to save generated dashboards?
+  default: '{output_folder}/implementation-artifacts/pulse-dashboards'
+  result: '{project-root}/{value}'
+pulse_dashboard_format:
+  prompt: Dashboard format?
+  default: markdown
+  result: '{value}'
+  single-select:
+    - value: markdown
+      label: Markdown — compatible with GitHub, Obsidian, Notion (Recommended)
+    - value: yaml
+      label: Structured YAML — for programmatic consumption
+    - value: both
+      label: Both — readable markdown + YAML for automation
+pulse_include_trend_chart:
+  prompt: Include trend chart in the dashboard?
+  default: 'yes'
+  result: '{value}'
+  single-select:
+    - value: 'yes'
+      label: Yes (Recommended)
+    - value: 'no'
+      label: 'No'
+pulse_include_capacity_forecast:
+  prompt: Include capacity forecast in the dashboard?
+  default: 'yes'
+  result: '{value}'
+  single-select:
+    - value: 'yes'
+      label: Yes (Recommended)
+    - value: 'no'
+      label: 'No'
+pulse_min_stories_for_trend:
+  prompt: Minimum number of stories to activate trend analysis?
+  default: '3'
+  result: '{value}'
+pulse_levi_verbosity:
+  prompt: Level of detail in Levi's responses?
+  default: standard
+  result: '{value}'
+  single-select:
+    - value: concise
+      label: Concise — executive summary
+    - value: standard
+      label: Standard — metrics + insights + recommendations (Recommended)
+    - value: verbose
+      label: Verbose — full analysis with educational context
+pulse_levi_coaching_mode:
+  prompt: Should Levi proactively suggest process improvements?
+  default: 'yes'
+  result: '{value}'
+  single-select:
+    - value: 'yes'
+      label: Yes — active coaching (Recommended)
+    - value: metrics-only
+      label: Metrics only
+pulse_process_health_checks:
+  prompt: Which process health checks should be monitored?
+  default: standard
+  result: '{value}'
+  single-select:
+    - value: standard
+      label: >-
+        Standard: stories without ACs, PRs without review, stalled stories
+        (Recommended)
+    - value: strict
+      label: 'Strict: standard + missing estimates, no TDD, no story linkage'
+    - value: minimal
+      label: 'Minimal: blocker detection only'
+pulse_alert_on_halt:
+  prompt: Alert when a story has recorded HALTs?
+  default: 'yes'
+  result: '{value}'
+  single-select:
+    - value: 'yes'
+      label: Yes — record and alert (Recommended)
+    - value: warn
+      label: Warning only — no blocking
+    - value: 'no'
+      label: 'No'
+pulse_alert_unused_skills:
+  prompt: Alert when available skills are not used?
+  default: 'yes'
+  result: '{value}'
+  single-select:
+    - value: 'yes'
+      label: Yes (Recommended)
+    - value: 'no'
+      label: 'No'
+directories:
+  - '{pulse_dashboard_folder}'

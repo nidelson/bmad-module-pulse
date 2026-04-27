@@ -24,11 +24,11 @@
         "name": "Nidelson Gimenez"
       },
       "skills": [
-        "./skills/pulse-setup",
-        "./skills/pulse-agent-levi",
-        "./skills/pulse-track-start",
-        "./skills/pulse-track-done",
-        "./skills/pulse-dashboard"
+        "./skills/bmad-pulse-setup",
+        "./skills/bmad-pulse-agent-levi",
+        "./skills/bmad-pulse-track-start",
+        "./skills/bmad-pulse-track-done",
+        "./skills/bmad-pulse-dashboard"
       ]
     }
   ]

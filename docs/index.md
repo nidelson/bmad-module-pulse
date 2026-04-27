@@ -3,10 +3,10 @@
 ## Quick Start
 
 1. Install the module: `npx bmad-method install --custom-source https://github.com/nidelson/bmad-module-pulse`
-2. Configure: `/pulse-setup`
-3. When starting a story: `/pulse-track-start`
-4. When completing: `/pulse-track-done`
-5. To view the dashboard: `/pulse-dashboard`
+2. Configure: `/bmad-pulse-setup`
+3. When starting a story: `/bmad-pulse-track-start`
+4. When completing: `/bmad-pulse-track-done`
+5. To view the dashboard: `/bmad-pulse-dashboard`
 
 ## Metrics Reference
 
@@ -34,4 +34,4 @@ Composite score based on:
 
 ## Advanced Configuration
 
-See [module.yaml](../skills/pulse-setup/assets/module.yaml) for the full list of configurable variables.
+See [module.yaml](../skills/bmad-pulse-setup/assets/module.yaml) for the full list of configurable variables.

@@ -20,3 +20,12 @@ build/
 _bmad/
 _bmad-output/
 .*/skills
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Implementation plans — controller's working tool, not product artifact
+docs/plans/
