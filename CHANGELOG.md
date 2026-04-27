@@ -5,6 +5,7 @@
 
 ### ⚠ BREAKING CHANGES
 
+* drops BMAD <6.4.0 support; auto-tracking now via _bmad/custom/*.toml.
 * skill folders and slash commands renamed pulse-* → bmad-pulse-*.
 
 ### Features
