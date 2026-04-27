@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0](https://github.com/nidelson/bmad-module-pulse/compare/v0.3.2...v0.4.0) (2026-04-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* skill folders and slash commands renamed pulse-* → bmad-pulse-*.
+
+### Features
+
+* migrate to BMAD 6.4.0 customize.toml and rename skills to bmad-pulse-* ([#12](https://github.com/nidelson/bmad-module-pulse/issues/12)) ([fcd8ba0](https://github.com/nidelson/bmad-module-pulse/commit/fcd8ba0e76e6dc766a3c160d7cd5928f1e541a38))
+
 ## [0.3.2](https://github.com/nidelson/bmad-module-pulse/compare/v0.3.1...v0.3.2) (2026-04-16)
 
 
