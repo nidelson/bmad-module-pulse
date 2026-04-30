@@ -126,11 +126,11 @@ pulse_sprint_status_filename:
 pulse_data_folder:
   prompt: Folder where sprint status files are stored?
   default: '{output_folder}/implementation-artifacts'
-  result: '{project-root}/{value}'
+  result: '{value}'
 pulse_dashboard_folder:
   prompt: Where to save generated dashboards?
   default: '{output_folder}/implementation-artifacts/pulse-dashboards'
-  result: '{project-root}/{value}'
+  result: '{value}'
 pulse_dashboard_format:
   prompt: Dashboard format?
   default: markdown
