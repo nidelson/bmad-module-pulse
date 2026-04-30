@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.0...v0.4.1) (2026-04-30)
+
+
+### Bug Fixes
+
+* **pulse-setup:** drop redundant {project-root} prefix from path result templates ([#16](https://github.com/nidelson/bmad-module-pulse/issues/16)) ([b9ddbca](https://github.com/nidelson/bmad-module-pulse/commit/b9ddbcae75322ec4315542b26bc68ad56eaf2799)), closes [#15](https://github.com/nidelson/bmad-module-pulse/issues/15)
+
 ## [0.4.0](https://github.com/nidelson/bmad-module-pulse/compare/v0.3.2...v0.4.0) (2026-04-27)
 
 
