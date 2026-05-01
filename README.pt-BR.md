@@ -188,7 +188,7 @@ Esse número não é o teto. É um ponto de dado. PULSE existe para que seu time
 - **v0.5** — Dashboard navegável por período (visões semana / sprint / trimestre, comparação lado a lado)
 - **v0.6** — Quebras de alavancagem por desenvolvedor e por agente, com guards de privacidade ativos por padrão
 - **v0.7** — Digests no Slack e Linear para sinais chegarem à liderança sem reunião
-- **v1.0** — Adoção nativa no BMAD core, em discussão com mantenedores
+- **v1.0** — Proposta à equipe principal do BMAD para adoção nativa
 
 ---
 
