@@ -188,7 +188,7 @@ That number isn't the ceiling. It's a data point. PULSE exists so your team can 
 - **v0.5** — Period-navigable dashboard (week / sprint / quarter views, side-by-side comparison)
 - **v0.6** — Per-developer and per-agent leverage breakdowns, with privacy guards on by default
 - **v0.7** — Slack and Linear digests so signals reach leadership without a meeting
-- **v1.0** — Native adoption into BMAD core, pending discussion with maintainers
+- **v1.0** — Pitch to BMAD core for native adoption.
 
 ---
 
