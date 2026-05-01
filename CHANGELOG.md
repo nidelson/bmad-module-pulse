@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.4.2](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.1...v0.4.2) (2026-05-01)
+
+
+### Documentation
+
+* **readme:** clarify v1.0 roadmap as a pitch to BMAD core ([#22](https://github.com/nidelson/bmad-module-pulse/issues/22)) ([b576b58](https://github.com/nidelson/bmad-module-pulse/commit/b576b5824ae7de624ec3c8b0c85f69ca91a9cf8d))
+* **readme:** replace static image with inline dashboard snippet + examples folder ([85389e7](https://github.com/nidelson/bmad-module-pulse/commit/85389e739153ce3b9867c9755734319beeb742d5))
+
+
+### Miscellaneous
+
+* add CONTRIBUTING.md and SECURITY.md (community standards) ([#24](https://github.com/nidelson/bmad-module-pulse/issues/24)) ([aabba1a](https://github.com/nidelson/bmad-module-pulse/commit/aabba1abf3ca5b539d71235b4ff750668c1558ec))
+* add Contributor Covenant 2.1 Code of Conduct ([#23](https://github.com/nidelson/bmad-module-pulse/issues/23)) ([31678cf](https://github.com/nidelson/bmad-module-pulse/commit/31678cfd84d1598bb37558296b0fffcfd4220aec))
+* add GitHub issue and pull request templates ([#25](https://github.com/nidelson/bmad-module-pulse/issues/25)) ([03a4f53](https://github.com/nidelson/bmad-module-pulse/commit/03a4f53ebc7aec7c8d05a3abb020ca26f736e9e2))
+
 ## [0.4.1](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.0...v0.4.1) (2026-04-30)
 
 
