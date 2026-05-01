@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Security vulnerability
+    url: https://github.com/nidelson/bmad-module-pulse/blob/main/SECURITY.md
+    about: Do NOT file public issues for security bugs. See SECURITY.md for the private disclosure process.
+  - name: 💬 General question or discussion
+    url: https://github.com/nidelson/bmad-module-pulse/discussions
+    about: For open-ended questions, ideas, or showing how you use PULSE.
+  - name: 📚 BMAD-METHOD itself
+    url: https://github.com/bmad-code-org/BMAD-METHOD/issues
+    about: PULSE is a BMAD module. For BMAD core issues, use the upstream tracker.

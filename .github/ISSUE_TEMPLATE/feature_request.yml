@@ -1,0 +1,63 @@
+name: ✨ Feature Request
+description: Suggest a new feature or improvement for PULSE.
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement. Please describe the problem first, then the proposed solution. Issues that lead with the *problem* (not the solution) are usually easier to triage.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the user-facing pain point. What does PULSE not do today that you wish it did?
+      placeholder: When I have 50+ stories in the dashboard, the breakdown table becomes unreadable.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed solution
+      description: How would you solve it? Sketch the desired behavior, config knobs, or output.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other approaches did you think about? Why didn't they fit?
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Estimated scope
+      description: Your best guess at the size of change.
+      options:
+        - Small (< 1 day, single skill)
+        - Medium (config knob + skill changes)
+        - Large (cross-skill, schema or breaking change)
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: related
+    attributes:
+      label: Related issues or discussions
+      description: Link any relevant existing issues, PRs, or external discussions.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I searched existing issues and confirmed this is not a duplicate
+          required: true
+        - label: This aligns with PULSE's scope (BMAD-native observability — not a general analytics platform)
+          required: true
+        - label: I'm willing to discuss tradeoffs and iterate on the proposal
+          required: true
