@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.3](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.2...v0.4.3) (2026-05-03)
+
+
+### Continuous Integration
+
+* **release-please:** allow PAT for triggering downstream workflows ([#26](https://github.com/nidelson/bmad-module-pulse/issues/26)) ([4c7ea56](https://github.com/nidelson/bmad-module-pulse/commit/4c7ea562601e36fd18ffca95c2d503e132dd443e))
+
 ## [0.4.2](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.1...v0.4.2) (2026-05-01)
 
 
