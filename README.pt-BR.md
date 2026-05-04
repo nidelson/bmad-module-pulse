@@ -158,6 +158,32 @@ PULSE instrumenta três pontos no ciclo de vida da story BMAD:
 - **Alert** — detecção de halt quando uma story trava além da estimativa.
 - **Coach** — Levi lê as métricas e aponta gargalos em linguagem clara.
 
+### Categorias de halt — separando trabalho de IA de tempo de espera
+
+Wall-clock pode ser inflado por latências que não são trabalho de dev. PULSE captura essas latências como halts estruturados em `process_health.halts` e subtrai do `actual_hours` para que a alavancagem reflita esforço real de engenharia.
+
+| `kind`           | O que representa                                                                                       |
+| ---------------- | ------------------------------------------------------------------------------------------------------ |
+| `approval_wait`  | Pausa aguardando aprovação explícita do usuário (admin merge, expansão de escopo, ação irreversível).  |
+| `incident`       | Indisponibilidade externa, GitHub fora, dependência indisponível.                                      |
+| `external_pause` | Pausa iniciada pelo usuário que não deve contar como trabalho de dev.                                  |
+| `other`          | Qualquer outro caso — documentar com `note`.                                                           |
+
+**Threshold:** documentar apenas halts maiores que 2 minutos. Abaixo disso é latência conversacional, não halt.
+
+**Decisões batch pré-aprovadas:** quando uma story anterior concedeu aprovação durável que cobre a atual (ex.: "Admin merge vale para todo o batch epic-setup"), marque `pre_approved_batch: true` na entrada do halt. PULSE registra mas não subtrai — isso premia o comportamento de batch-decision, operacionalmente correto para workflows human-in-the-loop com IA.
+
+```yaml
+process_health:
+  halts:
+    - kind: approval_wait
+      context: admin_merge_decision
+      duration_min: 7
+      pre_approved_batch: false
+```
+
+Por que importa: taxa de dev de IA >> taxa de review humano. Sem isso, cada ciclo "IA faz 5min de trabalho, humano leva 5min para aprovar" é logado como 0.5x de alavancagem em vez do número real.
+
 ---
 
 ## Configuração

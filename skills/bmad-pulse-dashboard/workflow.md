@@ -47,6 +47,17 @@ Load the `pulse` section from `{main_config}` and resolve all module variables:
    - Total estimated hours vs total actual hours
    - First-pass rate
    - Leverage by category (use `{pulse_dev_categories}`)
+   - **Halt aggregations** (read `process_health.halts` from each story; the field has three valid shapes — handle all without crashing):
+     - **Shape A** (integer): treat as opaque count, skip duration math.
+     - **Shape B** (list of objects): structured — read `kind`, `context`, `duration_min`, `pre_approved_batch`.
+     - **Shape C** (list of plain strings, legacy pre-0.5.0): infer `kind` from prefix when possible (`approval_wait_*` → `approval_wait`); `duration_min` is unknown — count as halt but exclude from minute aggregations.
+     - Aggregations:
+       - `total_halts` — sum across all stories (integers + list lengths regardless of shape)
+       - `total_approval_wait_count` — count of entries where `kind == approval_wait` (Shape B explicit, Shape C inferred via prefix)
+       - `total_approval_wait_minutes` — sum of `duration_min` for Shape B entries with `kind == approval_wait` and `pre_approved_batch != true` (Shape C contributes 0 — duration unknown)
+       - `total_pre_approved_batch_count` — count of `approval_wait` entries with `pre_approved_batch: true` (Shape B only)
+       - `legacy_halt_string_count` — count of Shape C entries encountered (used to surface migration hint in insights)
+       - `stories_with_approval_wait` — list of `(story_id, total_minutes)` pairs for the breakdown table (entries with unknown minutes show as `?min`)
 
 ### Step 2: Generate Dashboard
 
@@ -103,6 +114,32 @@ Based on avg leverage of {avg}x:
 - 80h estimated → ~{80/avg}h actual
 <!-- END CONDITIONAL capacity_forecast -->
 
+<!-- CONDITIONAL: include only if total_approval_wait_count > 0 OR total_pre_approved_batch_count > 0 -->
+## ⏸ Approval-Wait Halts
+
+| Metric                                  | Value                              |
+| --------------------------------------- | ---------------------------------- |
+| Approval-wait halts (subtracted)        | {total_approval_wait_count}        |
+| Total approval-wait time subtracted     | {total_approval_wait_minutes}min   |
+| Pre-approved batch decisions (skipped)  | {total_pre_approved_batch_count}   |
+
+{if stories_with_approval_wait}
+**By story:**
+
+| Story | Approval-wait minutes |
+| ----- | --------------------- |
+{for each (story_id, minutes) in stories_with_approval_wait}
+| {story_id} | {minutes}min |
+{end}
+{end}
+
+> Approval-wait halts measure governance latency (human-in-the-loop decisions) and are subtracted from `actual_hours` so leverage reflects real dev work, not wait time. `pre_approved_batch` flags durable decisions that legitimately remove latency on subsequent stories — these are reported but not subtracted.
+
+{if legacy_halt_string_count > 0}
+> ⚠ {legacy_halt_string_count} legacy halt entries (plain strings, pre-0.5.0 format) were detected. Their durations are not machine-readable and were excluded from minute totals. Migrate these entries to the structured shape (with `kind`, `context`, `duration_min`) for accurate leverage on historical stories.
+{end}
+<!-- END CONDITIONAL approval_wait -->
+
 ## 💡 Process Insights
 
 {insights generated based on the data}
@@ -150,3 +187,5 @@ The detail level of the summary must respect `pulse_levi_verbosity`.
 - The leverage trend section must only be included if `pulse_include_trend_chart == yes`
 - The capacity forecast section must only be included if `pulse_include_capacity_forecast == yes`
 - The categories table must use the categories defined in `pulse_dev_categories` (not hardcoded categories)
+- The Approval-Wait Halts section must only be rendered when `total_approval_wait_count + total_pre_approved_batch_count > 0`
+- When reading `process_health.halts`, accept both shapes (integer count and structured list) and degrade gracefully — never crash on legacy data

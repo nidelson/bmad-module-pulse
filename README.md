@@ -158,6 +158,32 @@ PULSE instruments three points in the BMAD story lifecycle:
 - **Alert** — halt detection when a story stalls beyond its estimate.
 - **Coach** — Levi reads the metrics and pinpoints bottlenecks in plain English.
 
+### Halt categories — separating dev work from wait time
+
+Wall-clock time can be inflated by latencies that aren't dev work. PULSE captures these as structured halts in `process_health.halts` and subtracts them from `actual_hours` so leverage reflects real engineering effort.
+
+| `kind`           | What it represents                                                                                  |
+| ---------------- | --------------------------------------------------------------------------------------------------- |
+| `approval_wait`  | Paused waiting for explicit user approval (admin merge, scope expansion, irreversible action).      |
+| `incident`       | External infra outage, GitHub down, dependency unavailable.                                         |
+| `external_pause` | User-initiated break that should not count as dev work.                                             |
+| `other`          | Anything else — document with `note`.                                                               |
+
+**Threshold:** only document halts longer than 2 minutes. Below that is conversational latency, not a halt.
+
+**Pre-approved batch decisions:** when a prior story granted durable approval covering the current one (e.g., "Admin merge applies to the entire epic-setup batch"), set `pre_approved_batch: true` on the halt entry. PULSE reports it but does not subtract — this rewards batch-decision behavior, which is operationally correct for human-in-the-loop AI workflows.
+
+```yaml
+process_health:
+  halts:
+    - kind: approval_wait
+      context: admin_merge_decision
+      duration_min: 7
+      pre_approved_batch: false
+```
+
+Why it matters: AI dev rate >> human review rate. Without this, every "AI does 5min of work, human takes 5min to approve" cycle gets logged as 0.5x leverage instead of the real number.
+
 ---
 
 ## Configuration
