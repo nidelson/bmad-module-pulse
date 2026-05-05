@@ -56,6 +56,24 @@ Load the config from the `pulse` section of `{main_config}` and resolve all modu
 2. Add the `end_ts` field with the current ISO 8601 timestamp
 3. Ask the user: "How many review cycles were needed?" → `review_cycles`
 4. Ask (optional): "Effective AI working time? (leave empty to use wall-clock)" → `effective_hours`
+5. Ask about halts >2min (skip if `effective_hours` was provided — wall-clock is being overridden):
+
+   **Prompt:** "Were there any halts >2min during execution?" — examples:
+   - `approval_wait` — paused waiting for explicit user approval (admin merge, scope expansion, irreversible action)
+   - `incident` — external infra outage, GitHub down, dependency unavailable
+   - `external_pause` — user-initiated break that should not count as dev work
+   - `other` — anything else (document with note)
+
+   For each halt, capture:
+   - `kind` (enum above)
+   - `context` (short identifier, e.g., `admin_merge_decision`, `github_outage`)
+   - `duration_min` (integer minutes, must be >2)
+   - `pre_approved_batch` (boolean, default false — set `true` if a prior story granted durable approval covering this case, e.g., "admin merge pre-approved across the entire epic-setup batch")
+   - `note` (optional human context)
+
+   **Threshold rule:** only document halts with `duration_min > 2`. Below that is conversational latency, not a halt.
+
+   **Pre-approved batch rule:** if a prior story in the same batch already captured the approval decision and the user confirmed it applies durably (e.g., "Admin merge for entire epic-setup batch"), set `pre_approved_batch: true` on subsequent halt entries OR omit the halt entirely with a comment explaining the durable decision. This rewards batch-decision behavior, which is operationally correct for human-in-the-loop AI workflows.
 
 ### Step 3: Calculate Metrics
 
@@ -88,13 +106,34 @@ estimated_hours = value recorded directly in hours
 
 ```text
 elapsed_minutes = (end_ts - start_ts) in minutes
-actual_hours = effective_hours ?? (elapsed_minutes / 60)
+
+# Halt subtraction (only when halts is a structured list, not a legacy integer):
+halt_minutes = sum(
+  h.duration_min for h in halts
+  if isinstance(halts, list)
+  and h.duration_min
+  and not h.pre_approved_batch
+)
+
+actual_hours = effective_hours ?? max(0.01, (elapsed_minutes - halt_minutes) / 60)
 leverage_ratio = estimated_hours / actual_hours
 first_pass = review_cycles == 1
 ```
 
+**Halt subtraction rules:**
+
+- If `effective_hours` is provided, `halt_minutes` is ignored (user already supplied the corrected value).
+- If `halts` is a legacy integer (e.g., `halts: 0`), no subtraction — the field carries no duration data.
+- If `halts` is a structured list, each entry with `duration_min` and `pre_approved_batch != true` contributes to `halt_minutes`.
+- If `halts` is a list of plain strings (legacy free-form shape, see Shape C below), no subtraction — duration data lives only in YAML comments and is not machine-readable. Emit a warning suggesting migration to Shape B.
+- Floor `actual_hours` at 0.01h to avoid divide-by-zero in `leverage_ratio`.
+- Document the subtraction inline with a YAML comment on `actual_hours` so the math is traceable, e.g.:
+  ```yaml
+  actual_hours: 0.65  # 46min wall-clock - 7min approval_wait_admin_merge_decision
+  ```
+
 1. Add the `review_cycles` field with the value provided by the user
-2. Add the `actual_hours` field with the calculated value
+2. Add the `actual_hours` field with the calculated value (with traceability comment when halts were subtracted)
 3. Add the `leverage_ratio` field with the calculated value (1 decimal)
 4. Add the `first_pass` field as a boolean
 
@@ -117,6 +156,7 @@ Display in the terminal:
    📋 Process Health
    Flow: {flow_check}
    HALTs: {halt_count} | Underused skills: {unused_skills_list}
+   {if any halt.kind == approval_wait}Approval-wait: {n} halt(s), {total_min}min total ({pre_approved_count} pre-approved batch){end}
 
    💡 {process_insight}
 ```
@@ -136,13 +176,16 @@ The verification level is determined by `pulse_process_health_checks`:
    - If any step was skipped (e.g. directly from backlog to done): "⚠ Steps skipped"
 
 2. **HALTs** (respect `pulse_alert_on_halt`):
-   - Locate the story file in the configured implementation artifacts folder
-   - Read the "Dev Agent Record" section of the story file
-   - Count occurrences of the word "HALT"
-   - If `pulse_alert_on_halt` is `yes`: display an alert if halt_count > 0
+   - Combine two sources:
+     - **Story-file HALTs:** locate the story file in the configured implementation artifacts folder, read the "Dev Agent Record" section, count occurrences of the word "HALT".
+     - **Captured halts:** the structured list collected in Step 2 (if `halts` is a list, count its length; if it is a legacy integer, use that integer directly).
+   - `halt_count = max(story_file_halts, captured_halts_count)` — captured halts dominate when they exist (they carry duration), but a story-file-only HALT still surfaces in the count.
+   - If `pulse_alert_on_halt` is `yes`: display an alert if `halt_count > 0`
    - If `pulse_alert_on_halt` is `warn`: display as an informational warning
    - If `pulse_alert_on_halt` is `no`: record internally but do not display
    - If 0: display "0"
+   - When the captured list contains any `kind: approval_wait` entries, surface them separately in the card:
+     `Approval-wait: {N} halt(s), {total_min}min total ({pre_approved_count} pre-approved batch)`
 
 3. **Underused skills** (only if `pulse_alert_unused_skills` is `yes`):
    - If `category` is "fullstack" or "backend":
@@ -159,15 +202,48 @@ The verification level is determined by `pulse_process_health_checks`:
    - If `pulse_levi_coaching_mode` is `metrics-only`: display data only, no suggestions
 
 5. **Persistence:**
-   - Add the `process_health` field to the story entry in `pulse_metrics`:
+   - Add the `process_health` field to the story entry in `pulse_metrics`.
+   - `halts` accepts two shapes (writers should prefer the structured list whenever halts were observed; the integer form remains valid for "no halts captured"):
 
-```yaml
-process_health:
-  flow_complete: true
-  halts: 0
-  unused_skills: ['tea:automate']
-  insight: 'Consider tea:automate for fullstack stories'
-```
+   **Shape A — no halts captured (legacy / shorthand):**
+
+   ```yaml
+   process_health:
+     flow_complete: true
+     halts: 0
+     unused_skills: ['tea:automate']
+     insight: 'Consider tea:automate for fullstack stories'
+   ```
+
+   **Shape B — structured list (required when halts >2min were captured):**
+
+   ```yaml
+   process_health:
+     flow_complete: true
+     halts:
+       - kind: approval_wait               # approval_wait | incident | external_pause | other
+         context: admin_merge_decision     # short identifier
+         duration_min: 7                   # integer minutes (>2)
+         pre_approved_batch: false         # true skips actual_hours subtraction
+         note: 'CI blocked by GH incident, waited for user merge override decision'  # optional
+       - kind: incident
+         context: github_outage
+         duration_min: 360
+     unused_skills: []
+     insight: 'Approval-wait dominated this story — consider batching the next governance call.'
+   ```
+
+   **Shape C — legacy free-form strings (read-only fallback for pre-0.5.0 data):**
+
+   ```yaml
+   process_health:
+     halts:
+       - approval_wait_admin_merge_decision  # ~7min — duration in comment, not machine-readable
+   ```
+
+   - Readers MUST handle all three shapes. Treat `halts: 0` as "empty list" semantically. Treat `halts: <int N>` as "N opaque halts, no duration data." Treat a string entry as "1 opaque halt, kind/context inferred from string prefix when possible (e.g., `approval_wait_*` → `kind: approval_wait`), `duration_min` unknown — do NOT subtract from `actual_hours`."
+   - Writers MUST NOT emit Shape C. Always write Shape A (no halts) or Shape B (structured). Shape C exists only to keep dashboards from breaking on historical data written before v0.5.0.
+   - When Shape C is detected, surface a one-line warning in the track-done card: `⚠ Legacy halt format detected — consider migrating to structured shape for accurate leverage.`
 
 ### Step 5: Compare with History
 
