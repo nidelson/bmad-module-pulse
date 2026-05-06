@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.4](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.3...v0.4.4) (2026-05-06)
+
+
+### Features
+
+* **track-done:** structured halts with approval_wait subtraction ([#28](https://github.com/nidelson/bmad-module-pulse/issues/28)) ([ea237bd](https://github.com/nidelson/bmad-module-pulse/commit/ea237bda7b36cd30ba2a2b473e00f3928a06e566)), closes [#18](https://github.com/nidelson/bmad-module-pulse/issues/18)
+
 ## [0.4.3](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.2...v0.4.3) (2026-05-03)
 
 
