@@ -199,6 +199,76 @@ PULSE offers 25 configurable variables with opinionated defaults. During setup (
 
 ---
 
+## Customizing PULSE skills
+
+Every PULSE skill ships a `customize.toml` exposing the same override surface as bmm-shipped skills. Overrides live in `_bmad/custom/{skill-name}.toml` (team-shared, committed) and `_bmad/custom/{skill-name}.user.toml` (gitignored). Empty defaults preserve current behavior — nothing to do until you want to extend.
+
+**Merge rules (by value shape):**
+
+- Scalars: override wins (`icon = "🔥"` replaces the default).
+- Arrays: append (base → team → user concatenate).
+- Arrays of tables with `code` or `id`: replace matching entries, append new ones.
+
+### Example 1 — give Levi a persistent fact
+
+`_bmad/custom/bmad-agent-pulse.toml`:
+
+```toml
+[agent]
+persistent_facts = [
+  "Always celebrate leverage above 4x with an exclamation; below 1.2x, request a halt review.",
+]
+```
+
+### Example 2 — push metrics to a webhook on every track-done
+
+`_bmad/custom/bmad-pulse-track-done.toml`:
+
+```toml
+[workflow]
+metric_post_hooks = [
+  "curl -X POST -H 'Content-Type: application/json' -d @{pulse_data_folder}/last-pulse.json https://hooks.slack.com/services/AAA/BBB/CCC",
+]
+```
+
+### Example 3 — register a custom halt category
+
+`_bmad/custom/bmad-pulse-track-done.toml`:
+
+```toml
+[workflow]
+halt_categories_extra = [
+  "security_review_wait",
+  "ux_review_wait",
+]
+```
+
+These values become valid selections in the halt prompt and are persisted alongside the built-in kinds.
+
+### Example 4 — append a team-glossary to every dashboard
+
+`_bmad/custom/bmad-pulse-dashboard.toml`:
+
+```toml
+[workflow]
+extra_sections = [
+  "file:{project-root}/docs/team-glossary.md",
+]
+```
+
+### Example 5 — override Levi's "new record" cutoff
+
+`_bmad/custom/bmad-agent-pulse.toml`:
+
+```toml
+[agent]
+celebration_threshold_override = "4.5"
+```
+
+The full surface for each skill is documented in the skill's `customize.toml` shipped under `.claude/skills/<skill>/`. The header line `# DO NOT EDIT -- overwritten on every update.` marks defaults; your overrides go in `_bmad/custom/` instead.
+
+---
+
 ## Proven leverage
 
 Sustained leverage of **6.9x** measured on a production BMAD project (SIP — local-first survey platform, monorepo with mobile, web, backend, and worker apps). The number reflects shipped stories with estimated and real hours captured by PULSE itself across multiple sprints.
