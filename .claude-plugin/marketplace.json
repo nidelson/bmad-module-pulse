@@ -25,7 +25,7 @@
       },
       "skills": [
         "./skills/bmad-pulse-setup",
-        "./skills/bmad-pulse-agent-levi",
+        "./skills/bmad-agent-pulse",
         "./skills/bmad-pulse-track-start",
         "./skills/bmad-pulse-track-done",
         "./skills/bmad-pulse-dashboard"
