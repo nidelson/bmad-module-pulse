@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.5](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.4...v0.4.5) (2026-05-12)
+
+
+### Features
+
+* BMAD v6.6.0 conformance (Levi consolidation + customize.toml parity + module.yaml at root) ([#34](https://github.com/nidelson/bmad-module-pulse/issues/34)) ([6419e61](https://github.com/nidelson/bmad-module-pulse/commit/6419e611c865f45959cd3480cf42b55bf5024eb4))
+
 ## [0.4.4](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.3...v0.4.4) (2026-05-06)
 
 
