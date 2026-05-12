@@ -22,7 +22,7 @@ import yaml
 REPO_ROOT = Path(__file__).parents[1]
 SKILLS_DIR = REPO_ROOT / "skills"
 TEMPLATES_DIR = SKILLS_DIR / "bmad-pulse-setup/assets/customize-templates"
-LEVI_AGENT_YAML = SKILLS_DIR / "bmad-pulse-agent-levi/levi.agent.yaml"
+PULSE_AGENT_SKILL = SKILLS_DIR / "bmad-agent-pulse/SKILL.md"
 MARKETPLACE_JSON = REPO_ROOT / ".claude-plugin/marketplace.json"
 
 
@@ -66,20 +66,24 @@ def test_customize_templates_reference_real_skills():
             )
 
 
-def test_agent_yaml_skill_triggers_resolve():
-    """Every `skill:` field in levi.agent.yaml's menu must resolve to a real
-    SKILL.md frontmatter `name:`.
+def test_agent_capabilities_skills_resolve():
+    """Every skill name listed in the bmad-agent-pulse Capabilities table must
+    resolve to a real SKILL.md frontmatter `name:`.
 
-    Catches: agent triggers that point to skills that were renamed or removed.
+    Catches: agent menu entries that point to skills that were renamed or
+    removed. Replaces the pre-v0.4.5 yaml-sidecar check, since the agent
+    now declares its capabilities inline in SKILL.md per bmm convention.
     """
     real_names = _declared_skill_names()
-    data = yaml.safe_load(LEVI_AGENT_YAML.read_text())
-    menu = data.get("agent", {}).get("menu", [])
-    referenced = [item["skill"] for item in menu if "skill" in item]
-    assert referenced, "levi.agent.yaml menu has no skill triggers — sanity check failed"
+    text = PULSE_AGENT_SKILL.read_text()
+    # Capabilities table rows reference skills via the third column. Parse
+    # any bmad-pulse-* token that follows a pipe-space prefix in the body.
+    referenced = re.findall(r"\bbmad-pulse-[a-z-]+\b", text)
+    referenced = sorted(set(referenced))
+    assert referenced, "bmad-agent-pulse SKILL.md lists no skill triggers — sanity check failed"
     for ref in referenced:
         assert ref in real_names, (
-            f"{LEVI_AGENT_YAML.relative_to(REPO_ROOT)}: dangling skill "
+            f"{PULSE_AGENT_SKILL.relative_to(REPO_ROOT)}: dangling skill "
             f"reference {ref!r}. Declared names: {sorted(real_names)}"
         )
 

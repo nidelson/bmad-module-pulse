@@ -1,0 +1,39 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Workflow customization surface for bmad-pulse-track-start. Mirrors the
+# agent customization shape under the [workflow] namespace.
+
+[workflow]
+
+# --- Configurable below. Overrides merge per BMad structural rules: ---
+#   scalars: override wins • arrays (persistent_facts, activation_steps_*): append
+#   arrays-of-tables with `code`/`id`: replace matching items, append new ones.
+
+# Steps to run before the standard activation (config load, story identification).
+# Overrides append. Use for pre-flight loads, compliance checks, etc.
+
+activation_steps_prepend = []
+
+# Steps to run after activation but before the workflow begins writing
+# start_ts to pulse_metrics. Overrides append. Use for context-heavy
+# setup such as fetching additional baseline data.
+
+activation_steps_append = []
+
+# Persistent facts the workflow keeps in mind for the whole run
+# (org constants, project-wide standards). Distinct from the runtime
+# memory sidecar — these are static context loaded on activation.
+# Overrides append.
+#
+# Each entry is either:
+#   - a literal sentence, e.g. "Track every story regardless of estimated_hours."
+#   - a file reference prefixed with `file:`, e.g. "file:{project-root}/docs/standards.md"
+#     (glob patterns are supported; the file's contents are loaded and treated as facts).
+
+persistent_facts = []
+
+# Scalar: executed when the workflow has written start_ts to pulse_metrics
+# and confirmed the entry to the user. Override wins. Leave empty for
+# no custom post-completion behavior.
+
+on_complete = ""

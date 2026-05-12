@@ -12,6 +12,41 @@ config_section: 'pulse'
 
 **Your Role:** You are Levi, closing the measurement cycle and celebrating (or diagnosing) the result.
 
+You will continue to operate with your given name, identity, and communication_style, merged with the details of this role description.
+
+## Conventions
+
+- Bare paths (e.g. `customize.toml`) resolve from the skill root.
+- `{skill-root}` resolves to this skill's installed directory (where `customize.toml` lives).
+- `{project-root}`-prefixed paths resolve from the project working directory.
+- `{skill-name}` resolves to the skill directory's basename.
+
+## On Activation
+
+### Step 1: Resolve the Workflow Block
+
+Run: `python3 {project-root}/_bmad/scripts/resolve_customization.py --skill {skill-root} --key workflow`
+
+**If the script fails**, resolve the `workflow` block yourself by reading these three files in base → team → user order and applying the same structural merge rules as the resolver:
+
+1. `{skill-root}/customize.toml` — defaults
+2. `{project-root}/_bmad/custom/{skill-name}.toml` — team overrides
+3. `{project-root}/_bmad/custom/{skill-name}.user.toml` — personal overrides
+
+Any missing file is skipped. Scalars override, tables deep-merge, arrays of tables keyed by `code` or `id` replace matching entries and append new entries, and all other arrays append.
+
+### Step 2: Execute Prepend Steps
+
+Execute each entry in `{workflow.activation_steps_prepend}` in order before proceeding.
+
+### Step 3: Load Persistent Facts
+
+Treat every entry in `{workflow.persistent_facts}` as foundational context you carry for the rest of the workflow run. Entries prefixed `file:` are paths or globs under `{project-root}` — load the referenced contents as facts. All other entries are facts verbatim.
+
+### Step 4: Load Config and Execute Append Steps
+
+Load the PULSE configuration as described in INITIALIZATION below, then execute each entry in `{workflow.activation_steps_append}` in order. Activation is complete; begin the workflow EXECUTION section.
+
 ---
 
 ## INITIALIZATION
@@ -64,8 +99,10 @@ Load the config from the `pulse` section of `{main_config}` and resolve all modu
    - `external_pause` — user-initiated break that should not count as dev work
    - `other` — anything else (document with note)
 
+   Every entry from `{workflow.halt_categories_extra}` is also a valid `kind` value. Surface these extra categories in the prompt alongside the built-ins so the user can pick them directly (e.g. `security_review_wait`, `ux_review_wait`).
+
    For each halt, capture:
-   - `kind` (enum above)
+   - `kind` (built-in enum above OR any entry from `{workflow.halt_categories_extra}`)
    - `context` (short identifier, e.g., `admin_merge_decision`, `github_outage`)
    - `duration_min` (integer minutes, must be >2)
    - `pre_approved_batch` (boolean, default false — set `true` if a prior story granted durable approval covering this case, e.g., "admin merge pre-approved across the entire epic-setup batch")
@@ -286,3 +323,13 @@ Display as an additional section in the card (respecting `pulse_levi_verbosity`)
 - Respect `pulse_levi_verbosity` for level of detail (concise / standard / verbose)
 - Respect `pulse_levi_coaching_mode` (yes = suggest improvements, metrics-only = data only)
 - If no entry exists for the story ID in `pulse_metrics:`, warn and suggest running track-start first
+
+---
+
+## Post-Metric Hooks
+
+After Step 6 has produced the final metrics card but BEFORE displaying it to the user, execute each entry in `{workflow.metric_post_hooks}` in order. Each entry is a shell command or skill invocation string — treat it as a hook that may publish the metrics to an external destination (Grafana, Slack, a webhook, a downstream pipeline). Surface any non-zero exit codes as a one-line warning appended to the card; do not fail the workflow on hook errors.
+
+## On Completion
+
+After the Efficiency Pulse has been displayed AND all `{workflow.metric_post_hooks}` have run, execute the `{workflow.on_complete}` scalar if non-empty. Override wins; an empty value means no custom post-completion behavior.

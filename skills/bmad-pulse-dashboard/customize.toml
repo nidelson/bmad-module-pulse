@@ -1,0 +1,53 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Workflow customization surface for bmad-pulse-dashboard. Mirrors the
+# agent customization shape under the [workflow] namespace, plus a
+# PULSE-specific array for appending extra markdown sections to the
+# generated dashboard.
+
+[workflow]
+
+# --- Configurable below. Overrides merge per BMad structural rules: ---
+#   scalars: override wins • arrays (persistent_facts, activation_steps_*): append
+#   arrays-of-tables with `code`/`id`: replace matching items, append new ones.
+
+# Steps to run before the standard activation (config load, data scan).
+# Overrides append. Use for pre-flight loads, compliance checks, etc.
+
+activation_steps_prepend = []
+
+# Steps to run after activation but before the workflow begins rendering
+# the dashboard markdown. Overrides append. Use for context-heavy setup
+# such as fetching external benchmark data to embed in the dashboard.
+
+activation_steps_append = []
+
+# Persistent facts the workflow keeps in mind for the whole run
+# (team conventions, dashboard tone, recurring annotations).
+# Distinct from the runtime memory sidecar — these are static context
+# loaded on activation. Overrides append.
+#
+# Each entry is either:
+#   - a literal sentence, e.g. "Always annotate leverage > 4x stories with the dev's name."
+#   - a file reference prefixed with `file:`, e.g. "file:{project-root}/docs/dashboard-notes.md"
+#     (glob patterns are supported; the file's contents are loaded and treated as facts).
+
+persistent_facts = []
+
+# Scalar: executed when the workflow has written the dashboard file to
+# pulse_dashboard_folder. Override wins. Leave empty for no custom
+# post-completion behavior.
+
+on_complete = ""
+
+# --- PULSE-specific knobs (additive on top of bmm parity) ---
+
+# Append array — extra markdown sections rendered at the end of the
+# dashboard, after the standard sections. Each entry is either:
+#   - a literal markdown block, e.g. "## Team Glossary\n\n- AI Leverage: ..."
+#   - a file reference prefixed with `file:`, e.g. "file:{project-root}/docs/team-glossary.md"
+#     (the file's contents are inlined verbatim).
+#
+# Sections render in the order listed. Override appends.
+
+extra_sections = []

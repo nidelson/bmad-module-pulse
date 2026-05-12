@@ -1,0 +1,61 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Workflow customization surface for bmad-pulse-track-done. Mirrors the
+# agent customization shape under the [workflow] namespace, plus a pair
+# of PULSE-specific arrays for the halt-classification and post-metric
+# extension points.
+
+[workflow]
+
+# --- Configurable below. Overrides merge per BMad structural rules: ---
+#   scalars: override wins • arrays (persistent_facts, activation_steps_*): append
+#   arrays-of-tables with `code`/`id`: replace matching items, append new ones.
+
+# Steps to run before the standard activation (config load, story identification).
+# Overrides append. Use for pre-flight loads, compliance checks, etc.
+
+activation_steps_prepend = []
+
+# Steps to run after activation but before the workflow begins recording
+# end_ts and prompting for review_cycles. Overrides append. Use for
+# context-heavy setup such as fetching review-cycle data from external
+# systems before the prompt.
+
+activation_steps_append = []
+
+# Persistent facts the workflow keeps in mind for the whole run
+# (org constants, leverage thresholds, halt-handling policy).
+# Distinct from the runtime memory sidecar — these are static context
+# loaded on activation. Overrides append.
+#
+# Each entry is either:
+#   - a literal sentence, e.g. "Treat infra-outage halts as non-billable time."
+#   - a file reference prefixed with `file:`, e.g. "file:{project-root}/docs/halt-policy.md"
+#     (glob patterns are supported; the file's contents are loaded and treated as facts).
+
+persistent_facts = []
+
+# Scalar: executed when the workflow has calculated metrics, displayed the
+# Efficiency Pulse, and synchronized the dashboard. Override wins.
+# Leave empty for no custom post-completion behavior.
+
+on_complete = ""
+
+# --- PULSE-specific knobs (additive on top of bmm parity) ---
+
+# Append array — extra halt `kind` values beyond the built-in enum
+# (approval_wait, incident, external_pause, other). Each entry is a
+# short snake_case identifier (e.g. "security_review_wait",
+# "ux_review_wait", "compliance_review"). These values become valid
+# selections in the halt prompt and are persisted alongside the
+# built-in kinds in pulse_metrics.
+
+halt_categories_extra = []
+
+# Append array — shell commands or skill invocations executed after metric
+# calculation but before the Efficiency Pulse is displayed. Use for pushing
+# metrics to Grafana, Slack, a webhook, or a downstream pipeline. Each
+# entry is a literal command string; the runtime treats it as a hook
+# rather than as a fact.
+
+metric_post_hooks = []

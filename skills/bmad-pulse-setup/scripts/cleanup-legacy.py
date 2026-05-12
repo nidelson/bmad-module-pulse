@@ -65,9 +65,16 @@ def parse_args():
         "under --project-root (standalone mode)",
     )
     parser.add_argument(
+        "--remove-legacy-agent",
+        action="store_true",
+        help="Remove the legacy .claude/skills/bmad-pulse-agent-levi/ folder "
+        "when the canonical .claude/skills/bmad-agent-pulse/ exists "
+        "under --project-root (standalone mode)",
+    )
+    parser.add_argument(
         "--project-root",
-        help="Path to the consumer project root "
-        "(required when --remove-pulse-markers is set)",
+        help="Path to the consumer project root (required when "
+        "--remove-pulse-markers or --remove-legacy-agent is set)",
     )
     parser.add_argument(
         "--verbose",
@@ -208,6 +215,97 @@ def remove_pulse_markers(project_root: Path) -> dict:
     }
 
 
+LEGACY_AGENT_FOLDER = "bmad-pulse-agent-levi"
+CANONICAL_AGENT_FOLDER = "bmad-agent-pulse"
+
+
+def remove_legacy_agent(project_root: Path) -> dict:
+    """Remove the legacy bmad-pulse-agent-levi/ skill folder if safe.
+
+    Before v0.4.5 PULSE shipped its own bmad-pulse-agent-levi/ skill folder
+    in parallel with the bmad-agent-pulse/ folder auto-provisioned by the
+    BMAD installer from agent-manifest-fragment.csv. On BMAD v6.6.0 projects
+    this produced two divergent entry points for the same agent (Levi).
+
+    This function removes the legacy folder only when the canonical
+    folder is present, so a partial-state install is never stranded
+    without an agent. It is idempotent — repeated invocations on a clean
+    state return without side effects.
+
+    Args:
+        project_root: Path to the consumer project root.
+
+    Returns:
+        Dict with keys:
+            status: 'success' (every code path is non-fatal).
+            legacy_path: Resolved path to the legacy folder (string).
+            canonical_path: Resolved path to the canonical folder (string).
+            action: One of 'removed', 'skipped_no_canonical',
+                    'skipped_already_absent'.
+            files_removed: Count of files deleted (0 unless action='removed').
+            notice: Human-readable message describing the outcome.
+    """
+    skills_dir = project_root / ".claude/skills"
+    legacy = skills_dir / LEGACY_AGENT_FOLDER
+    canonical = skills_dir / CANONICAL_AGENT_FOLDER
+
+    base = {
+        "status": "success",
+        "legacy_path": str(legacy),
+        "canonical_path": str(canonical),
+    }
+
+    if not legacy.exists():
+        return {
+            **base,
+            "action": "skipped_already_absent",
+            "files_removed": 0,
+            "notice": (
+                f"Legacy folder {LEGACY_AGENT_FOLDER}/ not found — nothing to do."
+            ),
+        }
+
+    if not canonical.is_dir():
+        # Safety: never strand the user without a Levi skill. The canonical
+        # folder should have been auto-provisioned by the BMAD installer
+        # from agent-manifest-fragment.csv. If it is missing, the install
+        # is incomplete and the legacy folder is the only entry point left.
+        return {
+            **base,
+            "action": "skipped_no_canonical",
+            "files_removed": 0,
+            "notice": (
+                f"Canonical folder {CANONICAL_AGENT_FOLDER}/ is missing. "
+                f"Refusing to remove legacy {LEGACY_AGENT_FOLDER}/ to avoid "
+                f"stranding the project without a Levi agent. Re-run the "
+                f"BMAD installer to provision the canonical folder."
+            ),
+        }
+
+    file_count = count_files(legacy)
+    try:
+        shutil.rmtree(legacy)
+    except OSError as e:
+        error_result = {
+            "status": "error",
+            "error": f"Failed to remove {legacy}: {e}",
+            "legacy_path": str(legacy),
+            "canonical_path": str(canonical),
+        }
+        print(json.dumps(error_result, indent=2))
+        sys.exit(2)
+
+    return {
+        **base,
+        "action": "removed",
+        "files_removed": file_count,
+        "notice": (
+            f"Removed legacy Levi skill folder {LEGACY_AGENT_FOLDER}/. "
+            f"Canonical agent is now {CANONICAL_AGENT_FOLDER}/."
+        ),
+    }
+
+
 def cleanup_directories(
     bmad_dir: str, dirs_to_remove: list, verbose: bool = False
 ) -> tuple:
@@ -262,8 +360,24 @@ def cleanup_directories(
 def main():
     args = parse_args()
 
+    # Standalone modes are mutually exclusive with each other and with the
+    # legacy directory cleanup.
+    if args.remove_pulse_markers and args.remove_legacy_agent:
+        print(
+            json.dumps(
+                {
+                    "status": "error",
+                    "error": (
+                        "--remove-pulse-markers and --remove-legacy-agent "
+                        "are mutually exclusive"
+                    ),
+                },
+                indent=2,
+            )
+        )
+        sys.exit(1)
+
     # Standalone mode: strip PULSE auto-inject blocks from workflow.md.
-    # This branch is mutually exclusive with the legacy directory cleanup.
     if args.remove_pulse_markers:
         if not args.project_root:
             print(
@@ -277,6 +391,23 @@ def main():
             )
             sys.exit(1)
         result = remove_pulse_markers(Path(args.project_root))
+        print(json.dumps(result, indent=2))
+        return
+
+    # Standalone mode: remove legacy bmad-pulse-agent-levi/ skill folder.
+    if args.remove_legacy_agent:
+        if not args.project_root:
+            print(
+                json.dumps(
+                    {
+                        "status": "error",
+                        "error": "--project-root is required with --remove-legacy-agent",
+                    },
+                    indent=2,
+                )
+            )
+            sys.exit(1)
+        result = remove_legacy_agent(Path(args.project_root))
         print(json.dumps(result, indent=2))
         return
 
