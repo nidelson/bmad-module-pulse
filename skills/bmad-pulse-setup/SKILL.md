@@ -134,6 +134,30 @@ the file is absent — this is the common case on fresh BMAD 6.4.0 installs and 
 a failure). A non-zero exit indicates `--project-root` is missing or the file system
 is broken; surface the error and stop.
 
+### Cleanup Legacy Levi Agent Folder
+
+Pre-v0.4.5 PULSE distributed its own `bmad-pulse-agent-levi/` skill folder
+in parallel with the canonical `bmad-agent-pulse/` folder auto-provisioned
+by the BMAD installer from `agent-manifest-fragment.csv`. On BMAD v6.6.0
+projects this produced two divergent entry points for the same Levi agent.
+
+This step removes the legacy folder when the canonical folder is present.
+The script refuses to remove the legacy folder if the canonical replacement
+is missing, so a partial-state install is never stranded without an agent.
+
+```bash
+python3 ./scripts/cleanup-legacy.py \
+    --remove-legacy-agent \
+    --project-root "{project-root}"
+```
+
+The script exits 0 in every non-fatal case and prints a JSON payload with
+an `action` field: `removed`, `skipped_already_absent`, or
+`skipped_no_canonical`. Surface the `notice` to the user when `action`
+is `removed` so they understand which folder was deleted. A non-zero exit
+indicates `--project-root` is missing or the file system is broken;
+surface the error and stop.
+
 ### Emit Override Files
 
 Emit the two override files. The conflict policy is **abort + `--force`**:
