@@ -17,10 +17,32 @@ import yaml
 
 REPO_ROOT = Path(__file__).parents[1]
 MODULE_YAML = REPO_ROOT / "skills/bmad-pulse-setup/assets/module.yaml"
+MODULE_YAML_ROOT_SYMLINK = REPO_ROOT / "module.yaml"
 
 
 def _load_module_yaml() -> dict:
     return yaml.safe_load(MODULE_YAML.read_text())
+
+
+def test_root_symlink_resolves_to_canonical_manifest():
+    """v0.4.5 exposes module.yaml at the repo root as a symlink for
+    discoverability (third-party validators, marketplace scrapers,
+    casual readers). The canonical file stays inside the setup skill
+    so the BMAD installer can copy it to the consumer project at
+    install time. This test pins the link so it does not drift."""
+    assert MODULE_YAML_ROOT_SYMLINK.exists(), (
+        "module.yaml at repo root is missing — must exist as a symlink "
+        "to skills/bmad-pulse-setup/assets/module.yaml for discoverability."
+    )
+    assert MODULE_YAML_ROOT_SYMLINK.is_symlink(), (
+        "module.yaml at repo root must be a symlink (not a duplicate file) "
+        "to avoid drift with the canonical manifest."
+    )
+    resolved = MODULE_YAML_ROOT_SYMLINK.resolve()
+    assert resolved == MODULE_YAML.resolve(), (
+        f"module.yaml symlink at repo root resolves to {resolved}, "
+        f"expected {MODULE_YAML.resolve()}"
+    )
 
 
 def test_path_results_do_not_double_prefix_project_root():

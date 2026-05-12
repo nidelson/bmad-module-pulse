@@ -34,4 +34,4 @@ Composite score based on:
 
 ## Advanced Configuration
 
-See [module.yaml](../skills/bmad-pulse-setup/assets/module.yaml) for the full list of configurable variables.
+See [module.yaml](../module.yaml) for the full list of configurable variables. The file at the repository root is a symlink to the canonical manifest shipped inside the setup skill (`skills/bmad-pulse-setup/assets/module.yaml`), so the BMAD installer can copy it to the consumer project at install time while keeping the file discoverable from the repo root.
