@@ -5,6 +5,47 @@ skip to the version you are migrating from.
 
 ---
 
+## Upgrading over an existing install — automatic self-heal
+
+This applies to **every** PULSE upgrade, not a specific version.
+
+The upstream BMAD installer performs an *additive* deploy when PULSE is
+already installed in a project: brand-new files are copied, but
+pre-existing files (`module.yaml`, `SKILL.md`, …) are **not** overwritten
+and renamed/removed skills are **not** pruned. Re-running
+`npx bmad-method install` over an existing install therefore leaves a
+mixed state frozen at the old version — new files present, old files
+stale, orphan folders lingering (issue #36).
+
+`bmad-pulse-setup` now self-heals this. Its first step,
+`reconcile-skills.py`, force-syncs every PULSE skill directory from the
+authoritative source (the freshly-fetched BMAD custom-module cache) and
+prunes orphaned renamed folders. It is idempotent (no-op when already in
+sync) and non-fatal on fresh installs.
+
+```bash
+# 1. Fetch the new PULSE version (refreshes the BMAD custom-module cache)
+npx bmad-method install --custom-source https://github.com/nidelson/bmad-module-pulse
+
+# 2. Re-run setup — reconcile converges the deployed tree automatically
+/bmad-pulse-setup
+```
+
+If the deployed `bmad-pulse-setup` skill itself was stale, the first run
+reconciles it in place; the JSON `notice` will ask you to run
+`/bmad-pulse-setup` once more so the current version executes. Re-run it
+once and you are converged.
+
+Manual reconcile (e.g. for a bug report) — `--dry-run` previews without
+writing:
+
+```bash
+python3 .claude/skills/bmad-pulse-setup/scripts/reconcile-skills.py \
+    --project-root . --dry-run
+```
+
+---
+
 ## v0.4.4 → v0.4.5 — Levi agent consolidation
 
 v0.4.5 consolidates the Levi agent into a single canonical skill folder
