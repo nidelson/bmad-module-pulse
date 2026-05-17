@@ -26,6 +26,12 @@ _bmad-output/
 __pycache__/
 *.pyc
 .pytest_cache/
+# Transient lockfile from `uv run --with ...` test invocations — the
+# project pins no runtime deps, so this is never an authoritative lock.
+uv.lock
+
+# Claude Code local harness config — machine-specific, never shared
+.claude/settings.local.json
 
 # Implementation plans — controller's working tool, not product artifact
 docs/plans/
