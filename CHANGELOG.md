@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.6](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.5...v0.4.6) (2026-05-17)
+
+
+### Bug Fixes
+
+* **setup:** idempotent skill reconcile to self-heal updates over existing installs ([#37](https://github.com/nidelson/bmad-module-pulse/issues/37)) ([907c03f](https://github.com/nidelson/bmad-module-pulse/commit/907c03f40ea6f687c7dc76999df7515bb062d573))
+
 ## [0.4.5](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.4...v0.4.5) (2026-05-12)
 
 
