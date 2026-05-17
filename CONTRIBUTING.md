@@ -15,14 +15,16 @@ Thanks for considering a contribution. PULSE is a BMAD-native observability modu
 ```bash
 git clone https://github.com/nidelson/bmad-module-pulse.git
 cd bmad-module-pulse
-python -m pip install --upgrade pip
-pip install -r requirements-dev.txt
 ```
+
+Test dependencies are declared as the `test` [PEP 735](https://peps.python.org/pep-0735/)
+dependency group in `pyproject.toml`. [`uv`](https://docs.astral.sh/uv/)
+resolves and runs them on demand — no manual install step.
 
 ### Run tests
 
 ```bash
-python -m pytest tests/ -v
+uv run --group test pytest tests/ -v
 ```
 
 The test suite includes both unit tests and integration tests (marked with `@pytest.mark.integration`) that spin up fake consumer projects to validate end-to-end skill behavior.

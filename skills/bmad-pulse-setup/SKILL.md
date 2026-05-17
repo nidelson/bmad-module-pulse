@@ -28,6 +28,38 @@ Both config scripts use an anti-zombie pattern — existing entries for this mod
 
 If the user provides arguments (e.g. `accept all defaults`, `--headless`, or inline values like `user name is BMad, I speak Swahili`), map any provided values to config keys, use defaults for the rest, and skip interactive prompting. Still display the full confirmation summary at the end.
 
+## Reconcile Installed Skills (Self-Heal)
+
+Run this **first**, before any other step. The upstream BMAD installer
+performs an *additive* deploy when PULSE is already installed: brand-new
+files are copied, but pre-existing files (`module.yaml`, `SKILL.md`, …) are
+never overwritten and renamed/removed skills are never pruned. Updating
+over an existing install therefore leaves a mixed state stuck at the old
+version (see issue #36). This step force-syncs every PULSE skill directory
+from the authoritative source (the freshly-fetched BMAD custom-module
+cache) and prunes orphaned renamed folders.
+
+```bash
+python3 ./scripts/reconcile-skills.py --project-root "{project-root}"
+```
+
+The script is idempotent — on an already-in-sync tree it writes nothing and
+reports `action: up_to_date`. It is non-fatal on fresh installs: when no
+source/cache is found it exits 0 with `action: skipped_no_source`, so
+continue normally. Exit codes: 0=success, 1=validation error, 2=runtime
+error. Surface any non-zero exit and stop.
+
+Inspect the JSON `action` field:
+
+- `up_to_date` / `skipped_no_source` — continue silently.
+- `reconciled` — report `from_version → to_version` to the user. If the
+  payload includes a `notice` saying `bmad-pulse-setup` was updated in
+  place, tell the user to re-run `/bmad-pulse-setup` once more so the
+  current version of this skill executes, then stop.
+
+Run `./scripts/reconcile-skills.py --help` for full usage (including
+`--source` and `--dry-run`).
+
 ## Collect Configuration
 
 Ask the user for values. Show defaults in brackets. Present all values together so the user can respond once with only the values they want to change (e.g. "change language to Swahili, rest are fine"). Never tell the user to "press enter" or "leave blank" — in a chat interface they must type something to respond.
