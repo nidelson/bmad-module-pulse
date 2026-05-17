@@ -58,7 +58,7 @@ Load the config from the `pulse` section of `{main_config}` and resolve all modu
 - `output_folder`, `user_name`, `communication_language`
 - `pulse_data_folder`, `pulse_dashboard_folder`
 - `pulse_sprint_status_filename`
-- `pulse_estimation_method` (story_points / hours / t-shirt)
+- `pulse_estimation_method` (story_points / hours / t-shirt / bcp)
 - `pulse_story_point_hours_factor` (story points → hours conversion factor)
 - `pulse_leverage_threshold_exceptional` (e.g. 4)
 - `pulse_leverage_threshold_solid` (e.g. 2)
@@ -139,6 +139,15 @@ If `pulse_estimation_method` is `hours`:
 estimated_hours = value recorded directly in hours
 ```
 
+If `pulse_estimation_method` is `bcp`:
+
+```text
+estimated_hours = value recorded directly in hours
+                  (already derived upstream by bmad-module-bcp — PULSE does NOT
+                   compute hours from BCP points; it consumes the field as-is,
+                   identical to the `hours` branch)
+```
+
 **Leverage calculation:**
 
 ```text
@@ -174,6 +183,38 @@ first_pass = review_cycles == 1
 3. Add the `leverage_ratio` field with the calculated value (1 decimal)
 4. Add the `first_pass` field as a boolean
 
+**BCP productivity (only when a BCP total is available for this story):**
+
+Resolve `bcp_total` as `pulse_metrics[story].bcp_at_start.total` (snapshotted by
+track-start). If that snapshot is absent, re-read the story frontmatter `bcp.total`
+(read-only) as a fallback. If neither yields a number, skip this block entirely —
+behave exactly as today.
+
+When `bcp_total` is a positive number, add a `bcp_recorded` field to the story
+entry in `pulse_metrics`:
+
+```text
+h_per_bcp_actual    = round(actual_hours    / bcp_total, 2)
+h_per_bcp_estimated = round(estimated_hours / bcp_total, 2)
+drift_pct           = round((h_per_bcp_actual - h_per_bcp_estimated)
+                            / h_per_bcp_estimated * 100, 1)   # 0.0 if estimated == 0
+```
+
+```yaml
+pulse_metrics:
+  "5.7":
+    # ... existing fields ...
+    bcp_recorded:
+      total: 21
+      h_per_bcp_actual: 4.13
+      h_per_bcp_estimated: 4.13
+      drift_pct: 0.0
+```
+
+PULSE does **not** update any BCP baseline. Baseline maturation is the
+`bmad-module-bcp` module's responsibility (via `/bmad-bcp-recalibrate`). This step
+only records read-derived telemetry inside the `pulse_metrics:` section.
+
 ### Step 4: Generate Efficiency Pulse + Process Health
 
 Display in the terminal:
@@ -185,6 +226,7 @@ Display in the terminal:
    Human estimate: {estimated_hours}h ({dev_count} devs)
    Actual AI time: {actual_hours}h ({elapsed_minutes}min wall-clock)
    AI Leverage: {leverage_ratio}x
+   {if bcp_recorded}BCP: {bcp_recorded.total} pts | {bcp_recorded.h_per_bcp_actual}h/BCP actual vs {bcp_recorded.h_per_bcp_estimated}h/BCP est ({bcp_recorded.drift_pct:+}% drift){end}
    Quality: {first_pass ? "✅ first-pass" : "🔄 " + review_cycles + " cycles"}
    Tasks: {task_count}
    Category: {category}
@@ -318,6 +360,7 @@ Display as an additional section in the card (respecting `pulse_levi_verbosity`)
 ## BEHAVIOR RESTRICTIONS
 
 - DO NOT modify anything outside the `pulse_metrics:` section of file `{sprint_status_file}`
+- DO NOT write to the story frontmatter or to any BCP baseline file (`bcp-baseline.yaml`) — `bcp.*` is read-only input owned by `bmad-module-bcp`; baseline recalibration lives in that module
 - Data is isolated in the `pulse_metrics:` section — zero risk of conflict
 - Communicate in the language configured in `communication_language`
 - Respect `pulse_levi_verbosity` for level of detail (concise / standard / verbose)

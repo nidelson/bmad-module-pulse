@@ -93,6 +93,14 @@ Load the `pulse` section from `{main_config}` and resolve all module variables:
        - `total_pre_approved_batch_count` — count of `approval_wait` entries with `pre_approved_batch: true` (Shape B only)
        - `legacy_halt_string_count` — count of Shape C entries encountered (used to surface migration hint in insights)
        - `stories_with_approval_wait` — list of `(story_id, total_minutes)` pairs for the breakdown table (entries with unknown minutes show as `?min`)
+   - **BCP aggregations** (read `bcp_recorded` and `bcp_at_start` / `estimation_basis` from each story; all optional — a story without them is normal and contributes nothing):
+     - `bcp_stories` — list of stories that have a `bcp_recorded` block
+     - `total_bcp` — sum of `bcp_recorded.total` across `bcp_stories`
+     - `bcp_throughput` — `total_bcp` grouped by epic (proxy for BCP/sprint when sprint segmentation is unavailable)
+     - `h_per_bcp_by_category` — for each category in `{pulse_dev_categories}`, the mean of `bcp_recorded.h_per_bcp_actual` over its `bcp_stories`
+     - `h_per_bcp_estimated_by_category` — same, over `bcp_recorded.h_per_bcp_estimated` (for the drift comparison)
+     - `drift_trend` — ordered list of `(story_id, bcp_recorded.drift_pct)` for `bcp_stories` (story-order = chronological proxy)
+     - `top_bcp_stories` — `bcp_stories` sorted by `bcp_recorded.total` desc, top 5 (proxy for "elements driving BCP" — PULSE does not read `bcp.breakdown`, so it ranks by total points per story)
 
 ### Step 2: Generate Dashboard
 
@@ -175,6 +183,51 @@ Based on avg leverage of {avg}x:
 {end}
 <!-- END CONDITIONAL approval_wait -->
 
+<!-- CONDITIONAL: include only if bcp_stories is non-empty (≥1 story has a bcp_recorded block) -->
+## 📊 BCP Productivity
+
+> Business Complexity Points telemetry. Hours were derived upstream by
+> [`bmad-module-bcp`](https://github.com/nidelson/bmad-module-bcp); PULSE only
+> reports observed productivity and never owns the BCP baseline.
+
+| Metric                | Value          |
+| --------------------- | -------------- |
+| Stories with BCP      | {len(bcp_stories)} |
+| Total BCP scored      | {total_bcp}    |
+
+**Throughput (BCP per epic):**
+
+{for each epic in bcp_throughput}
+Epic {N}: {bcp} BCP ({count} stories)
+{end}
+
+**Actual h/BCP by category:**
+
+| Category | Actual h/BCP | Est. h/BCP | Drift |
+| -------- | ------------ | ---------- | ----- |
+{for each category with bcp_stories}
+| {category} | {h_per_bcp_by_category}h | {h_per_bcp_estimated_by_category}h | {drift:+}% |
+{end}
+
+**Drift trend (estimated vs actual h/BCP):**
+
+{for each (story_id, drift_pct) in drift_trend}
+{story_id}: {drift_pct:+}%
+{end}
+
+**Top stories by BCP:**
+
+| Story | BCP | Actual h/BCP |
+| ----- | --- | ------------ |
+{for each story in top_bcp_stories}
+| {story_id} | {bcp_recorded.total} | {bcp_recorded.h_per_bcp_actual}h |
+{end}
+
+> Note: PULSE ranks by story-level BCP total. Per-element breakdown
+> (`bcp.breakdown`) is owned by `bmad-module-bcp` and is intentionally not
+> read here — this preserves zero coupling.
+<!-- END CONDITIONAL bcp -->
+
 ## 💡 Process Insights
 
 {insights generated based on the data}
@@ -223,6 +276,8 @@ The detail level of the summary must respect `pulse_levi_verbosity`.
 - The capacity forecast section must only be included if `pulse_include_capacity_forecast == yes`
 - The categories table must use the categories defined in `pulse_dev_categories` (not hardcoded categories)
 - The Approval-Wait Halts section must only be rendered when `total_approval_wait_count + total_pre_approved_batch_count > 0`
+- The BCP Productivity section must only be rendered when at least one story has a `bcp_recorded` block; stories without BCP data render unchanged in all other sections
+- Never read or write the BCP baseline file — BCP productivity is computed purely from `pulse_metrics` fields PULSE itself recorded
 - When reading `process_health.halts`, accept both shapes (integer count and structured list) and degrade gracefully — never crash on legacy data
 
 ---

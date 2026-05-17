@@ -56,6 +56,7 @@ Load the PULSE configuration as described in INITIALIZATION below, then execute 
 Load the `pulse` section from `{main_config}` and resolve module variables:
 
 - `output_folder`, `user_name`, `communication_language`
+- `pulse_estimation_method` — `hours` / `story_points` / `tshirt` / `bcp`
 - `pulse_field_estimated_hours` — name of the hours/points estimate field in the story file
 - `pulse_field_dev_count` — name of the estimated developer count field in the story file
 - `pulse_field_category` — name of the category field in the story file
@@ -66,6 +67,13 @@ Load the `pulse` section from `{main_config}` and resolve module variables:
 > **Note on `pulse_estimation_method`:** If the value is `story_points`, the field pointed to by
 > `pulse_field_estimated_hours` contains story points, not hours. The record should reflect this
 > (e.g. display as "estimated points" instead of "estimated hours").
+>
+> **Note on `bcp` (Business Complexity Points):** PULSE stays **passive and zero-coupled** —
+> it does NOT compute hours from BCP. The `bcp` value only signals that the upstream
+> `estimated_hours` was already derived by the [`bmad-module-bcp`](https://github.com/nidelson/bmad-module-bcp)
+> module (install = consent to overwrite). PULSE reads `estimated_hours` exactly as for
+> `hours`, and additionally snapshots the `bcp.*` block for audit (see Step 2/3). PULSE
+> never writes to the story frontmatter and never touches the BCP baseline file.
 
 ### Paths
 
@@ -91,6 +99,10 @@ Load the `pulse` section from `{main_config}` and resolve module variables:
    - The field configured in `pulse_field_dev_count` (estimated number of developers)
    - `task_count` (number of tasks/subtasks — internal PULSE field, always present)
    - The field configured in `pulse_field_category` (story category — infer from name; if ambiguous, ask the user using the valid categories defined in `pulse_dev_categories`)
+   - The `bcp:` frontmatter block, **only if present** (written exclusively by `bmad-module-bcp`):
+     - Read `bcp.schema_version`. If it is a value this skill does not recognize (anything other than `"1.0"`), emit a one-line warning (`⚠ Unknown bcp.schema_version <v> — ignoring bcp.* for this story`) and treat the block as absent for the rest of the workflow.
+     - Otherwise capture `bcp.total`, `bcp.rule_version`, and `bcp.scored_by` for the snapshot in Step 3. PULSE does not interpret `bcp.breakdown` or `bcp.history`.
+     - This extraction is **read-only** — PULSE never writes back to the story frontmatter.
 
 ### Step 3: Record in the file configured in `pulse_sprint_status_filename`
 
@@ -101,6 +113,26 @@ Load the `pulse` section from `{main_config}` and resolve module variables:
    - `dev_count`: value extracted from the `pulse_field_dev_count` field
    - `task_count`: extracted value
    - `category`: value inferred or confirmed by the user (from the categories in `pulse_dev_categories`)
+3. **BCP snapshot (only when a valid `bcp:` block was captured in Step 2):** add to the same story entry:
+   - `estimation_basis: bcp`
+   - `bcp_at_start:` with `total`, `rule_version`, `scored_by` taken from the `bcp.*` block
+
+   ```yaml
+   pulse_metrics:
+     "5.7":
+       start_ts: "..."
+       estimated_hours: 86.7
+       estimation_basis: bcp
+       bcp_at_start:
+         total: 21
+         rule_version: "1.0"
+         scored_by: bruno
+   ```
+
+   When `pulse_estimation_method` is not `bcp` but a valid `bcp:` block is present, the
+   snapshot is still recorded as opt-in telemetry (`estimation_basis` reflects the
+   configured method, `bcp_at_start` is added alongside). When no valid `bcp:` block is
+   present, omit both fields entirely — behave exactly as today.
 
 ### Step 4: Confirm
 
@@ -111,6 +143,7 @@ Display:
    Story: {story_id}
    Timestamp: {start_ts}
    Human estimate: {estimated_hours}h ({dev_count} devs)
+   {if bcp_at_start}BCP: {bcp_at_start.total} pts (rule {bcp_at_start.rule_version}, scored by {bcp_at_start.scored_by}){end}
    Tasks: {task_count}
    Category: {category}
    ⏱️ The clock is running...
@@ -121,6 +154,7 @@ Display:
 ## BEHAVIOR RESTRICTIONS
 
 - DO NOT modify anything outside the `pulse_metrics:` section of the sprint-status file
+- DO NOT write to the story file frontmatter or to any BCP baseline file — `bcp.*` is read-only input owned by `bmad-module-bcp`
 - If an entry already exists for this story ID in `pulse_metrics:`, ask whether to overwrite
 - Create the `pulse_metrics:` section if it does not exist
 - Communicate in the language configured in `communication_language`
