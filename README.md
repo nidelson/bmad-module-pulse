@@ -98,6 +98,22 @@ PULSE is also the **first BMAD-native observability plugin** on the marketplace.
 npx bmad-method install --custom-source https://github.com/nidelson/bmad-module-pulse
 ```
 
+> **Production: pin a released version.** The command above tracks
+> `main` (the manifest records `version: main`), so every re-run pulls
+> whatever has since landed on `main` — non-deterministic across a team
+> and across CI. For production projects, pin an explicit released tag:
+>
+> ```bash
+> npx bmad-method install \
+>   --custom-source https://github.com/nidelson/bmad-module-pulse \
+>   --version v0.4.5
+> ```
+>
+> Bump the tag deliberately when you want a new version. Pick one from
+> the [releases](https://github.com/nidelson/bmad-module-pulse/releases).
+> Upgrading over an existing install self-heals automatically — see
+> [MIGRATION.md](docs/MIGRATION.md#upgrading-over-an-existing-install--automatic-self-heal).
+
 Then in your BMAD project:
 
 ```bash

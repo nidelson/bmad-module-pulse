@@ -36,6 +36,21 @@ reconciles it in place; the JSON `notice` will ask you to run
 `/bmad-pulse-setup` once more so the current version executes. Re-run it
 once and you are converged.
 
+**Production tip — pin a released tag.** Installing with the bare
+`--custom-source` tracks `main` (`version: main` in the manifest), so
+every re-run pulls whatever has since landed there. For deterministic,
+team-reproducible installs, pin an explicit tag and bump it deliberately:
+
+```bash
+npx bmad-method install \
+  --custom-source https://github.com/nidelson/bmad-module-pulse \
+  --version v0.4.5
+```
+
+Reconcile still runs on every `/bmad-pulse-setup` and converges the
+deployed tree to whatever the cache holds — pinning just makes *what the
+cache holds* deterministic.
+
 Manual reconcile (e.g. for a bug report) — `--dry-run` previews without
 writing:
 
