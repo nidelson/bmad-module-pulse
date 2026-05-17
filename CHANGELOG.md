@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.7](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.6...v0.4.7) (2026-05-17)
+
+
+### Features
+
+* add pulse_estimation_method=bcp for Business Complexity Points integration ([#39](https://github.com/nidelson/bmad-module-pulse/issues/39)) ([c5dfe39](https://github.com/nidelson/bmad-module-pulse/commit/c5dfe3987ff1c100bc6708b97c86493f736198ac))
+
 ## [0.4.6](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.5...v0.4.6) (2026-05-17)
 
 
