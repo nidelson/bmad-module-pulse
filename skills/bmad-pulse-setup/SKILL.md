@@ -72,6 +72,7 @@ Ask the user for values. Show defaults in brackets. Present all values together 
 
 **Validation rules:**
 - If `pulse_estimation_method` = `story_points` and `pulse_story_point_hours_factor` has not been set, warn before continuing
+- If `pulse_estimation_method` = `bcp`: do **not** require `pulse_story_point_hours_factor` (no factor applies — `estimated_hours` is derived upstream by [`bmad-module-bcp`](https://github.com/nidelson/bmad-module-bcp), not converted by PULSE). The value is semantic-only: it tells PULSE the upstream hours came from BCP so the dashboard surfaces the BCP Productivity section. Inform the user that the companion `bmad-module-bcp` module must be installed for `estimated_hours` to be BCP-derived; PULSE itself stays passive if it is not.
 - If `pulse_dev_categories` = `custom`, request a comma-separated list
 
 ## Write Files

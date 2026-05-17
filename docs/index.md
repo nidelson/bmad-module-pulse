@@ -32,6 +32,12 @@ Composite score based on:
 - HALT count
 - Available skills that were not used
 
+## Integrations
+
+- [BCP — Business Complexity Points](integration/bcp.md) — opt-in
+  `pulse_estimation_method=bcp` for teams estimating in BCP via the companion
+  [`bmad-module-bcp`](https://github.com/nidelson/bmad-module-bcp) module.
+
 ## Advanced Configuration
 
 See [module.yaml](../module.yaml) for the full list of configurable variables. The file at the repository root is a symlink to the canonical manifest shipped inside the setup skill (`skills/bmad-pulse-setup/assets/module.yaml`), so the BMAD installer can copy it to the consumer project at install time while keeping the file discoverable from the repo root.

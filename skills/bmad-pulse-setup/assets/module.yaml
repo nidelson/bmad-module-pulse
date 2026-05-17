@@ -28,6 +28,10 @@ pulse_estimation_method:
       label: Story Points (requires calibration factor)
     - value: tshirt
       label: T-Shirt Sizes (S/M/L/XL — normalized automatically)
+    - value: bcp
+      label: >-
+        Business Complexity Points (estimated_hours derived upstream by
+        bmad-module-bcp — PULSE stays passive)
 pulse_story_point_hours_factor:
   prompt: How many hours on average equal 1 story point in your team?
   default: '4.0'
