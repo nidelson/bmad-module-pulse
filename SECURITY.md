@@ -61,7 +61,7 @@ PULSE is currently maintained by a single person, so response times are best-eff
 - Dashboard generation logic
 - Configuration and template handling (`customize.toml`, golden templates)
 - Any file or path manipulation performed by PULSE
-- Dependencies declared in `requirements-dev.txt` and `pyproject.toml`
+- Test dependencies declared in the `test` dependency group in `pyproject.toml`
 
 ### Out of scope
 

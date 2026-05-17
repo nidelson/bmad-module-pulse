@@ -1,3 +1,15 @@
+# The module ships no installable Python package — its scripts run via
+# `python3 script.py` inside consumer projects with zero runtime deps
+# (`dependencies = []` in each script header). The only Python deps in this
+# repo are for the test suite, declared here as a PEP 735 dependency group.
+# Run the suite with: `uv run --group test pytest`
+[dependency-groups]
+test = [
+    "pytest>=8.0",
+    "pyyaml>=6.0",
+    "tomlkit>=0.13",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
