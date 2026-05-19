@@ -28,6 +28,7 @@
         "./skills/bmad-agent-pulse",
         "./skills/bmad-pulse-track-start",
         "./skills/bmad-pulse-track-done",
+        "./skills/bmad-pulse-track-backfill",
         "./skills/bmad-pulse-dashboard"
       ]
     }

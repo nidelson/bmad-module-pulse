@@ -28,6 +28,7 @@ WORKFLOW_SKILLS = [
     "bmad-pulse-setup",
     "bmad-pulse-track-start",
     "bmad-pulse-track-done",
+    "bmad-pulse-track-backfill",
     "bmad-pulse-dashboard",
 ]
 
@@ -115,6 +116,9 @@ def test_agent_customize_has_required_keys(skill: str):
         ("bmad-pulse-track-done", "activation_steps_prepend"),
         ("bmad-pulse-track-done", "activation_steps_append"),
         ("bmad-pulse-track-done", "persistent_facts"),
+        ("bmad-pulse-track-backfill", "activation_steps_prepend"),
+        ("bmad-pulse-track-backfill", "activation_steps_append"),
+        ("bmad-pulse-track-backfill", "persistent_facts"),
         ("bmad-pulse-dashboard", "activation_steps_prepend"),
         ("bmad-pulse-dashboard", "activation_steps_append"),
         ("bmad-pulse-dashboard", "persistent_facts"),
@@ -131,7 +135,7 @@ def test_workflow_arrays_are_arrays(skill: str, array_key: str):
     )
 
 
-@pytest.mark.parametrize("skill", ["bmad-pulse-track-start", "bmad-pulse-track-done", "bmad-pulse-dashboard"])
+@pytest.mark.parametrize("skill", ["bmad-pulse-track-start", "bmad-pulse-track-done", "bmad-pulse-track-backfill", "bmad-pulse-dashboard"])
 def test_workflow_on_complete_is_scalar_string(skill: str):
     """on_complete is the terminal hook — must be a string scalar so
     override semantics (override wins) work. Setup is exempt: it is a

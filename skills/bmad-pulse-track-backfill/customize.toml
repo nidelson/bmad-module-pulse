@@ -1,0 +1,41 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Workflow customization surface for bmad-pulse-track-backfill. Mirrors the
+# agent customization shape under the [workflow] namespace.
+
+[workflow]
+
+# --- Configurable below. Overrides merge per BMad structural rules: ---
+#   scalars: override wins • arrays (persistent_facts, activation_steps_*): append
+#   arrays-of-tables with `code`/`id`: replace matching items, append new ones.
+
+# Steps to run before the standard activation (config load, arg parsing).
+# Overrides append. Use for pre-flight loads, compliance checks, etc.
+
+activation_steps_prepend = []
+
+# Steps to run after activation but before the workflow begins writing
+# the retroactive entry to pulse_metrics. Overrides append. Use for
+# context-heavy setup such as fetching the original timestamps from an
+# external system (CI logs, time tracker) before reconstruction.
+
+activation_steps_append = []
+
+# Persistent facts the workflow keeps in mind for the whole run
+# (org constants, project-wide standards). Distinct from the runtime
+# memory sidecar — these are static context loaded on activation.
+# Overrides append.
+#
+# Each entry is either:
+#   - a literal sentence, e.g. "Backfill only stories from the adoption sprint."
+#   - a file reference prefixed with `file:`, e.g. "file:{project-root}/docs/standards.md"
+#     (glob patterns are supported; the file's contents are loaded and treated as facts).
+
+persistent_facts = []
+
+# Scalar: executed when the workflow has written the retroactive entry to
+# pulse_metrics, confirmed it to the user, and run the optional dashboard
+# refresh. Override wins (e.g. set "/bmad-pulse-dashboard" to always
+# regenerate). Leave empty for no custom post-completion behavior.
+
+on_complete = ""

@@ -120,6 +120,7 @@ Then in your BMAD project:
 /bmad-pulse-setup            # Configure once
 /bmad-pulse-track-start      # When you start a story
 /bmad-pulse-track-done       # When you finish — leverage is computed
+/bmad-pulse-track-backfill   # Forgot to track? Recover HI/HF after the fact
 /bmad-pulse-dashboard        # See the cumulative trend
 ```
 
@@ -136,6 +137,7 @@ PULSE attaches to your existing BMAD story files — no schema migrations, no se
 | `bmad-pulse-setup` | `/bmad-pulse-setup` | Configure the module in your project |
 | `bmad-pulse-track-start` | `/bmad-pulse-track-start [story_id]` | Register story start |
 | `bmad-pulse-track-done` | `/bmad-pulse-track-done [story_id]` | Register completion + calculate metrics |
+| `bmad-pulse-track-backfill` | `/bmad-pulse-track-backfill [story_id] --hi <ts> --hf <ts>` | Retroactively record HI/HF + metrics for a story tracked too late |
 | `bmad-pulse-dashboard` | `/bmad-pulse-dashboard` | Generate cumulative dashboard |
 
 ---

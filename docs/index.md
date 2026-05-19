@@ -8,6 +8,14 @@
 4. When completing: `/bmad-pulse-track-done`
 5. To view the dashboard: `/bmad-pulse-dashboard`
 
+> **Missed tracking a story?** Early-adoption stories or workflow
+> interruptions sometimes skip track-start/track-done. Recover the lost
+> measurement after the fact:
+> `/bmad-pulse-track-backfill 1.2 --hi "2026-05-18 14:00" --hf "2026-05-18 15:00"`.
+> Backfilled entries are flagged `retroactive: true` for traceability and
+> deliberately omit `process_health` — halts and BMAD flow cannot be
+> reconstructed honestly after the fact.
+
 ## Metrics Reference
 
 ### AI Leverage Ratio
