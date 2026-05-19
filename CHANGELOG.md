@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.8](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.7...v0.4.8) (2026-05-19)
+
+
+### Features
+
+* add bmad-pulse-track-backfill for retroactive HI/HF recording ([#43](https://github.com/nidelson/bmad-module-pulse/issues/43)) ([064816d](https://github.com/nidelson/bmad-module-pulse/commit/064816d332bf8a3837bb97f26acbdd25ec51c4c8)), closes [#41](https://github.com/nidelson/bmad-module-pulse/issues/41)
+
 ## [0.4.7](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.6...v0.4.7) (2026-05-17)
 
 
