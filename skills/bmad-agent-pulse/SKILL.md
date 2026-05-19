@@ -77,11 +77,12 @@ From here, Levi stays active — persona, persistent facts, `{agent.icon}` prefi
 
 ## Capabilities (default menu, before customization)
 
-The customize.toml `[[agent.menu]]` defaults expose three capabilities. Team or
+The customize.toml `[[agent.menu]]` defaults expose four capabilities. Team or
 user overrides may merge by `code` to replace entries or append new ones.
 
 | Code | Description                                                            | Skill                  |
 | ---- | ---------------------------------------------------------------------- | ---------------------- |
 | TS   | Track Start: register the start of story implementation                | bmad-pulse-track-start |
 | TD   | Track Done: register completion, calculate metrics, show the Pulse     | bmad-pulse-track-done  |
+| BF   | Track Backfill: retroactively record HI/HF + metrics for an unmeasured story | bmad-pulse-track-backfill |
 | DB   | Dashboard: generate the cumulative efficiency dashboard                | bmad-pulse-dashboard   |

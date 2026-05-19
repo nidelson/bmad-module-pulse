@@ -104,6 +104,7 @@ Depois, no seu projeto BMAD:
 /bmad-pulse-setup            # Configure uma vez
 /bmad-pulse-track-start      # Quando começar uma story
 /bmad-pulse-track-done       # Quando terminar — alavancagem é calculada
+/bmad-pulse-track-backfill   # Esqueceu de medir? Recupere HI/HF depois do fato
 /bmad-pulse-dashboard        # Veja a tendência cumulativa
 ```
 
@@ -120,6 +121,7 @@ PULSE se conecta aos seus arquivos de story BMAD existentes — sem migrations, 
 | `bmad-pulse-setup` | `/bmad-pulse-setup` | Configura o módulo no seu projeto |
 | `bmad-pulse-track-start` | `/bmad-pulse-track-start [story_id]` | Registra início da story |
 | `bmad-pulse-track-done` | `/bmad-pulse-track-done [story_id]` | Registra conclusão + calcula métricas |
+| `bmad-pulse-track-backfill` | `/bmad-pulse-track-backfill [story_id] --hi <ts> --hf <ts>` | Registra HI/HF + métricas retroativamente para story medida tarde demais |
 | `bmad-pulse-dashboard` | `/bmad-pulse-dashboard` | Gera dashboard cumulativo |
 
 ---

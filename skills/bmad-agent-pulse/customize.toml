@@ -75,6 +75,11 @@ description = "Track Done — register completion, calculate metrics, show the E
 skill = "bmad-pulse-track-done"
 
 [[agent.menu]]
+code = "BF"
+description = "Track Backfill — retroactively record HI/HF and metrics for an unmeasured story"
+skill = "bmad-pulse-track-backfill"
+
+[[agent.menu]]
 code = "DB"
 description = "Dashboard — generate the cumulative efficiency dashboard"
 skill = "bmad-pulse-dashboard"
