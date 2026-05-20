@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.9](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.8...v0.4.9) (2026-05-20)
+
+
+### Bug Fixes
+
+* **setup:** align module-help.csv header with BMAD canonical schema ([#45](https://github.com/nidelson/bmad-module-pulse/issues/45)) ([ac42b65](https://github.com/nidelson/bmad-module-pulse/commit/ac42b6579f6b6663187301785ee9c6326e764740)), closes [#42](https://github.com/nidelson/bmad-module-pulse/issues/42)
+
 ## [0.4.8](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.7...v0.4.8) (2026-05-19)
 
 
