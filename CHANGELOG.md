@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.10](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.9...v0.4.10) (2026-05-22)
+
+
+### Bug Fixes
+
+* **setup:** make track-start auto-trigger an executed activation step ([#48](https://github.com/nidelson/bmad-module-pulse/issues/48)) ([440aa0a](https://github.com/nidelson/bmad-module-pulse/commit/440aa0a08d020e769d666fc173bf19f60d68e244)), closes [#47](https://github.com/nidelson/bmad-module-pulse/issues/47)
+
 ## [0.4.9](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.8...v0.4.9) (2026-05-20)
 
 
