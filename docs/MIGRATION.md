@@ -61,6 +61,37 @@ python3 .claude/skills/bmad-pulse-setup/scripts/reconcile-skills.py \
 
 ---
 
+## Auto-tracking fix — regenerate the `bmad-dev-story` override (post-v0.4.9)
+
+If `bmad-pulse-track-start` was **not firing automatically** at the start of
+your stories (issue #47), the cause was the auto-tracking trigger living in
+the `persistent_facts` array of `_bmad/custom/bmad-dev-story.toml`.
+`persistent_facts` is passive context the agent merely carries — it did not
+deterministically execute. The fix moves the trigger to
+`activation_steps_append` (an executed activation step) and decouples it from
+the sprint-status `in-progress` field.
+
+The fix ships in the PULSE source, but **existing installs keep the old
+override file**: `bmad-pulse-setup` aborts rather than overwrite a file you
+may have customized. To pick up the fix, regenerate it:
+
+```bash
+# 1. Pull the new PULSE version
+npx bmad-method install --custom-source https://github.com/nidelson/bmad-module-pulse
+
+# 2. Remove the stale override (or back it up if you customized it)
+rm _bmad/custom/bmad-dev-story.toml
+
+# 3. Re-run setup — it re-emits the override with the activation-step trigger
+/bmad-pulse-setup
+```
+
+Alternatively, re-run setup and let it overwrite via `--force` (passed through
+to `inject_customize.py`). `bmad-code-review.toml` (track-done) is unchanged —
+only the `bmad-dev-story` override needs regeneration.
+
+---
+
 ## v0.4.4 → v0.4.5 — Levi agent consolidation
 
 v0.4.5 consolidates the Levi agent into a single canonical skill folder
@@ -188,7 +219,7 @@ git commit -m "chore(pulse): migrate to v0.4.0 customize.toml integration"
 
 | Before (v0.3.x) | After (v0.4.0) |
 |---|---|
-| `<!-- PULSE:auto-inject -->` markers in `.claude/skills/bmad-dev-story/workflow.md` | `_bmad/custom/bmad-dev-story.toml` (track-start in `persistent_facts`) |
+| `<!-- PULSE:auto-inject -->` markers in `.claude/skills/bmad-dev-story/workflow.md` | `_bmad/custom/bmad-dev-story.toml` (track-start auto-trigger) |
 | Track-done injected at end of `bmad-dev-story` workflow | `_bmad/custom/bmad-code-review.toml` (track-done in `on_complete`) |
 | Auto-tracking broken silently on every BMAD ≥6.4.0 install | Auto-tracking survives BMAD core upgrades |
 

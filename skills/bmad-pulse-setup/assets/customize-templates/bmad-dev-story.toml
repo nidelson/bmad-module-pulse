@@ -4,12 +4,15 @@
 # `/bmad-pulse-setup` aborts when this file already exists; pass `--force` to
 # regenerate, which overwrites your edits.
 #
-# The instructions below are read by the BMAD agent invoking the
-# `bmad-dev-story` workflow. They are merged into the workflow's
-# `persistent_facts` (append semantics).
+# The step below is appended to the `bmad-dev-story` workflow's
+# `activation_steps_append` (append semantics) — an EXECUTED activation step,
+# not passive context. It runs after greet and before the workflow begins, so
+# track-start fires deterministically at the start of every implementation.
+# (Previously this lived in `persistent_facts`, which is passive context the
+# agent merely carries — it did not reliably trigger. See issue #47.)
 
 [workflow]
 
-persistent_facts = [
-  "PULSE auto-tracking enabled. After workflow Step 1 identifies the in-progress story (resolving its story_id from sprint-status.yaml or the explicit {story_path}), invoke the bmad-pulse-track-start skill, passing the story_id as argument (e.g. /bmad-pulse-track-start 15.3) BEFORE starting implementation. The skill is idempotent — if a start_ts already exists in pulse_metrics: for this story, it asks before overwriting. Skip the invocation for read-only or exploratory stories without real implementation.",
+activation_steps_append = [
+  "PULSE auto-tracking: invoke the bmad-pulse-track-start skill BEFORE implementation begins. Resolve the story_id from the story this bmad-dev-story run is about to implement — the story file / {story_path} the workflow was given — NOT from the sprint-status `in-progress` field, since the story may still be `ready-for-dev` at this point. Pass the story_id explicitly, e.g. /bmad-pulse-track-start 15.3. The skill is idempotent — if a start_ts already exists in pulse_metrics: for this story, it asks before overwriting. Skip the invocation only for read-only or exploratory stories without real implementation.",
 ]
