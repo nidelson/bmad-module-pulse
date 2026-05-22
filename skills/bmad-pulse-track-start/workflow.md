@@ -86,10 +86,18 @@ Load the `pulse` section from `{main_config}` and resolve module variables:
 
 ### Step 1: Identify Story
 
-1. If arguments were passed (e.g. `15.3`), use them as the story ID
-2. If not, read `{sprint_status_file}` and identify stories with status `in-progress`
-3. If multiple stories in-progress, ask the user which one to record
-4. If no story in-progress, inform and exit
+1. **Explicit story id — preferred path (this is how auto-tracking invokes the skill).**
+   If an argument was passed (e.g. `15.3`), or a story id / story file path is
+   available from the invoking context, use it as the story ID directly. Do
+   **not** require the story to be marked `in-progress` in sprint-status —
+   track-start fires at implementation start, when the story may still be
+   `ready-for-dev`. The sprint-status status field is not a precondition.
+2. **Fallback — no story id available (manual no-argument invocation).** Read
+   `{sprint_status_file}` and identify stories with status `in-progress`.
+3. If exactly one story is `in-progress`, use it.
+4. If multiple stories are `in-progress`, ask the user which one to record.
+5. If no story is `in-progress`, do **not** silently exit — ask the user for the
+   story id (the story may simply not have been transitioned to `in-progress` yet).
 
 ### Step 2: Extract Story Data
 
