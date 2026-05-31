@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.11](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.10...v0.4.11) (2026-05-31)
+
+
+### Features
+
+* **pulse:** opt-in auto-dashboard via on_complete (pulse_auto_dashboard) ([#52](https://github.com/nidelson/bmad-module-pulse/issues/52)) ([6b93259](https://github.com/nidelson/bmad-module-pulse/commit/6b93259a323b17331c31eaff6192b574595fa85b))
+
 ## [0.4.10](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.9...v0.4.10) (2026-05-22)
 
 
