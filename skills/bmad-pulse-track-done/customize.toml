@@ -37,9 +37,19 @@ persistent_facts = []
 
 # Scalar: executed when the workflow has calculated metrics, displayed the
 # Efficiency Pulse, and synchronized the dashboard. Override wins.
-# Leave empty for no custom post-completion behavior.
+#
+# Default ships an opt-in auto-dashboard trigger gated by the
+# `pulse_auto_dashboard` config flag (see skills/bmad-pulse-setup/assets/module.yaml).
+# When the flag is `yes`, the dashboard is regenerated after the Efficiency
+# Pulse card is shown. When unset, `no`, or any other value, this default
+# behaves as a silent no-op — preserving the pre-flag behavior.
+#
+# To disable entirely, override with `on_complete = ""` in
+# `_bmad/custom/bmad-pulse-track-done.toml`. To replace with a different
+# hook (Grafana push, Slack notification, etc.), override with your own
+# instruction string.
 
-on_complete = ""
+on_complete = "PULSE auto-dashboard: read the `pulse_auto_dashboard` field from the `pulse` section of the main_config that was loaded during activation. If its value is the string `yes`, invoke the `/bmad-pulse-dashboard` skill (no arguments) to regenerate the cumulative dashboard with the story that was just recorded. If the value is `no`, missing, empty, or any other value, skip silently — do not invoke the dashboard skill and do not surface any message. This step runs AFTER the Efficiency Pulse card has been displayed and AFTER every entry in `metric_post_hooks` has executed; the dashboard regen is the final action of the workflow."
 
 # --- PULSE-specific knobs (additive on top of bmm parity) ---
 
