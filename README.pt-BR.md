@@ -201,6 +201,61 @@ PULSE oferece 25 variáveis configuráveis com defaults opinionated. Durante o s
 
 ---
 
+## Auto-dashboard
+
+O PULSE pode regenerar o dashboard cumulativo automaticamente após cada `track-done` — fechando o loop "story concluída → estado consistente" sem invocação manual de `/bmad-pulse-dashboard`. O trigger é **opt-in** via flag de configuração:
+
+```yaml
+# _bmad/config.yaml — seção pulse
+pulse:
+  # ... outras configurações PULSE ...
+  pulse_auto_dashboard: yes   # default: 'no' (regen manual, preserva comportamento pré-flag)
+```
+
+Quando `yes`, o hook `on_complete` padrão de `bmad-pulse-track-done` invoca `/bmad-pulse-dashboard` logo depois do card Efficiency Pulse aparecer. Quando `no`, ausente ou qualquer outro valor, o hook é um no-op silencioso.
+
+### Trade-off: conflitos de merge em PRs paralelas
+
+Auto-regenerar `dashboard.md` em cada track-done **garante conflitos de merge** em workflows com pull requests paralelas — cada track-done reescreve o arquivo inteiro. Três estratégias documentadas de mitigação:
+
+**1. `dashboard.md` em `.gitignore`** (recomendado para repos com paralelismo)
+
+Fonte de verdade fica em `sprint-status.yaml` sob `pulse_metrics:`. Cada dev regenera localmente sob demanda. Zero conflitos, zero perda de histórico.
+
+```gitignore
+# .gitignore
+implementation-artifacts/pulse-dashboards/dashboard.md
+```
+
+**2. Workflow CI pós-merge em `main`**
+
+Dashboard é regenerado por uma GitHub Action serializada e commitado direto em `main` com `[skip ci]`. Devs locais deixam `pulse_auto_dashboard: no` — a CI central é dona do arquivo.
+
+```yaml
+# .github/workflows/pulse-dashboard.yml
+on:
+  push:
+    branches: [main]
+    paths: ['**/sprint-status.yaml']
+jobs:
+  regen:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pulse-dashboard
+      cancel-in-progress: false
+    # ... invocar /bmad-pulse-dashboard via seu runner ...
+```
+
+**3. Aceitar conflito como resolução trivial**
+
+Para times pequenos (1–2 devs trabalhando serial), `git checkout --theirs dashboard.md && /bmad-pulse-dashboard` resolve em ~5 segundos. Aceitável quando paralelismo é raro.
+
+### Desabilitando o hook default
+
+Para manter `pulse_auto_dashboard: yes` mas substituir o regen do dashboard por outro comportamento (push pra Grafana, notificação Slack, etc.), sobrescreva `on_complete` em `_bmad/custom/bmad-pulse-track-done.toml`. Para desabilitar completamente, defina `on_complete = ""` no mesmo arquivo de override.
+
+---
+
 ## Alavancagem comprovada
 
 Alavancagem sustentada de **6.9x** medida em um projeto BMAD em produção (SIP — plataforma de pesquisa local-first, monorepo com apps mobile, web, backend e worker). O número reflete stories entregues com horas estimadas e reais capturadas pelo próprio PULSE ao longo de múltiplas sprints.

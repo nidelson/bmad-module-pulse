@@ -376,3 +376,7 @@ After Step 6 has produced the final metrics card but BEFORE displaying it to the
 ## On Completion
 
 After the Efficiency Pulse has been displayed AND all `{workflow.metric_post_hooks}` have run, execute the `{workflow.on_complete}` scalar if non-empty. Override wins; an empty value means no custom post-completion behavior.
+
+The shipped default for `on_complete` is an opt-in auto-dashboard trigger gated by `pulse_auto_dashboard` in the `pulse` config section. When that flag is `yes`, the default invokes `/bmad-pulse-dashboard` to regenerate the cumulative dashboard right after the Efficiency Pulse card is shown. When the flag is `no`, missing, or any other value, the default behaves as a silent no-op — preserving the pre-flag behavior. To disable the auto-dashboard while keeping the flag enabled (or to swap in a different post-completion hook), override `on_complete` in `_bmad/custom/bmad-pulse-track-done.toml`.
+
+In parallel-PR workflows, auto-regenerating `dashboard.md` on every track-done **will produce merge conflicts** — the file is rewritten in full each run. See the README "Auto-dashboard" section for the three documented mitigation strategies before enabling.
