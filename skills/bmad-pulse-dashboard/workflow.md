@@ -80,6 +80,8 @@ Load the `pulse` section from `{main_config}` and resolve all module variables:
    - Total stories measured
    - **`predictability_score`** — the v0.6 **hero metric**. The **median** of the per-story estimate error `|actual_hours - estimated_hours| / estimated_hours` across all stories with `pulse_metrics` (floor `estimated_hours` at 0.01 to avoid divide-by-zero). Report as a percentage; **lower is better** — it reads "estimates are X% off, median". Method-agnostic: for BCP stories it equals `|bcp_recorded.drift_pct|` (the BCP totals cancel), so it works whether or not the project uses BCP. Compute it global and per category. Median (not mean) for the same reason the v0.5 baseline is geometric — resist outliers. Pair it with a **trend arrow**: split the stories in story-order (chronological proxy) into first half vs second half and compare each half's median error → `↓ converging` / `→ stable` / `↑ diverging`. Needs `>= 4` stories for a trend; fewer → no arrow.
    - **`estimate_regime`** (v0.6 regime detection) — the basis each `estimated_hours` was derived from, read **read-only** from the story's `estimated_hours_basis` frontmatter field when present (`bcp` / `hours` / `story_points` / `tshirt`), falling back to `{pulse_estimation_method}` when the field is absent. PULSE **never writes** `estimated_hours_basis` and **never derives hours from it** — it only labels what each multiplier is measured *against* (so "5x" reads "vs PLAN (bcp)" not an unqualified number). Report the dominant regime across stories for the leverage context line; annotate a story in the breakdown when its regime differs from the project default. (`estimated_hours_pre_bcp` stays ignored.)
+   - **`cohort_drift(category, segment)`** (v0.7 — the shared primitive for estimation-time drift alerts; also consumed by `bmad-pulse-track-start`). For a **cohort**, the **median** of the per-story estimate error `|actual_hours - estimated_hours| / estimated_hours * 100` over the **last `K = 5` completed stories** in that cohort (story-order = chronological proxy; floor `estimated_hours` at 0.01). For BCP stories this equals `|bcp_recorded.drift_pct|`. The **cohort key** is `(category, segment)` when the story carries BCP (segment = `micro`/`story` from the v0.5 median split), else `(category)` alone — fallback documented so non-BCP projects still cohort by category. Returns `(median_abs_drift_pct, n, sample_story_ids)` where `n` is the cohort size considered (≤ K). **Requires `n >= 3`** to be meaningful — fewer → `insufficient` (callers must stay silent, no false alarm). This is read-only over `pulse_metrics`; it never writes or alters any estimate.
+   - **`drift_watchlist`** (v0.7) — the forward-looking companion to the track-start alert. For **every** cohort present in `pulse_metrics`, evaluate `cohort_drift`; keep only cohorts with `n >= 3` **and** `median_abs_drift_pct > T = 25%`, sorted by `median_abs_drift_pct` desc. Each entry carries `(cohort_label, median_abs_drift_pct, n, trend)` where `trend` reuses the v0.6 half-split direction (`↓`/`→`/`↑`). Healthy cohorts (≤ T) are omitted. Empty list is the healthy default.
    - Average, minimum, and maximum leverage
    - Total estimated hours vs total actual hours
    - First-pass rate
@@ -249,6 +251,20 @@ Epic {N}: {bcp} BCP ({count} stories)
 > (`bcp.breakdown`) is owned by `bmad-module-bcp` and is intentionally not
 > read here — this preserves zero coupling.
 <!-- END CONDITIONAL bcp -->
+
+## 🚦 Estimation drift watch
+
+> Forward-looking companion to the track-start alert: which cohorts are estimating badly *right now*, so you can re-estimate before committing. A cohort is listed only when it has ≥3 completed stories and its median estimate error exceeds 25% over the last 5. Healthy cohorts are omitted.
+
+{if drift_watchlist non-empty}
+| Cohort | Median \|drift\| | n | Trend |
+| ------ | -------------- | - | ----- |
+{for each (cohort_label, median_abs_drift_pct, n, trend) in drift_watchlist}
+| {cohort_label} | {median_abs_drift_pct}% | {n} | {trend} |
+{end}
+{else}
+_No cohorts drifting — estimates are tracking._
+{end}
 
 ## 💡 Process Insights
 
