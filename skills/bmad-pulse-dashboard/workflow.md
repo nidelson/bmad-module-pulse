@@ -117,111 +117,111 @@ Generate the dashboard in the format(s) defined in `pulse_dashboard_format` (`ma
 For `markdown` format (default), write `{dashboard_file}` with the following structure:
 
 ```markdown
-# ⚡ PULSE — Efficiency Dashboard
+# ⚡ PULSE — Dashboard de Eficiência
 
 > Process Utilization & Leverage Statistics Engine
-> Generated at: {date} | Project: {project_name}
+> Gerado em: {date} | Projeto: {project_name}
 
 ---
 
-## 🏆 General Statistics
+## 🏆 Estatísticas Gerais
 
-| Metric                  | Value                                |
+| Métrica                 | Valor                                |
 | ----------------------- | ------------------------------------ |
-| Stories measured        | {total}                              |
-| **Predictability**      | **{predictability_score}% off (median) {trend_arrow}** |
-| Human estimated hours   | {total_estimated}h                   |
-| Actual AI hours         | {total_actual}h                      |
-| Hours saved             | {saved}h                             |
-| First-pass rate         | {rate}%                              |
-| AI Leverage (vs PLAN, {dominant_regime}) | {avg}x — context, not a target |
+| Stories medidas         | {total}                              |
+| **Previsibilidade**     | **{predictability_score}% de erro (mediana) {trend_arrow}** |
+| Horas estimadas (humano)| {total_estimated}h                   |
+| Horas reais (IA)        | {total_actual}h                      |
+| Horas economizadas      | {saved}h                             |
+| Taxa de first-pass      | {rate}%                              |
+| AI Leverage (vs PLANO, {dominant_regime}) | {avg}x — contexto, não meta |
 
-> **Predictability is the hero number** (lower = estimates closer to reality; `↓` = converging). Leverage is shown as context only and read "vs PLAN ({dominant_regime})", never "vs human" — the regime is the estimate basis (`estimated_hours_basis`, read-only) so the multiplier is read against the right plan. A high multiplier signals an uncalibrated estimate basis, not speed (see the anti-Goodhart invariant below).
+> **Previsibilidade é o número-herói** (menor = estimativas mais perto da realidade; `↓` = convergindo). Leverage aparece só como contexto e lê-se "vs PLANO ({dominant_regime})", nunca "vs humano" — o regime é a base da estimativa (`estimated_hours_basis`, read-only), pra o multiplicador ser lido contra o plano certo. Um multiplicador alto sinaliza base de estimativa não-calibrada, não velocidade (veja o invariante anti-Goodhart abaixo).
 
-> **Anti-Goodhart invariant — leverage is not a target.** `leverage = estimated_hours / actual_hours`. Once the estimate basis is calibrated (estimates derived from a baseline that matches reality), this ratio collapses to **~1.0x by construction** — so a *high* multiplier signals an inflated or uncalibrated estimate basis, **not** velocity, and a *leverage goal* would literally reward never calibrating. The durable signal is **predictability**: the per-category h/BCP drift converging on zero (do estimates match outcomes?). Read every multiplier as "vs PLAN", never "vs human". (v0.5 locked this invariant; v0.6 acted on it — predictability now leads the dashboard and the track-done celebration triggers on accuracy, not leverage magnitude.)
+> **Invariante anti-Goodhart — leverage não é meta.** `leverage = estimated_hours / actual_hours`. Quando a base de estimativa está calibrada (estimativas derivadas de um baseline que casa com a realidade), essa razão colapsa pra **~1.0x por construção** — então um multiplicador *alto* sinaliza base de estimativa inflada ou não-calibrada, **não** velocidade, e uma *meta de leverage* literalmente premiaria nunca calibrar. O sinal durável é a **previsibilidade**: o drift de h/BCP por categoria convergindo a zero (as estimativas casam com os resultados?). Leia todo multiplicador como "vs PLANO", nunca "vs humano". (v0.5 travou esse invariante; v0.6 agiu sobre ele — a previsibilidade agora lidera o dashboard e a celebração do track-done dispara por acurácia, não por magnitude de leverage.)
 
 <!-- CONDITIONAL: include only if pulse_include_trend_chart == yes -->
-## 📈 Leverage Trend by Epic
+## 📈 Tendência de Leverage por Epic
 
-Sparkline: each █ = 0.5x leverage, maximum 20 characters.
+Sparkline: cada █ = 0.5x de leverage, máximo 20 caracteres.
 
 {for each epic with data}
 Epic {N}: {sparkline} {avg}x ({count} stories)
 {end}
 
-Example: Epic 14: ████████░░ 3.5x (4 stories)
+Exemplo: Epic 14: ████████░░ 3.5x (4 stories)
 <!-- END CONDITIONAL trend_chart -->
 
-## 📊 Leverage by Category
+## 📊 Leverage por Categoria
 
-| Category | Avg Leverage (vs PLAN) | Stories | Best |
-| -------- | ---------------------- | ------- | ---- |
+| Categoria | Leverage médio (vs PLANO) | Stories | Melhor |
+| --------- | ------------------------- | ------- | ------ |
 {for each category in pulse_dev_categories}
 | {category} | {x}x | {n} | {best} |
 {end}
 
 <!-- CONDITIONAL: include only if pulse_include_capacity_forecast == yes -->
-## 🔮 Capacity Forecast
+## 🔮 Previsão de Capacidade
 
-Based on avg leverage of {avg}x:
+Baseado no leverage médio de {avg}x:
 
-- 10h estimated → ~{10/avg}h actual
-- 40h estimated → ~{40/avg}h actual
-- 80h estimated → ~{80/avg}h actual
+- 10h estimadas → ~{10/avg}h reais
+- 40h estimadas → ~{40/avg}h reais
+- 80h estimadas → ~{80/avg}h reais
 <!-- END CONDITIONAL capacity_forecast -->
 
 <!-- CONDITIONAL: include only if total_approval_wait_count > 0 OR total_pre_approved_batch_count > 0 -->
-## ⏸ Approval-Wait Halts
+## ⏸ Pausas de Aprovação (Approval-Wait)
 
-| Metric                                  | Value                              |
+| Métrica                                 | Valor                              |
 | --------------------------------------- | ---------------------------------- |
-| Approval-wait halts (subtracted)        | {total_approval_wait_count}        |
-| Total approval-wait time subtracted     | {total_approval_wait_minutes}min   |
-| Pre-approved batch decisions (skipped)  | {total_pre_approved_batch_count}   |
+| Pausas de aprovação (subtraídas)        | {total_approval_wait_count}        |
+| Tempo total de aprovação subtraído      | {total_approval_wait_minutes}min   |
+| Decisões de batch pré-aprovadas (puladas)| {total_pre_approved_batch_count}  |
 
 {if stories_with_approval_wait}
-**By story:**
+**Por story:**
 
-| Story | Approval-wait minutes |
-| ----- | --------------------- |
+| Story | Minutos de aprovação |
+| ----- | -------------------- |
 {for each (story_id, minutes) in stories_with_approval_wait}
 | {story_id} | {minutes}min |
 {end}
 {end}
 
-> Approval-wait halts measure governance latency (human-in-the-loop decisions) and are subtracted from `actual_hours` so leverage reflects real dev work, not wait time. `pre_approved_batch` flags durable decisions that legitimately remove latency on subsequent stories — these are reported but not subtracted.
+> Pausas de aprovação medem latência de governança (decisões human-in-the-loop) e são subtraídas de `actual_hours` pra o leverage refletir trabalho real de dev, não tempo de espera. `pre_approved_batch` marca decisões duráveis que legitimamente removem latência em stories seguintes — essas são reportadas, mas não subtraídas.
 
 {if legacy_halt_string_count > 0}
-> ⚠ {legacy_halt_string_count} legacy halt entries (plain strings, pre-0.5.0 format) were detected. Their durations are not machine-readable and were excluded from minute totals. Migrate these entries to the structured shape (with `kind`, `context`, `duration_min`) for accurate leverage on historical stories.
+> ⚠ {legacy_halt_string_count} entradas de halt legadas (strings simples, formato pré-0.5.0) foram detectadas. As durações não são legíveis por máquina e foram excluídas dos totais de minutos. Migre essas entradas pro formato estruturado (com `kind`, `context`, `duration_min`) pra leverage acurado nas stories históricas.
 {end}
 <!-- END CONDITIONAL approval_wait -->
 
 <!-- CONDITIONAL: include only if bcp_stories is non-empty (≥1 story has a bcp_recorded block) -->
-## 📊 BCP Productivity
+## 📊 Produtividade BCP
 
-> Business Complexity Points telemetry. Hours were derived upstream by
-> [`bmad-module-bcp`](https://github.com/nidelson/bmad-module-bcp); PULSE only
-> reports observed productivity and never owns the BCP baseline.
+> Telemetria de Business Complexity Points. As horas foram derivadas upstream pelo
+> [`bmad-module-bcp`](https://github.com/nidelson/bmad-module-bcp); PULSE só
+> reporta produtividade observada e nunca é dono do baseline BCP.
 
-| Metric                | Value          |
+| Métrica               | Valor          |
 | --------------------- | -------------- |
-| Stories with BCP      | {len(bcp_stories)} |
-| Total BCP scored      | {total_bcp}    |
+| Stories com BCP       | {len(bcp_stories)} |
+| Total BCP pontuado    | {total_bcp}    |
 
-**Throughput (BCP per epic):**
+**Throughput (BCP por epic):**
 
 {for each epic in bcp_throughput}
 Epic {N}: {bcp} BCP ({count} stories)
 {end}
 
-**Actual h/BCP by category and size segment:**
+**h/BCP real por categoria e segmento de tamanho:**
 
-> Stories split at the observed median BCP (`segment_split` = {segment_split} BCP): below it = `micro`, at/above = `story`. The `all` row pools both, for continuity with pre-0.5 dashboards. A segment with fewer than 3 stories is folded into `all` rather than shown on its own (too thin to trust).
+> Stories divididas na mediana de BCP observada (`segment_split` = {segment_split} BCP): abaixo = `micro`, igual/acima = `story`. A linha `all` agrupa as duas, pra continuidade com dashboards pré-0.5. Um segmento com menos de 3 stories é dobrado em `all` em vez de mostrado sozinho (fino demais pra confiar).
 >
-> The `Actual h/BCP` cell shows the geometric mean with its **typical range** `[low–high]` (≈68%, sample GSD, `k=1`). The range is shown only when `n >= 3`; for `n < 3` the bare point is shown (its `n` is in the `n` column — too few samples for a trustworthy range).
+> A célula `h/BCP real` mostra a média geométrica com sua **faixa típica** `[low–high]` (≈68%, GSD amostral, `k=1`). A faixa só aparece quando `n >= 3`; pra `n < 3` mostra o ponto puro (o `n` está na coluna `n` — amostras de menos pra uma faixa confiável).
 
-| Category | Segment | n | Actual h/BCP (typical range) | Est. h/BCP | Drift |
-| -------- | ------- | - | ---------------------------- | ---------- | ----- |
+| Categoria | Segmento | n | h/BCP real (faixa típica) | h/BCP est. | Drift |
+| --------- | -------- | - | ------------------------- | ---------- | ----- |
 {for each category with bcp_stories}
 {for each segment in [micro, story] with n >= 3}
 | {category} | {segment} | {n} | {h_per_bcp_by_category}h [{band.low}–{band.high}] | {h_per_bcp_estimated_by_category}h | {drift:+}% |
@@ -229,51 +229,51 @@ Epic {N}: {bcp} BCP ({count} stories)
 | {category} | all | {n_all} | {pooled h_per_bcp_by_category}h{if n_all >= 3} [{pooled band.low}–{pooled band.high}]{end} | {pooled h_per_bcp_estimated_by_category}h | {drift:+}% |
 {end}
 
-**Baseline convergence (is h/BCP stabilizing?):**
+**Convergência do baseline (h/BCP está estabilizando?):**
 
-> {if bcp_stories count >= 4}**{h_per_bcp_convergence}** — median |drift| moved from {first_half_median}% (first half) to {second_half_median}% (second half); the confidence band {band narrowed / widened / held} over the same split. Converging is the healthy direction: estimates closing on reality.{else}_Insufficient data (thin sample — need ≥4 BCP stories for a convergence reading)._{end}
+> {if bcp_stories count >= 4}**{h_per_bcp_convergence}** — a mediana de |drift| foi de {first_half_median}% (1ª metade) pra {second_half_median}% (2ª metade); a faixa de confiança {band narrowed / widened / held} no mesmo split. Convergir é a direção saudável: estimativas se fechando na realidade.{else}_Dados insuficientes (amostra fina — precisa de ≥4 stories BCP pra uma leitura de convergência)._{end}
 
-**Drift trend (estimated vs actual h/BCP):**
+**Tendência de drift (h/BCP estimado vs real):**
 
 {for each (story_id, drift_pct) in drift_trend}
 {story_id}: {drift_pct:+}%
 {end}
 
-**Top stories by BCP:**
+**Top stories por BCP:**
 
-| Story | BCP | Actual h/BCP |
-| ----- | --- | ------------ |
+| Story | BCP | h/BCP real |
+| ----- | --- | ---------- |
 {for each story in top_bcp_stories}
 | {story_id} | {bcp_recorded.total} | {bcp_recorded.h_per_bcp_actual}h |
 {end}
 
-> Note: PULSE ranks by story-level BCP total. Per-element breakdown
-> (`bcp.breakdown`) is owned by `bmad-module-bcp` and is intentionally not
-> read here — this preserves zero coupling.
+> Nota: PULSE ranqueia pelo total de BCP por story. O detalhamento por elemento
+> (`bcp.breakdown`) é do `bmad-module-bcp` e é intencionalmente não
+> lido aqui — isso preserva o zero coupling.
 <!-- END CONDITIONAL bcp -->
 
-## 🚦 Estimation drift watch
+## 🚦 Monitor de drift de estimativa
 
-> Forward-looking companion to the track-start alert: which cohorts are estimating badly *right now*, so you can re-estimate before committing. A cohort is listed only when it has ≥3 completed stories and its median estimate error exceeds 25% over the last 5. Healthy cohorts are omitted.
+> Companheiro prospectivo do alerta do track-start: quais coortes estão estimando mal *agora*, pra você reestimar antes de se comprometer. Uma coorte só é listada quando tem ≥3 stories concluídas e seu erro de estimativa mediano passa de 25% nas últimas 5. Coortes saudáveis são omitidas.
 
 {if drift_watchlist non-empty}
-| Cohort | Median \|drift\| | n | Trend |
-| ------ | -------------- | - | ----- |
+| Coorte | Mediana \|drift\| | n | Tendência |
+| ------ | --------------- | - | --------- |
 {for each (cohort_label, median_abs_drift_pct, n, trend) in drift_watchlist}
 | {cohort_label} | {median_abs_drift_pct}% | {n} | {trend} |
 {end}
 {else}
-_No cohorts drifting — estimates are tracking._
+_Nenhuma coorte derivando — estimativas no rumo._
 {end}
 
-## 💡 Process Insights
+## 💡 Insights de Processo
 
-{insights generated based on the data}
+{insights gerados a partir dos dados}
 
-## 📋 Story Breakdown
+## 📋 Detalhamento por Story
 
-| Story | Est. | Actual | Leverage (vs PLAN) | Quality | Category |
-| ----- | ---- | ------ | ------------------ | ------- | -------- |
+| Story | Est. | Real | Leverage (vs PLANO) | Qualidade | Categoria |
+| ----- | ---- | ---- | ------------------- | --------- | --------- |
 
 {for each story with pulse_metrics data}
 | {id} | {est}h | {actual}h | {lev}x | {quality} | {cat} |
@@ -281,8 +281,8 @@ _No cohorts drifting — estimates are tracking._
 
 ---
 
-_PULSE — Against facts, there are no arguments._
-_Dashboard generated automatically by the PULSE module._
+_PULSE — Contra fatos, não há argumentos._
+_Dashboard gerado automaticamente pelo módulo PULSE._
 ```
 
 For `yaml` format, generate `{pulse_dashboard_folder}/dashboard.yaml` with the same data structured as YAML.
@@ -297,8 +297,8 @@ The detail level of the summary must respect `pulse_levi_verbosity`.
 ### Step 4: Report Location
 
 ```text
-⚡ Levi: Dashboard saved at {dashboard_file}
-   {total} stories measured | Avg leverage: {avg}x
+⚡ Levi: Dashboard salvo em {dashboard_file}
+   {total} stories medidas | Leverage médio: {avg}x
 ```
 
 ---
@@ -308,6 +308,7 @@ The detail level of the summary must respect `pulse_levi_verbosity`.
 - If no data exists in the `pulse_metrics:` section, inform and suggest running track-start/track-done first
 - Create the `{pulse_dashboard_folder}` directory if it does not exist
 - Always overwrite dashboard.md (it is the most recent version)
+- The rendered dashboard template above is **PT-BR by default** (section titles, table headers, labels, messages, notes). Keep all technical jargon in English (`h/BCP`, `BCP`, `leverage`, `drift`, `micro`/`story`, field names) and every `{placeholder}` verbatim. If `communication_language` is set to another language, localize the rendered labels/messages accordingly (jargon and placeholders still unchanged); the internal aggregation logic in Step 1 stays English regardless.
 - Communicate in the language configured in `communication_language`
 - Respect `pulse_levi_verbosity` for level of detail in responses
 - The leverage trend section must only be included if `pulse_include_trend_chart == yes`
