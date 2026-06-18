@@ -61,6 +61,26 @@ python3 .claude/skills/bmad-pulse-setup/scripts/reconcile-skills.py \
 
 ---
 
+## v0.7.x → v0.8.0 — Previsibilidade para precificar (forecast de projeto)
+
+**Quem isto afeta:** quem usa a seção de previsão do dashboard com BCP. **Breaking** numa seção: a antiga `Previsão de Capacidade` (extrapolação por leverage) foi **substituída** por `Previsão de Projeto` (`BCP × h/BCP ± IC 90%`).
+
+A v0.8 vira a engine honesta pra **frente**: dado o backlog pontuado restante, prevê quantas horas falta — com intervalo de confiança de 90% — pra times que faturam por hora.
+
+### O que muda
+
+- **Previsão de Projeto** (substitui Previsão de Capacidade). PULSE enumera (read-only) as stories pontuadas **não-iniciadas** (com `bcp.total`, sem entrada em `pulse_metrics`) → BCP restante por categoria, e prevê `horas = BCP × h/BCP` (geométrico, calibrado da v0.5) com **IC de 90%** (escala a banda de confiança de k=1 ~68% pra k=1.645 ~90%). O total soma os limites por categoria (faixa **conservadora**, declarada). Categorias finas (n<3) usam baseline pooled e marcam **baixa confiança**. Backlog vazio → sem seção.
+- **Digest** (`digest.md`). Um resumo conciso (previsibilidade + forecast + coortes em risco) é gerado junto do dashboard. **Entrega thin:** PULSE **não** chama Slack/Linear direto — você aponta `on_complete` pra um comando que posta o `digest.md` (ex.: webhook Slack via `curl`). Credenciais ficam no seu ambiente.
+- **Quebra por desenvolvedor/agente:** **adiada** — PULSE não captura identidade hoje (só `dev_count`); fica pra um marco futuro com decisão de privacidade à parte. A v0.8 quebra por **categoria** (que já existe).
+
+### O que você precisa fazer
+
+**Nada no disco** além do upgrade normal. O forecast usa dados que PULSE já lê + os story files pontuados (read-only). Se o backlog não for enumerável, informe um total manual em `pulse_forecast_remaining_bcp`. Pra digests, configure `on_complete`.
+
+> ⚠ **Breaking:** a seção `🔮 Previsão de Capacidade` deixou de existir; quem parseava ela (ou dependia da extrapolação por leverage) deve migrar pra `🔮 Previsão de Projeto`. As demais seções não mudaram de formato.
+
+---
+
 ## v0.6.0 → v0.7.0 — A ação que importa (alerta de drift na estimativa)
 
 **Quem isto afeta:** quem usa `/bmad-pulse-track-start` e o dashboard. **Aditivo** — nada existente muda de formato; a v0.7 só **acrescenta** um aviso e uma seção.
