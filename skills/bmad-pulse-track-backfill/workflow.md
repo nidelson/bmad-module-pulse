@@ -141,6 +141,7 @@ Leverage:
 elapsed_minutes = (HF - HI) in minutes
 actual_hours    = effective_hours ?? max(0.01, elapsed_minutes / 60)
 leverage_ratio  = estimated_hours / actual_hours
+estimate_error_pct = round(abs(actual_hours - estimated_hours) / max(0.01, estimated_hours) * 100, 1)  # |drift_pct| for BCP stories
 first_pass      = review_cycles == 1
 ```
 
@@ -220,11 +221,12 @@ Display (respect `pulse_levi_verbosity`):
    HI: {start_ts}  →  HF: {end_ts}
    Human estimate: {estimated_hours}h ({dev_count} devs)
    Actual AI time: {actual_hours}h ({elapsed_minutes}min wall-clock)
-   AI Leverage: {leverage_ratio}x
+   AI Leverage: {leverage_ratio}x (vs PLAN, not vs human)
+   Estimate accuracy: {estimate_error_pct}% off plan
    {if bcp_recorded}BCP: {bcp_recorded.total} pts | {bcp_recorded.h_per_bcp_actual}h/BCP actual vs {bcp_recorded.h_per_bcp_estimated}h/BCP est ({bcp_recorded.drift_pct:+}% drift){end}
    Quality: {first_pass ? "✅ first-pass" : "🔄 " + review_cycles + " cycles"}
    Category: {category}
-   {leverage_ratio >= pulse_leverage_threshold_exceptional ? "🔥 Exceptional!" : leverage_ratio >= pulse_leverage_threshold_solid ? "💪 Solid!" : leverage_ratio < pulse_leverage_warning_threshold ? "⚠ Below expectations — review estimates." : "📊 Data recorded."}
+   {estimate_error_pct <= 15 ? (first_pass ? "🎯 On-plan! (estimate within 15%, first-pass)" : "🎯 On-plan (estimate within 15%)") : estimate_error_pct >= 50 ? "⚠ Off-plan — review the estimate basis, not the speed." : "📊 Data recorded."}
 
    💡 {if pulse_levi_coaching_mode == yes}Run /bmad-pulse-track-start and /bmad-pulse-track-done on future stories to capture process health and halts, which backfill cannot reconstruct.{end}
 ```
