@@ -76,12 +76,14 @@ Load the `pulse` section from `{main_config}` and resolve all module variables:
 1. Read `{sprint_status_file}` in full
 2. Extract all entries from the `pulse_metrics:` section
 3. Group by epic — infer epic_id from the numeric prefix of story_id (e.g. `15.3` → epic 15, `4.4.1` → epic 4)
-4. Calculate aggregations:
+4. **Enumerate the scored backlog** (v0.8 forecast input — read-only): scan the story files in the implementation-artifacts folder for stories that carry a `bcp:` block (with `bcp.total`) but have **no entry** in `pulse_metrics:` (i.e. scored but not yet started). These are the remaining work. Sum `bcp.total` by `category` → `remaining_bcp_by_category` (and `remaining_bcp_total`). If the story files cannot be enumerated, fall back to an optional manual total `pulse_forecast_remaining_bcp` (category-less). PULSE reads story files **read-only** — it never writes them, the BCP baseline, or any estimate. An empty backlog → no forecast.
+5. Calculate aggregations:
    - Total stories measured
    - **`predictability_score`** — the v0.6 **hero metric**. The **median** of the per-story estimate error `|actual_hours - estimated_hours| / estimated_hours` across all stories with `pulse_metrics` (floor `estimated_hours` at 0.01 to avoid divide-by-zero). Report as a percentage; **lower is better** — it reads "estimates are X% off, median". Method-agnostic: for BCP stories it equals `|bcp_recorded.drift_pct|` (the BCP totals cancel), so it works whether or not the project uses BCP. Compute it global and per category. Median (not mean) for the same reason the v0.5 baseline is geometric — resist outliers. Pair it with a **trend arrow**: split the stories in story-order (chronological proxy) into first half vs second half and compare each half's median error → `↓ converging` / `→ stable` / `↑ diverging`. Needs `>= 4` stories for a trend; fewer → no arrow.
    - **`estimate_regime`** (v0.6 regime detection) — the basis each `estimated_hours` was derived from, read **read-only** from the story's `estimated_hours_basis` frontmatter field when present (`bcp` / `hours` / `story_points` / `tshirt`), falling back to `{pulse_estimation_method}` when the field is absent. PULSE **never writes** `estimated_hours_basis` and **never derives hours from it** — it only labels what each multiplier is measured *against* (so "5x" reads "vs PLAN (bcp)" not an unqualified number). Report the dominant regime across stories for the leverage context line; annotate a story in the breakdown when its regime differs from the project default. (`estimated_hours_pre_bcp` stays ignored.)
    - **`cohort_drift(category, segment)`** (v0.7 — the shared primitive for estimation-time drift alerts; also consumed by `bmad-pulse-track-start`). For a **cohort**, the **median** of the per-story estimate error `|actual_hours - estimated_hours| / estimated_hours * 100` over the **last `K = 5` completed stories** in that cohort (story-order = chronological proxy; floor `estimated_hours` at 0.01). For BCP stories this equals `|bcp_recorded.drift_pct|`. The **cohort key** is `(category, segment)` when the story carries BCP (segment = `micro`/`story` from the v0.5 median split), else `(category)` alone — fallback documented so non-BCP projects still cohort by category. Returns `(median_abs_drift_pct, n, sample_story_ids)` where `n` is the cohort size considered (≤ K). **Requires `n >= 3`** to be meaningful — fewer → `insufficient` (callers must stay silent, no false alarm). This is read-only over `pulse_metrics`; it never writes or alters any estimate.
    - **`drift_watchlist`** (v0.7) — the forward-looking companion to the track-start alert. For **every** cohort present in `pulse_metrics`, evaluate `cohort_drift`; keep only cohorts with `n >= 3` **and** `median_abs_drift_pct > T = 25%`, sorted by `median_abs_drift_pct` desc. Each entry carries `(cohort_label, median_abs_drift_pct, n, trend)` where `trend` reuses the v0.6 half-split direction (`↓`/`→`/`↑`). Healthy cohorts (≤ T) are omitted. Empty list is the healthy default.
+   - **`forecast`** (v0.8 — project hours to price the remaining work; requires BCP baselines). For each category in `remaining_bcp_by_category`, the point forecast is `hours_cat = remaining_bcp_cat × geo_mean(h_per_bcp_actual_cat)` (reusing the v0.5 geometric `h_per_bcp_by_category`). The **90% interval** scales the v0.5 confidence band from `k=1` (~68%) to **`k=1.645`** (~90% of a log-normal): `[hours_cat / GSD_cat^1.645, hours_cat × GSD_cat^1.645]`, where `GSD_cat` is the v0.5 sample geometric SD. Compose the **total** conservatively: `forecast_total = Σ hours_cat`, `forecast_low_90 = Σ low_cat`, `forecast_high_90 = Σ high_cat` — summing the bounds assumes the per-category errors are correlated (widest honest interval; **state this assumption** in the rendered note). A category with `n < 3` (no own baseline) uses the **pooled** `all` baseline and flags the forecast **low-confidence**. Manual-total fallback (`pulse_forecast_remaining_bcp`, no categories) uses the **global** geometric baseline + pooled GSD. Empty backlog → `forecast` is empty (no section). This is read-only: it never writes the backlog, the baseline, or any estimate.
    - Average, minimum, and maximum leverage
    - Total estimated hours vs total actual hours
    - First-pass rate
@@ -109,6 +111,8 @@ Load the `pulse` section from `{main_config}` and resolve all module variables:
      - `drift_trend` — ordered list of `(story_id, bcp_recorded.drift_pct)` for `bcp_stories` (story-order = chronological proxy)
      - `h_per_bcp_convergence` — the v0.6 **self-referential drift signal**: is the h/BCP baseline *stabilizing* over time? Split `drift_trend` in story-order into a first half and a second half and compare the **median `|drift_pct|`** of each: second-half median meaningfully **lower** → `converging` (estimates closing on reality); meaningfully **higher** → `diverging`; within a small tolerance → `stable`. The confidence band (`h_per_bcp_band`) narrowing across the same split is corroborating evidence (report it alongside). **Requires `>= 4` `bcp_stories`** for a reading — fewer → `insufficient data (thin sample)`, no label. This consumes the v0.5 drift/band data; it does not recompute raw ratios.
      - `top_bcp_stories` — `bcp_stories` sorted by `bcp_recorded.total` desc, top 5 (proxy for "elements driving BCP" — PULSE does not read `bcp.breakdown`, so it ranks by total points per story)
+
+> **Forecast passive invariant (v0.8, do not regress).** The project forecast and the digest are **read-only and passive**. PULSE reads the scored backlog (story files) and `pulse_metrics` to compute `BCP × h/BCP ± CI(90%)`, but it **never writes** the story frontmatter, the BCP baseline, the backlog, or any estimate — pricing is informational, it does not drive estimation (which is upstream, owned by BMAD/BCP). The digest is **generated only**; PULSE never calls Slack/Linear or any external API itself — delivery is the user's `on_complete`. If a future edit makes the forecast mutate an estimate/baseline or call an external API directly, that breaks the contract (locked by `tests/test_forecast.py`).
 
 ### Step 2: Generate Dashboard
 
@@ -160,14 +164,20 @@ Exemplo: Epic 14: ████████░░ 3.5x (4 stories)
 | {category} | {x}x | {n} | {best} |
 {end}
 
-<!-- CONDITIONAL: include only if pulse_include_capacity_forecast == yes -->
-## 🔮 Previsão de Capacidade
+<!-- CONDITIONAL: include only if pulse_include_capacity_forecast == yes AND forecast is non-empty (the scored backlog has remaining BCP) -->
+## 🔮 Previsão de Projeto
 
-Baseado no leverage médio de {avg}x:
+> Horas pra concluir o backlog pontuado restante ({remaining_bcp_total} BCP não-iniciado), por `BCP × h/BCP` calibrado, com IC de 90%. Pra times que faturam por hora.
 
-- 10h estimadas → ~{10/avg}h reais
-- 40h estimadas → ~{40/avg}h reais
-- 80h estimadas → ~{80/avg}h reais
+**Total: {forecast_total}h** — faixa [{forecast_low_90}–{forecast_high_90}]h (IC 90%)
+
+| Categoria | BCP restante | Previsão (IC 90%) | Confiança |
+| --------- | ------------ | ----------------- | --------- |
+{for each category in remaining_bcp_by_category}
+| {category} | {remaining_bcp_cat} | {hours_cat}h [{low_cat}–{high_cat}]h | {if n_cat >= 3}ok{else}baixa (pooled){end} |
+{end}
+
+> Faixa **conservadora**: o IC do total soma os limites por categoria (assume erros correlacionados — a faixa mais larga e honesta). Categorias sem baseline próprio (n<3) usam o baseline pooled e entram como **baixa confiança**. O forecast é read-only — não muda estimativa nem baseline.
 <!-- END CONDITIONAL capacity_forecast -->
 
 <!-- CONDITIONAL: include only if total_approval_wait_count > 0 OR total_pre_approved_batch_count > 0 -->
@@ -289,6 +299,19 @@ For `yaml` format, generate `{pulse_dashboard_folder}/dashboard.yaml` with the s
 
 For `both` format, generate both files.
 
+### Step 2b: Generate digest artifact (v0.8 — thin delivery)
+
+Also write a concise digest to `{pulse_dashboard_folder}/digest.md` — a short, postable summary (PT-BR, jargon kept) a teammate can read at a glance or that `on_complete` can ship to Slack/Linear. PULSE only **generates** the artifact; it **never calls any external API itself** (see On Completion). Keep it to the essentials:
+
+```markdown
+⚡ PULSE digest — {project_name} — {date}
+• Previsibilidade: {predictability_score}% de erro (mediana) {trend_arrow}
+• Previsão de Projeto: {forecast_total}h [{forecast_low_90}–{forecast_high_90}]h (IC 90%) pra {remaining_bcp_total} BCP restante
+• Coortes em risco: {if drift_watchlist non-empty}{drift_watchlist count} (>{T}% drift){else}nenhuma — estimativas no rumo{end}
+```
+
+Omit the forecast line when the backlog is empty. The digest is opt-in companion data — it does not replace `dashboard.md`.
+
 ### Step 3: Display Summary
 
 Display in the terminal the General Statistics block + (if `pulse_include_trend_chart == yes`) Trend + a Process Insight.
@@ -312,11 +335,12 @@ The detail level of the summary must respect `pulse_levi_verbosity`.
 - Communicate in the language configured in `communication_language`
 - Respect `pulse_levi_verbosity` for level of detail in responses
 - The leverage trend section must only be included if `pulse_include_trend_chart == yes`
-- The capacity forecast section must only be included if `pulse_include_capacity_forecast == yes`
+- The project forecast section (`🔮 Previsão de Projeto`) must only be included if `pulse_include_capacity_forecast == yes` AND the scored backlog has remaining BCP (an empty backlog → no section). Since v0.8 it forecasts `BCP × h/BCP ± CI(90%)`, replacing the pre-0.8 leverage-extrapolation capacity forecast.
 - The categories table must use the categories defined in `pulse_dev_categories` (not hardcoded categories)
 - The Approval-Wait Halts section must only be rendered when `total_approval_wait_count + total_pre_approved_batch_count > 0`
 - The BCP Productivity section must only be rendered when at least one story has a `bcp_recorded` block; stories without BCP data render unchanged in all other sections
 - Never read or write the BCP baseline file — BCP productivity is computed purely from `pulse_metrics` fields PULSE itself recorded
+- The v0.8 digest (`digest.md`) is **generated only** — PULSE never calls Slack/Linear or any external API directly; delivery is delegated to the user-configured `on_complete` command (thin, local-first)
 - When reading `process_health.halts`, accept both shapes (integer count and structured list) and degrade gracefully — never crash on legacy data
 
 ---
@@ -327,4 +351,12 @@ After the standard dashboard sections have been rendered and BEFORE writing the 
 
 ## On Completion
 
-After `dashboard_file` has been written and the confirmation message displayed, execute the `{workflow.on_complete}` scalar if non-empty. Override wins; an empty value means no custom post-completion behavior.
+After `dashboard_file` (and, since v0.8, `digest.md`) has been written and the confirmation message displayed, execute the `{workflow.on_complete}` scalar if non-empty. Override wins; an empty value means no custom post-completion behavior.
+
+**Posting the digest (thin delivery, v0.8).** PULSE **never calls Slack/Linear (or any external) APIs itself** — it stays local-first and passive. To deliver the digest, the user sets `on_complete` to a command that posts the generated `digest.md`, e.g. a Slack incoming webhook:
+
+```bash
+on_complete = "curl -s -X POST -H 'Content-type: application/json' --data \"{\\\"text\\\": \\\"$(cat {pulse_dashboard_folder}/digest.md)\\\"}\" $PULSE_SLACK_WEBHOOK"
+```
+
+The webhook URL / token lives in the user's environment, never in PULSE. Linear or any other channel works the same way — the channel and credentials are the user's; the digest is PULSE's. PULSE generates the artifact and hands off; it does not own the integration.
