@@ -94,11 +94,14 @@ Load the `pulse` section from `{main_config}` and resolve all module variables:
        - `legacy_halt_string_count` — count of Shape C entries encountered (used to surface migration hint in insights)
        - `stories_with_approval_wait` — list of `(story_id, total_minutes)` pairs for the breakdown table (entries with unknown minutes show as `?min`)
    - **BCP aggregations** (read `bcp_recorded` and `bcp_at_start` / `estimation_basis` from each story; all optional — a story without them is normal and contributes nothing):
+     - _Since v0.5.0, per-category h/BCP baselines use the **geometric** mean of the per-story ratios, not the arithmetic mean (pre-0.5.0). Baselines recomputed from the same data will shift; this is intentional — see the v0.5 honest-measurement-engine notes._
      - `bcp_stories` — list of stories that have a `bcp_recorded` block
      - `total_bcp` — sum of `bcp_recorded.total` across `bcp_stories`
      - `bcp_throughput` — `total_bcp` grouped by epic (proxy for BCP/sprint when sprint segmentation is unavailable)
-     - `h_per_bcp_by_category` — for each category in `{pulse_dev_categories}`, the mean of `bcp_recorded.h_per_bcp_actual` over its `bcp_stories`
-     - `h_per_bcp_estimated_by_category` — same, over `bcp_recorded.h_per_bcp_estimated` (for the drift comparison)
+     - `segment_split` — the **median** of `bcp_recorded.total` over **all** `bcp_stories` (one global value). Computed **only when `bcp_stories` is non-empty** — never evaluate `median([])`. A story is `micro` when `bcp_recorded.total < segment_split`, else `story`. This split is data-driven: PULSE assumes nothing about the BCP point scale and stays zero-coupled to BCP. (Since v0.5.0.)
+     - `h_per_bcp_by_category` — for each `(category, segment)` with `segment ∈ {micro, story}`, the **geometric mean** of `bcp_recorded.h_per_bcp_actual` over the `bcp_stories` in that category and segment: `exp(mean(ln(h_per_bcp_actual)))`, equivalently `(∏ h_per_bcp_actual)^(1/n)`. h/BCP values are multiplicative ratios, so the geometric mean is the unbiased central tendency and resists outliers (a single 10x story does not drag the baseline the way an arithmetic mean would). Round to 2 decimals. Also compute a per-category **pooled** baseline (`all` segment — geometric mean over every `bcp_story` in the category, ignoring the split) for the continuity row. **Thin-segment fallback:** a `(category, segment)` pair with `n < 3` is not reported on its own; those stories still count in the category's pooled `all` baseline. `n == 0` → pair omitted.
+     - `h_per_bcp_estimated_by_category` — same **geometric mean**, segmented the same way (per `(category, segment)` plus pooled `all`), over `bcp_recorded.h_per_bcp_estimated` (for the drift comparison).
+     - `h_per_bcp_band` — for each baseline (every `(category, segment)` and each pooled `all`), a **confidence band** around the geometric mean of `bcp_recorded.h_per_bcp_actual`, so the baseline reads as a range, not false precision. Compute the **sample geometric standard deviation** `GSD = exp(sample_std(ln(h_per_bcp_actual)))`, where `sample_std` uses the `n-1` (sample, not population) denominator — we estimate, not enumerate. The band is `[geo_mean / GSD, geo_mean * GSD]` (multiplier `k = 1`, ≈ 68% of a log-normal sample — a **typical range**, not a 95% CI; with PULSE's small `n` a wider band would be unactionable). **Require `n >= 3` to emit a band**; for `n < 3` emit the point with an explicit `(n=2)` / `(n=1)` marker and no interval (a GSD from 2 samples has 1 degree of freedom — one outlier distorts it). Carry `n` alongside every baseline so thin samples are visible. (Since v0.5.0.)
      - `drift_trend` — ordered list of `(story_id, bcp_recorded.drift_pct)` for `bcp_stories` (story-order = chronological proxy)
      - `top_bcp_stories` — `bcp_stories` sorted by `bcp_recorded.total` desc, top 5 (proxy for "elements driving BCP" — PULSE does not read `bcp.breakdown`, so it ranks by total points per story)
 
@@ -126,6 +129,8 @@ For `markdown` format (default), write `{dashboard_file}` with the following str
 | Actual AI hours         | {total_actual}h    |
 | Hours saved             | {saved}h           |
 | First-pass rate         | {rate}%            |
+
+> **Anti-Goodhart invariant — leverage is not a target.** `leverage = estimated_hours / actual_hours`. Once the estimate basis is calibrated (estimates derived from a baseline that matches reality), this ratio collapses to **~1.0x by construction** — so a *high* multiplier signals an inflated or uncalibrated estimate basis, **not** velocity, and a *leverage goal* would literally reward never calibrating. The durable signal is **predictability**: the per-category h/BCP drift converging on zero (do estimates match outcomes?). Read every multiplier as "vs PLAN", never "vs human". (The hero-metric inversion lands in v0.6; v0.5 only locks this invariant.)
 
 <!-- CONDITIONAL: include only if pulse_include_trend_chart == yes -->
 ## 📈 Leverage Trend by Epic
@@ -201,12 +206,19 @@ Based on avg leverage of {avg}x:
 Epic {N}: {bcp} BCP ({count} stories)
 {end}
 
-**Actual h/BCP by category:**
+**Actual h/BCP by category and size segment:**
 
-| Category | Actual h/BCP | Est. h/BCP | Drift |
-| -------- | ------------ | ---------- | ----- |
+> Stories split at the observed median BCP (`segment_split` = {segment_split} BCP): below it = `micro`, at/above = `story`. The `all` row pools both, for continuity with pre-0.5 dashboards. A segment with fewer than 3 stories is folded into `all` rather than shown on its own (too thin to trust).
+>
+> The `Actual h/BCP` cell shows the geometric mean with its **typical range** `[low–high]` (≈68%, sample GSD, `k=1`). The range is shown only when `n >= 3`; for `n < 3` the bare point is shown (its `n` is in the `n` column — too few samples for a trustworthy range).
+
+| Category | Segment | n | Actual h/BCP (typical range) | Est. h/BCP | Drift |
+| -------- | ------- | - | ---------------------------- | ---------- | ----- |
 {for each category with bcp_stories}
-| {category} | {h_per_bcp_by_category}h | {h_per_bcp_estimated_by_category}h | {drift:+}% |
+{for each segment in [micro, story] with n >= 3}
+| {category} | {segment} | {n} | {h_per_bcp_by_category}h [{band.low}–{band.high}] | {h_per_bcp_estimated_by_category}h | {drift:+}% |
+{end}
+| {category} | all | {n_all} | {pooled h_per_bcp_by_category}h{if n_all >= 3} [{pooled band.low}–{pooled band.high}]{end} | {pooled h_per_bcp_estimated_by_category}h | {drift:+}% |
 {end}
 
 **Drift trend (estimated vs actual h/BCP):**
