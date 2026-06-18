@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/nidelson/bmad-module-pulse/compare/v0.7.0...v0.7.1) (2026-06-18)
+
+
+### Features
+
+* **dashboard:** saída do dashboard em PT-BR (jargão mantido) ([#61](https://github.com/nidelson/bmad-module-pulse/issues/61)) ([ea6ae3e](https://github.com/nidelson/bmad-module-pulse/commit/ea6ae3ecfdf76f8963dc26cec4fda548377431f9))
+
 ## [0.7.0](https://github.com/nidelson/bmad-module-pulse/compare/v0.6.0...v0.7.0) (2026-06-18)
 
 
