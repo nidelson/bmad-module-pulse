@@ -61,6 +61,25 @@ python3 .claude/skills/bmad-pulse-setup/scripts/reconcile-skills.py \
 
 ---
 
+## v0.6.0 → v0.7.0 — A ação que importa (alerta de drift na estimativa)
+
+**Quem isto afeta:** quem usa `/bmad-pulse-track-start` e o dashboard. **Aditivo** — nada existente muda de formato; a v0.7 só **acrescenta** um aviso e uma seção.
+
+A v0.5/v0.6 são retrospectivas (você vê o drift depois que a story fechou). A v0.7 leva o sinal pro **momento do compromisso**: ao iniciar uma story, PULSE avisa se a coorte dela vem errando a estimativa — _antes_ de virar promessa. PULSE segue passivo: o alerta **informa, nunca dirige**.
+
+### O que muda (tudo aditivo)
+
+- **Alerta no track-start.** Ao registrar o start, PULSE computa o drift recente da coorte da story (`category` + segmento de tamanho quando há BCP) e, se as últimas 5 erraram > 25% na mediana (mínimo 3 stories), mostra uma linha **não-bloqueante**: `⚠ Heads up: stories like backend/story were off +N% (median) over the last 5 — re-estimate before committing?`. O start é registrado normalmente; **PULSE nunca altera `estimated_hours`** — reestimar é decisão sua.
+- **Watch-list no dashboard.** Nova seção `🚦 Estimation drift watch` lista as coortes que estão estimando mal agora (mediana > 25%, ≥3 stories), ordenadas por drift, com tendência. Coortes saudáveis são omitidas; tudo saudável → "No cohorts drifting — estimates are tracking".
+
+### O que você precisa fazer
+
+**Nada.** Aditivo, sem migração de dados. Próximo `/bmad-pulse-track-start` e `/bmad-pulse-dashboard` já trazem o aviso e a seção. Os thresholds (`K=5`, `T=25%`) são inline nesta versão.
+
+> ℹ️ **Não-breaking.** Nenhum formato existente foi reordenado ou removido; só houve acréscimos. O alerta é advisory e nunca toca a sua estimativa.
+
+---
+
 ## v0.5.0 → v0.6.0 — Inverter o velocímetro (previsibilidade como herói)
 
 **Quem isto afeta:** todos os usuários do dashboard e do track-done; mais profundamente quem usa `pulse_estimation_method=bcp`. Nada na coleta de dados muda — a virada é em como os números são **enquadrados**.
