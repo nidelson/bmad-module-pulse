@@ -20,7 +20,7 @@ BCP → PULSE coupling: **zero**. BCP optionally reads `pulse_metrics` in its ow
 | --------------------------- | ------------------------------------------------------------ |
 | `estimated_hours` (story)   | BMAD/Amelia originally; BCP overwrites if installed (install = consent) |
 | `estimated_hours_pre_bcp`   | BCP (audit — PULSE ignores)                                   |
-| `estimated_hours_basis`     | BCP (audit — PULSE ignores)                                   |
+| `estimated_hours_basis`     | BCP writes it (audit); since v0.6 PULSE **reads it read-only** to label the dashboard regime — never writes it, never derives hours from it |
 | `bcp.*` (story frontmatter) | BCP exclusively — PULSE reads, never writes                   |
 | `bcp-baseline.yaml`         | BCP exclusively — PULSE never reads or writes                 |
 | `pulse_metrics.*`           | PULSE exclusively                                             |
@@ -37,7 +37,7 @@ does *not* mean PULSE converts BCP points to hours.
 story_id: "5.7"
 estimated_hours: 86.7              # PULSE reads this — writer-agnostic
 estimated_hours_pre_bcp: 80        # BCP audit — PULSE ignores
-estimated_hours_basis: bcp         # BCP audit — PULSE ignores
+estimated_hours_basis: bcp         # BCP audit; PULSE reads read-only for the regime label (never writes/derives)
 category: backend
 
 bcp:                               # written by BCP — PULSE surfaces it

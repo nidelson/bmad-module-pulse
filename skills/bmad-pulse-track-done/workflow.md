@@ -60,9 +60,9 @@ Load the config from the `pulse` section of `{main_config}` and resolve all modu
 - `pulse_sprint_status_filename`
 - `pulse_estimation_method` (story_points / hours / t-shirt / bcp)
 - `pulse_story_point_hours_factor` (story points → hours conversion factor)
-- `pulse_leverage_threshold_exceptional` (e.g. 4)
-- `pulse_leverage_threshold_solid` (e.g. 2)
-- `pulse_leverage_warning_threshold` (e.g. 1)
+- `pulse_leverage_threshold_exceptional` (e.g. 4) — _legacy since v0.6: no longer drives celebration (kept for back-compat)_
+- `pulse_leverage_threshold_solid` (e.g. 2) — _legacy since v0.6: no longer drives celebration_
+- `pulse_leverage_warning_threshold` (e.g. 1) — _legacy since v0.6: no longer drives celebration_
 - `pulse_alert_on_halt` (yes / warn / no)
 - `pulse_alert_unused_skills` (yes / no)
 - `pulse_process_health_checks` (standard / strict / minimal)
@@ -163,6 +163,7 @@ halt_minutes = sum(
 
 actual_hours = effective_hours ?? max(0.01, (elapsed_minutes - halt_minutes) / 60)
 leverage_ratio = estimated_hours / actual_hours
+estimate_error_pct = round(abs(actual_hours - estimated_hours) / max(0.01, estimated_hours) * 100, 1)  # how far the estimate was from reality; equals |drift_pct| for BCP stories
 first_pass = review_cycles == 1
 ```
 
@@ -225,12 +226,14 @@ Display in the terminal:
    📊 Efficiency
    Human estimate: {estimated_hours}h ({dev_count} devs)
    Actual AI time: {actual_hours}h ({elapsed_minutes}min wall-clock)
-   AI Leverage: {leverage_ratio}x
+   AI Leverage: {leverage_ratio}x (vs PLAN, not vs human)
+   Estimate accuracy: {estimate_error_pct}% off plan
    {if bcp_recorded}BCP: {bcp_recorded.total} pts | {bcp_recorded.h_per_bcp_actual}h/BCP actual vs {bcp_recorded.h_per_bcp_estimated}h/BCP est ({bcp_recorded.drift_pct:+}% drift){end}
    Quality: {first_pass ? "✅ first-pass" : "🔄 " + review_cycles + " cycles"}
    Tasks: {task_count}
    Category: {category}
-   {leverage_ratio >= pulse_leverage_threshold_exceptional ? "🔥 Exceptional!" : leverage_ratio >= pulse_leverage_threshold_solid ? "💪 Solid!" : leverage_ratio < pulse_leverage_warning_threshold ? "⚠ Below expectations — review estimates or process." : "📊 Data recorded."}
+   {estimate_error_pct <= 15 ? (first_pass ? "🎯 On-plan! (estimate within 15%, first-pass)" : "🎯 On-plan (estimate within 15%)") : estimate_error_pct >= 50 ? "⚠ Off-plan — review the estimate basis, not the speed." : "📊 Data recorded."}
+   <!-- v0.6: celebration triggers on estimate ACCURACY (on-plan), not on leverage magnitude. A high multiplier is an uncalibrated estimate, not a win (anti-Goodhart). pulse_leverage_threshold_exceptional/solid are retired as celebration triggers — leverage is reported "vs PLAN" as context only. -->
 
    📋 Process Health
    Flow: {flow_check}
