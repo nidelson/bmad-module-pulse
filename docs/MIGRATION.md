@@ -61,6 +61,55 @@ python3 .claude/skills/bmad-pulse-setup/scripts/reconcile-skills.py \
 
 ---
 
+## v0.4.x → v0.5.0 — Honest measurement engine (BCP dashboard)
+
+**Who this affects:** only projects using `pulse_estimation_method=bcp`. If you
+do not use BCP, the dashboard is unchanged — skip this section.
+
+v0.5.0 reworks how the dashboard summarizes per-category **h/BCP** so the number
+is honest rather than flattering. Nothing about tracking, frontmatter, or the
+BCP module boundary changes — PULSE stays passive and zero-coupled to
+`bmad-module-bcp` (it still only *reads* `bcp.*`, never writes a baseline). The
+shift is entirely in how the **BCP Productivity** section is computed and
+rendered.
+
+### What changes
+
+- **Geometric mean, not arithmetic.** Per-category h/BCP baselines are now the
+  *geometric* mean of the per-story ratios (`exp(mean(ln(ratio)))`). h/BCP is a
+  multiplicative ratio, so the arithmetic mean was biased high and fragile to a
+  single outlier. **Baselines recomputed from the same data will shift** — this
+  is the intended correction, not a regression.
+- **Micro vs story-size segmentation.** Stories are split at the *observed
+  median* BCP total (`micro` below, `story` at/above) and each segment gets its
+  own baseline, so a 1-point fix no longer pollutes a 40-point story's number. A
+  pooled `all` row remains for continuity. The split is data-driven — PULSE
+  makes no assumption about your BCP point scale and there is **no new config
+  key**.
+- **Confidence band, not a point.** Each baseline now shows a *typical range*
+  `[low–high]` (geometric standard deviation, ~68%) plus the sample size `n`.
+  Ranges appear only at `n >= 3`; thinner samples show the bare point.
+- **Leverage reframed (anti-Goodhart).** A new dashboard note states that
+  leverage (`estimated_hours / actual_hours`) collapses to ~1.0x once the
+  estimate basis is calibrated — so a *high* multiplier signals an uncalibrated
+  estimate, not velocity, and the durable signal is **predictability** (h/BCP
+  drift converging on zero). The hero-metric inversion itself lands in v0.6;
+  v0.5 only locks the invariant.
+
+### What you must do
+
+**Nothing on disk** beyond a normal upgrade (`/bmad-pulse-setup`). The change is
+in the dashboard workflow; the next `/bmad-pulse-dashboard` run renders the new
+shape. There is no data migration — historical `pulse_metrics` are re-read and
+re-summarized in place.
+
+> ⚠ **Breaking only for tooling that parses the dashboard markdown.** The
+> **BCP Productivity** table gained `Segment` and `n` columns and the h/BCP cell
+> now carries a `[low–high]` range. If you scrape the dashboard, update your
+> parser. The human-readable dashboard and all non-BCP sections are unaffected.
+
+---
+
 ## Auto-tracking fix — regenerate the `bmad-dev-story` override (post-v0.4.9)
 
 If `bmad-pulse-track-start` was **not firing automatically** at the start of
