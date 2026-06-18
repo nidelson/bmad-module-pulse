@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/nidelson/bmad-module-pulse/compare/v0.6.0...v0.7.0) (2026-06-18)
+
+
+### Features
+
+* **track-start:** v0.7 a ação que importa (alerta de drift na estimativa + watch-list) ([#59](https://github.com/nidelson/bmad-module-pulse/issues/59)) ([eceb9d6](https://github.com/nidelson/bmad-module-pulse/commit/eceb9d6e99fe6fc3b181ab9ef0aeecfaca018333))
+
 ## [0.6.0](https://github.com/nidelson/bmad-module-pulse/compare/v0.5.0...v0.6.0) (2026-06-18)
 
 
