@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.8.0](https://github.com/nidelson/bmad-module-pulse/compare/v0.7.1...v0.8.0) (2026-06-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* **dashboard:** a seção do dashboard "🔮 Previsão de Capacidade" (extrapolação por leverage) foi substituída por "🔮 Previsão de Projeto" (BCP x h/BCP ± IC 90%). Quem parseava a seção antiga ou dependia da extrapolação por leverage deve migrar.
+
+### Features
+
+* **dashboard:** v0.8 previsibilidade para precificar (forecast BCP x h/BCP ± IC 90% + digest) ([#63](https://github.com/nidelson/bmad-module-pulse/issues/63)) ([0b9390f](https://github.com/nidelson/bmad-module-pulse/commit/0b9390ff708e2b4f79ea059b3c1432e2ea0da40a))
+
 ## [0.7.1](https://github.com/nidelson/bmad-module-pulse/compare/v0.7.0...v0.7.1) (2026-06-18)
 
 
