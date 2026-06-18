@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.0](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.11...v0.5.0) (2026-06-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* **dashboard:** a tabela BCP Productivity do dashboard ganhou colunas Segment e n e a célula h/BCP agora carrega faixa [low-high]. Ferramentas que parseiam o markdown do dashboard precisam atualizar. O dashboard legível e todas as seções sem BCP ficam inalterados.
+
+### Features
+
+* **dashboard:** v0.5 engine de medição honesto (média geométrica, segmentação, faixa de confiança, anti-Goodhart) ([#56](https://github.com/nidelson/bmad-module-pulse/issues/56)) ([b5ea720](https://github.com/nidelson/bmad-module-pulse/commit/b5ea720a4e116a8de516792093212cc1aa2c2e7c))
+
+
+### Documentation
+
+* **readme:** reposicionar em torno de previsibilidade + tornar PT-BR primário ([#54](https://github.com/nidelson/bmad-module-pulse/issues/54)) ([8169ca4](https://github.com/nidelson/bmad-module-pulse/commit/8169ca42516aaeb7e6461b6faa658dce9d5ed1ef))
+
 ## [0.4.11](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.10...v0.4.11) (2026-05-31)
 
 
