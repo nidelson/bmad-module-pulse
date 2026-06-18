@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.0](https://github.com/nidelson/bmad-module-pulse/compare/v0.5.0...v0.6.0) (2026-06-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* **dashboard:** o General Statistics do dashboard foi reordenado (Predictability lidera, leverage vira contexto), colunas de leverage ganharam "(vs PLAN)" e a celebração do track-done passou a disparar por acurácia, não por magnitude de leverage. Parsers do dashboard e automações sobre "🔥 Exceptional" precisam atualizar.
+
+### Features
+
+* **dashboard:** v0.6 inverter o velocímetro (previsibilidade como métrica-herói, regime, celebração por acurácia) ([#57](https://github.com/nidelson/bmad-module-pulse/issues/57)) ([2d70eed](https://github.com/nidelson/bmad-module-pulse/commit/2d70eed0c20bc47c3cad52ee63b13db6120736e4))
+
 ## [0.5.0](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.11...v0.5.0) (2026-06-18)
 
 
