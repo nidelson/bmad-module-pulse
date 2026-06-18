@@ -142,7 +142,31 @@ Load the `pulse` section from `{main_config}` and resolve module variables:
    configured method, `bcp_at_start` is added alongside). When no valid `bcp:` block is
    present, omit both fields entirely — behave exactly as today.
 
-### Step 4: Confirm
+### Step 4: Estimation drift check (advisory — non-blocking)
+
+This is the v0.7 "action that matters": surface drift at the commitment gate so a
+bad estimate can be caught *before* it becomes a promise. Compute
+`cohort_drift(category, segment)` from the existing `pulse_metrics:` history (see
+the `bmad-pulse-dashboard` aggregation for the canonical definition):
+
+- **Segment** (only when a `bcp.total` was captured this run): `micro` if
+  `bcp.total < median(bcp.total over recorded stories)`, else `story`. Without
+  BCP, the cohort is `category` alone (documented fallback).
+- **Cohort drift**: the **median `|estimate error|%`** over the **last `K = 5`**
+  completed stories in the cohort (a completed story has both `estimated_hours`
+  and a recorded `actual_hours`/drift). For BCP stories this equals
+  `|bcp_recorded.drift_pct|`.
+- **Emit the advisory only when `n >= 3` and the median exceeds `T = 25%`.**
+  Otherwise stay **silent** — no false alarm on a healthy or thin cohort.
+
+The advisory is **non-blocking**: a one-line heads-up in the Confirm card. The
+start is recorded regardless and PULSE **never changes `estimated_hours`** — the
+re-estimate decision is the human's/agent's. Defaults `K=5` / `T=25%` are inline
+(may become config later).
+
+> **Advisory invariant (do not regress).** Estimation is owned **upstream** (BMAD/Amelia, or BCP/Bruno) — PULSE stays passive. This alert **informs, it never drives**: it reads `pulse_metrics` history, it never writes the story frontmatter, never writes or adjusts `estimated_hours`, never halts the start, and never re-scores anything. If a future edit makes it mutate an estimate or block the flow, that breaks the contract (locked by `tests/test_action_alert.py`).
+
+### Step 5: Confirm
 
 Display:
 
@@ -154,6 +178,7 @@ Display:
    {if bcp_at_start}BCP: {bcp_at_start.total} pts (rule {bcp_at_start.rule_version}, scored by {bcp_at_start.scored_by}){end}
    Tasks: {task_count}
    Category: {category}
+   {if cohort_drift alert (n >= 3 and median > 25%)}⚠ Heads up: stories like {category}{if segment}/{segment}{end} were off +{median_abs_drift}% (median) over the last {K} — re-estimate before committing? (advisory; PULSE will not change your estimate){end}
    ⏱️ The clock is running...
 ```
 
@@ -163,6 +188,7 @@ Display:
 
 - DO NOT modify anything outside the `pulse_metrics:` section of the sprint-status file
 - DO NOT write to the story file frontmatter or to any BCP baseline file — `bcp.*` is read-only input owned by `bmad-module-bcp`
+- The v0.7 drift advisory (Step 4) is **advisory-only and non-blocking**: it NEVER writes or changes `estimated_hours`, never auto-adjusts the estimate, and never halts the start. It only surfaces a heads-up; the re-estimate decision belongs to the human/agent.
 - If an entry already exists for this story ID in `pulse_metrics:`, ask whether to overwrite
 - Create the `pulse_metrics:` section if it does not exist
 - Communicate in the language configured in `communication_language`
