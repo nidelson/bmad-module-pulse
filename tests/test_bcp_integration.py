@@ -88,7 +88,7 @@ def test_dashboard_bcp_section_is_conditional():
     """The BCP Productivity section must be gated on bcp_recorded existing —
     stories without BCP must not trigger it."""
     text = DASHBOARD.read_text()
-    assert "📊 BCP Productivity" in text
+    assert "📊 Produtividade BCP" in text
     assert "CONDITIONAL" in text and "bcp_recorded" in text
 
 

@@ -54,8 +54,8 @@ def test_predictability_leads_table_before_leverage():
     """Ordering invariant: in General Statistics the Predictability row must
     appear BEFORE the leverage row — leverage is no longer the headline."""
     text = DASHBOARD.read_text()
-    pred_idx = text.find("| **Predictability**")
-    lev_idx = text.find("| AI Leverage (vs PLAN")
+    pred_idx = text.find("| **Previsibilidade**")
+    lev_idx = text.find("| AI Leverage (vs PLANO")
     assert pred_idx != -1 and lev_idx != -1, "both rows must be present"
     assert pred_idx < lev_idx, "Predictability must lead; leverage comes after"
 
@@ -64,8 +64,8 @@ def test_leverage_demoted_to_context():
     """Leverage must be labelled vs PLAN and explicitly marked as context, not
     a target — and the old 'Avg AI Leverage' headline row must be gone."""
     text = DASHBOARD.read_text()
-    assert "AI Leverage (vs PLAN" in text
-    assert "context, not a target" in text
+    assert "AI Leverage (vs PLANO" in text
+    assert "contexto, não meta" in text
     assert "| Avg AI Leverage         | {avg}x             |" not in text, (
         "the pre-v0.6 leverage headline row must be replaced"
     )
@@ -129,7 +129,7 @@ def test_regime_falls_back_to_global_method():
 def test_regime_labels_leverage_vs_plan_regime():
     """The leverage context line must carry the regime: 'vs PLAN ({regime})'."""
     text = DASHBOARD.read_text()
-    assert "vs PLAN, {dominant_regime}" in text or "vs PLAN ({dominant_regime})" in text
+    assert "vs PLANO, {dominant_regime}" in text or "vs PLANO ({dominant_regime})" in text
 
 
 def test_regime_read_is_zero_write_coupled():
@@ -198,7 +198,7 @@ def test_leverage_thresholds_marked_legacy():
 def test_leverage_labeled_vs_plan_in_cards_and_tables():
     """Every leverage display reads 'vs PLAN', never 'vs human' as a target."""
     done = TRACK_DONE.read_text()
-    assert "AI Leverage: {leverage_ratio}x (vs PLAN" in done
+    assert "AI Leverage: {leverage_ratio}x (vs PLAN" in done  # track-done card stays EN
     dash = DASHBOARD.read_text()
-    assert "Avg Leverage (vs PLAN)" in dash
-    assert "Leverage (vs PLAN) | Quality" in dash
+    assert "Leverage médio (vs PLANO)" in dash
+    assert "Leverage (vs PLANO) | Qualidade" in dash

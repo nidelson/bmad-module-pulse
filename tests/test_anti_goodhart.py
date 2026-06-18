@@ -54,17 +54,17 @@ def test_leverage_formula_is_estimated_over_actual():
 def test_dashboard_carries_anti_goodhart_note():
     """The 'why' must live next to the leverage number on the dashboard."""
     text = DASHBOARD.read_text()
-    assert "Anti-Goodhart invariant" in text
-    assert "leverage is not a target" in text.lower()
-    assert "~1.0x by construction" in text
-    assert "vs PLAN" in text and "never" in text and "vs human" in text
+    assert "Invariante anti-Goodhart" in text
+    assert "leverage não é meta" in text.lower()
+    assert "~1.0x por construção" in text
+    assert "vs PLANO" in text and "nunca" in text and "vs humano" in text
 
 
 def test_predictability_is_named_the_durable_signal():
     """The note must point to predictability (drift→0), not the multiplier, as
-    the signal that matters."""
+    the signal that matters (PT-BR rendered output: previsibilidade)."""
     text = DASHBOARD.read_text().lower()
-    assert "predictability" in text
+    assert "previsibilidade" in text
     assert "drift" in text and "converg" in text
 
 

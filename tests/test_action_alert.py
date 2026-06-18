@@ -119,18 +119,19 @@ def test_watchlist_aggregation_defined():
 
 
 def test_watchlist_section_rendered():
-    """The dashboard must render an 'Estimation drift watch' section."""
+    """The dashboard must render the 'Monitor de drift de estimativa' section
+    (PT-BR rendered output)."""
     text = DASHBOARD.read_text()
-    assert "Estimation drift watch" in text
-    assert "| Cohort |" in text and "Trend" in text
+    assert "Monitor de drift de estimativa" in text
+    assert "| Coorte |" in text and "Tendência" in text
 
 
 def test_watchlist_omits_healthy_and_has_empty_default():
     """Healthy cohorts are omitted; an empty watch-list shows the healthy
-    default message, not a blank/alarming table."""
+    default message, not a blank/alarming table (PT-BR rendered output)."""
     text = DASHBOARD.read_text()
-    assert "Healthy cohorts are omitted" in text
-    assert "No cohorts drifting — estimates are tracking" in text
+    assert "Coortes saudáveis são omitidas" in text
+    assert "Nenhuma coorte derivando — estimativas no rumo" in text
 
 
 def test_watchlist_is_additive_outside_bcp_gate():
@@ -138,7 +139,7 @@ def test_watchlist_is_additive_outside_bcp_gate():
     BCP conditional block (after END CONDITIONAL bcp)."""
     text = DASHBOARD.read_text()
     end_bcp = text.find("<!-- END CONDITIONAL bcp -->")
-    watch = text.find("## 🚦 Estimation drift watch")
+    watch = text.find("## 🚦 Monitor de drift de estimativa")
     assert end_bcp != -1 and watch != -1
     assert watch > end_bcp, "watch-list must be outside the BCP-gated section"
 
