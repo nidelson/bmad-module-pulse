@@ -61,6 +61,27 @@ python3 .claude/skills/bmad-pulse-setup/scripts/reconcile-skills.py \
 
 ---
 
+## v0.5.0 → v0.6.0 — Inverter o velocímetro (previsibilidade como herói)
+
+**Quem isto afeta:** todos os usuários do dashboard e do track-done; mais profundamente quem usa `pulse_estimation_method=bcp`. Nada na coleta de dados muda — a virada é em como os números são **enquadrados**.
+
+A v0.6 age sobre a engine honesta da v0.5: troca a métrica-herói de **alavancagem** → **previsibilidade/acurácia**. Um `~1.0x` estável é saudável; um multiplicador alto sinaliza estimativa inflada, não velocidade. PULSE segue passivo e zero-**write**-coupled ao `bmad-module-bcp`.
+
+### O que muda
+
+- **Métrica-herói invertida.** O `General Statistics` do dashboard agora **lidera** com `Predictability` (mediana do erro de estimativa por story `|actual−estimated|/estimated`, menor = melhor, com seta de tendência) e demove `Avg AI Leverage` pra uma linha de contexto `AI Leverage (vs PLAN) — context, not a target`.
+- **Sinal de convergência.** Nova seção "Baseline convergence" mostra se o `h/BCP` está estabilizando (mediana de `|drift|` da 1ª vs 2ª metade + banda estreitando). Precisa de ≥4 stories BCP.
+- **Detecção de regime.** PULSE passa a **ler** `estimated_hours_basis` (read-only) pra rotular cada multiplicador pela base (`vs PLAN (bcp)`, `vs PLAN (hours)`, …), com fallback pro `pulse_estimation_method`. Nunca escreve o campo, nunca deriva horas dele.
+- **Celebração invertida.** O `track-done` (e `track-backfill`) param de premiar leverage alto (`🔥 Exceptional!` aposentado). O gatilho agora é **acurácia**: `🎯 On-plan` quando a estimativa erra ≤15%; `⚠ Off-plan — review the estimate basis` quando erra ≥50%. Os `pulse_leverage_threshold_*` ficam no `module.yaml` por back-compat, mas não disparam mais celebração.
+
+### O que você precisa fazer
+
+**Nada no disco** além do upgrade normal (`/bmad-pulse-setup`). A mudança é nos workflows; o próximo `/bmad-pulse-dashboard` e `/bmad-pulse-track-done` já renderizam o novo enquadramento. Sem migração de dados.
+
+> ⚠ **Breaking para parsers e para quem dependia do troféu de leverage.** O `General Statistics` foi reordenado, colunas de leverage ganharam "(vs PLAN)" e a celebração do track-done mudou de gatilho. Se você scrapeia o dashboard ou automatiza em cima do "🔥 Exceptional", atualize. O número de leverage continua visível, só sem troféu.
+
+---
+
 ## v0.4.x → v0.5.0 — Honest measurement engine (BCP dashboard)
 
 **Who this affects:** only projects using `pulse_estimation_method=bcp`. If you
