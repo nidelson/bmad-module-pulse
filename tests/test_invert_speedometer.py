@@ -28,12 +28,30 @@ def test_predictability_score_is_defined_as_hero():
 
 
 def test_predictability_is_median_estimate_error():
-    """Hero = median of per-story |actual - estimated| / estimated; median (not
-    mean) to resist outliers, consistent with the v0.5 geometric choice."""
+    """Hero is computed from the median per-story |actual - estimated| / estimated
+    error; median (not mean) to resist outliers, consistent with the v0.5
+    geometric choice. It is RENDERED as accuracy (100 - error), not raw error."""
     text = DASHBOARD.read_text()
     assert "|actual_hours - estimated_hours| / estimated_hours" in text
     assert "median" in text.lower()
-    assert "lower is better" in text.lower()
+
+
+def test_predictability_rendered_as_accuracy_not_raw_error():
+    """The reframe: the hero reads as **accuracy** (higher is better, target
+    100%) = max(0, 100 - error), NOT as a raw error % (which mis-signalled — an
+    8.5% error reads as 91.5% predictable). The raw margin of error stays
+    surfaced for transparency; the persisted data field is still estimate_error_pct."""
+    text = DASHBOARD.read_text()
+    assert "100 - E" in text or "100 − E" in text, "must define the accuracy transform"
+    assert "higher is better" in text.lower()
+    assert "target 100%" in text.lower()
+    assert "max(0, 100 - estimate_error_pct)" in text, (
+        "the per-story detail column must render accuracy, not raw error"
+    )
+    # the raw error name is preserved as the persisted data field
+    assert "estimate_error_pct" in text
+    # the headline row must NOT read "% de erro" any more (that was the bug)
+    assert "{predictability_score}% de erro" not in text
 
 
 def test_predictability_is_method_agnostic():

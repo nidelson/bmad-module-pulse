@@ -10,7 +10,7 @@
 | Métrica                                   | Valor                                |
 | ----------------------------------------- | ------------------------------------ |
 | Stories medidas                           | 12                                   |
-| **Previsibilidade**                       | **12% de erro (mediana) ↓ convergindo** |
+| **Previsibilidade**                       | **88% (mediana) ↑ convergindo** — margem de erro 12% |
 | Horas reais (IA)                          | 24h                                  |
 | Taxa de first-pass                        | 83%                                  |
 | AI Leverage (vs PLANO, bcp)               | 1.1x — contexto, não meta            |
@@ -82,7 +82,7 @@ Epic 15: ████████████████████  8.4x (1 s
 
 ## 💡 Insights de Processo
 
-⚡ **Levi:** A manchete é **previsibilidade**: 12% de erro mediano, convergindo (`↓`). As estimativas deste time casam com a realidade — é o sinal que sobrevive a uma reunião de board. Três leituras:
+⚡ **Levi:** A manchete é **previsibilidade**: 88% (mediana), convergindo (`↑`) — só 12% de margem de erro. As estimativas deste time casam com a realidade — é o sinal que sobrevive a uma reunião de board. Três leituras:
 
 1. **Alavancagem vs PLANO já colapsou para ~1.1x.** Isso é o produto funcionando: base calibrada ⇒ multiplicador vs-plano → 1.0x por construção. Não persiga esse número.
 2. **O ROI durável é a alavancagem vs REFERÊNCIA frozen (6.9x)** — vs um benchmark de 4.0h/BCP que não recalibra. É o que você leva pro board, honesto e estável.

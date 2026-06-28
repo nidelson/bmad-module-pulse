@@ -20,7 +20,7 @@
 | Métrica                                | Valor     |
 | -------------------------------------- | --------- |
 | Stories medidas                        | 12        |
-| **Previsibilidade**                    | **12% de erro (mediana) ↓** |
+| **Previsibilidade**                    | **88% (mediana) ↑** — margem de erro 12% |
 | Horas reais AI                         | 24h       |
 | Taxa de first-pass                     | 83%       |
 | Alavancagem AI (vs PLANO)              | 1.1x — contexto, não meta |
