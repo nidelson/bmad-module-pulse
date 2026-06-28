@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.0...v0.8.1) (2026-06-28)
+
+
+### Features
+
+* **metrics:** alavancagem estável vs referência frozen + previsibilidade por story ([#67](https://github.com/nidelson/bmad-module-pulse/issues/67)) ([eb6c4d5](https://github.com/nidelson/bmad-module-pulse/commit/eb6c4d5fcb544acf745aad4f2c789628f47527b5)), closes [#65](https://github.com/nidelson/bmad-module-pulse/issues/65)
+
 ## [0.8.0](https://github.com/nidelson/bmad-module-pulse/compare/v0.7.1...v0.8.0) (2026-06-18)
 
 
