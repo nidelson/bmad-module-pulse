@@ -183,6 +183,30 @@ first_pass = review_cycles == 1
 2. Add the `actual_hours` field with the calculated value (with traceability comment when halts were subtracted)
 3. Add the `leverage_ratio` field with the calculated value (1 decimal)
 4. Add the `first_pass` field as a boolean
+5. Add the `estimate_error_pct` field with the calculated value — the per-story **predictability** signal (accuracy of plan vs reality, **lower is better**; `0%` = perfectly on-plan). Persist it next to `leverage_ratio`: the leverage ratio is a 1.0-centered multiplier that *mis-signals* predictability (a calibrated `0.9` reads like "weak leverage" when it is in fact good predictability), so the explicit accuracy field is the one that reads as previsibilidade per-story. The dashboard's `predictability_score` is the median of this across stories.
+
+**Stable leverage vs frozen reference (issue #65 — only when available):**
+
+Resolve `estimated_hours_reference` as `pulse_metrics[story].estimated_hours_reference`
+(snapshotted by track-start). If that snapshot is absent, re-read the story frontmatter
+`estimated_hours_reference` (read-only) as a fallback. If neither yields a positive
+number, **omit** this block entirely — behave exactly as today (vs-PLAN leverage only).
+
+When a positive `estimated_hours_reference` is available, add a `leverage_vs_reference`
+field to the story entry in `pulse_metrics`:
+
+```text
+leverage_vs_reference = round(estimated_hours_reference / actual_hours, 1)
+```
+
+This is the **stable ROI** number: its denominator is **frozen** (the reference rate is
+governed upstream by `bmad-module-bcp`, never recalibrated), so unlike `leverage_ratio`
+(vs PLAN, which collapses to ~1.0x by construction as the estimate basis calibrates) it
+**does not collapse**. It is an honest multiplier **vs a fixed external benchmark**, not
+"vs human" and not a target — predictability stays the hero metric. PULSE only **reads**
+the field (file convention) and divides; it never computes the reference, never reads the
+BCP baseline, and never writes the story frontmatter (read-only input owned by
+`bmad-module-bcp`).
 
 **BCP productivity (only when a BCP total is available for this story):**
 
@@ -227,6 +251,7 @@ Display in the terminal:
    Human estimate: {estimated_hours}h ({dev_count} devs)
    Actual AI time: {actual_hours}h ({elapsed_minutes}min wall-clock)
    AI Leverage: {leverage_ratio}x (vs PLAN, not vs human)
+   {if leverage_vs_reference}AI Leverage: {leverage_vs_reference}x (vs REFERENCE, frozen — stable ROI, does not collapse){end}
    Estimate accuracy: {estimate_error_pct}% off plan
    {if bcp_recorded}BCP: {bcp_recorded.total} pts | {bcp_recorded.h_per_bcp_actual}h/BCP actual vs {bcp_recorded.h_per_bcp_estimated}h/BCP est ({bcp_recorded.drift_pct:+}% drift){end}
    Quality: {first_pass ? "✅ first-pass" : "🔄 " + review_cycles + " cycles"}

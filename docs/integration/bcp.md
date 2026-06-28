@@ -21,6 +21,7 @@ BCP → PULSE coupling: **zero**. BCP optionally reads `pulse_metrics` in its ow
 | `estimated_hours` (story)   | BMAD/Amelia originally; BCP overwrites if installed (install = consent) |
 | `estimated_hours_pre_bcp`   | BCP (audit — PULSE ignores)                                   |
 | `estimated_hours_basis`     | BCP writes it (audit); since v0.6 PULSE **reads it read-only** to label the dashboard regime — never writes it, never derives hours from it |
+| `estimated_hours_reference` | BCP writes it (frozen leverage anchor); since #65 PULSE **reads it read-only** to compute stable `leverage_vs_reference` — never writes it, never computes it |
 | `bcp.*` (story frontmatter) | BCP exclusively — PULSE reads, never writes                   |
 | `bcp-baseline.yaml`         | BCP exclusively — PULSE never reads or writes                 |
 | `pulse_metrics.*`           | PULSE exclusively                                             |
@@ -38,6 +39,7 @@ story_id: "5.7"
 estimated_hours: 86.7              # PULSE reads this — writer-agnostic
 estimated_hours_pre_bcp: 80        # BCP audit — PULSE ignores
 estimated_hours_basis: bcp         # BCP audit; PULSE reads read-only for the regime label (never writes/derives)
+estimated_hours_reference: 105.0   # frozen leverage anchor (#65); PULSE reads read-only for stable leverage_vs_reference
 category: backend
 
 bcp:                               # written by BCP — PULSE surfaces it
@@ -80,6 +82,7 @@ pulse_metrics:
     start_ts: "..."
     estimated_hours: 86.7
     estimation_basis: bcp
+    estimated_hours_reference: 105.0   # frozen leverage anchor (#65) — only when present
     bcp_at_start:
       total: 21
       rule_version: "1.0"
@@ -95,6 +98,7 @@ fallback), `bmad-pulse-track-done` records:
 pulse_metrics:
   "5.7":
     # ... existing fields ...
+    leverage_vs_reference: 6.9      # estimated_hours_reference / actual_hours (#65) — only when reference present
     bcp_recorded:
       total: 21
       h_per_bcp_actual: 4.13        # actual_hours / bcp.total
@@ -104,6 +108,34 @@ pulse_metrics:
 
 PULSE does **not** update any baseline. Baseline maturation is the BCP module's
 responsibility (via `/bmad-bcp-recalibrate`).
+
+## Stable leverage vs frozen reference (issue #65)
+
+BCP can write a second hours figure, `estimated_hours_reference = bcp.total ×
+reference_h_per_bcp`, where the **reference rate** is a frozen, governed
+benchmark (it never recalibrates). PULSE reads it **read-only** and divides:
+
+```text
+leverage_vs_reference = estimated_hours_reference / actual_hours
+```
+
+Two distinct, complementary numbers — one collapses (and that is the point),
+one does not:
+
+| Metric                  | Denominator            | Behavior as the team calibrates | Audience / cadence  |
+| ----------------------- | ---------------------- | ------------------------------- | ------------------- |
+| Predictability (hero)   | plan (recalibrated)    | converges → vs-PLAN leverage collapses to ~1.0x | planning / per-story |
+| `leverage_vs_reference` | reference (**frozen**) | **stable — does not collapse**  | board / C-Level, ROI |
+
+The frozen denominator is what makes the ROI multiplier honest and durable: it
+is "vs a fixed external benchmark", **not** "vs human" and **not** a target —
+predictability stays the hero (see the dashboard anti-Goodhart note). PULSE
+stays zero-coupled: it never computes the reference, never reads the BCP
+baseline, never converts BCP→hours, and never writes the story frontmatter.
+**Graceful degradation:** no `estimated_hours_reference` (BCP absent or older) →
+PULSE reports only the vs-PLAN leverage, exactly as before. A governed change of
+the reference rate (e.g. 5h→4h, forward-only) is surfaced on the dashboard as a
+**labelled regime break** so pre/post stories are never compared naively.
 
 ## Dashboard Extension
 

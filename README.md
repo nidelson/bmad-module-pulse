@@ -17,18 +17,24 @@
 
 ### 🏆 Estatísticas Gerais
 
-| Métrica                | Valor     |
-| ---------------------- | --------- |
-| Stories medidas        | 12        |
-| Alavancagem AI média   | **6.9x**  |
-| Horas estimadas humano | 152h      |
-| Horas reais AI         | 22h       |
-| Horas economizadas     | **130h**  |
-| Taxa de first-pass     | 83%       |
+| Métrica                                | Valor     |
+| -------------------------------------- | --------- |
+| Stories medidas                        | 12        |
+| **Previsibilidade**                    | **12% de erro (mediana) ↓** |
+| Horas reais AI                         | 24h       |
+| Taxa de first-pass                     | 83%       |
+| Alavancagem AI (vs PLANO)              | 1.1x — contexto, não meta |
+| Alavancagem AI (vs REFERÊNCIA frozen)  | **6.9x — ROI estável (não colapsa)** |
+| Economia vs benchmark de referência (152h) | **128h** |
 
-> **Leia com honestidade:** o **6.9x** é o número *andaime* — ele só é grande enquanto suas estimativas ainda usam um baseline não calibrado. Calibre, e a alavancagem colapsa para **1.0x por construção**. Esse colapso é o produto funcionando, não falhando. O sinal durável embaixo é **previsibilidade** — suas estimativas estão convergindo para a realidade? O dashboard está sendo invertido para liderar com isso (veja o [Roadmap](#roadmap)).
+> **Leia com honestidade — três enquadramentos, papéis distintos:**
+> - **Previsibilidade (herói):** suas estimativas estão convergindo para a realidade? Menor = melhor; `↓` = convergindo. É o sinal durável.
+> - **Alavancagem vs PLANO:** o número *andaime* — só é grande enquanto a base de estimativa não está calibrada. Este time já calibrou: ela **colapsou para ~1.1x** (e esse colapso é o produto funcionando — virou a previsibilidade). Contexto, nunca meta.
+> - **Alavancagem vs REFERÊNCIA frozen** (quando o `bmad-module-bcp` grava `estimated_hours_reference`): denominador **congelado** e governado, então **não colapsa** — o multiplicador de ROI honesto vs um benchmark fixo (4.0h/BCP), para a cadência de board. Continua não sendo meta nem "vs humano".
 
-### 📈 Tendência de Alavancagem por Epic
+Sem `estimated_hours_reference`, só aparecem previsibilidade + alavancagem-vs-plano. (Veja o [Roadmap](#roadmap).)
+
+### 📈 Tendência de Alavancagem (vs REFERÊNCIA frozen) por Epic
 
 ```text
 Epic  1: ████████░░░░░░░░░░░░  4.2x (3 stories)
@@ -258,13 +264,15 @@ Para manter `pulse_auto_dashboard: yes` mas substituir o regen do dashboard por 
 
 ---
 
-## Alavancagem comprovada
+## Alavancagem comprovada — vs referência frozen (estável)
 
-Alavancagem sustentada de **6.9x** medida em um projeto BMAD em produção (SIP — plataforma de pesquisa local-first, monorepo com apps mobile, web, backend e worker). O número reflete stories entregues com horas estimadas e reais capturadas pelo próprio PULSE ao longo de múltiplas sprints.
+Alavancagem sustentada de **6.9x** medida em um projeto BMAD em produção (SIP — plataforma de pesquisa local-first, monorepo com apps mobile, web, backend e worker), capturada pelo próprio PULSE ao longo de múltiplas sprints.
+
+Esse **6.9x** é honesto porque é lido **vs uma referência frozen** (`estimated_hours_reference`, denominador congelado e governado pelo `bmad-module-bcp`) — um benchmark fixo que **não colapsa** conforme o time calibra. É diferente da alavancagem-vs-plano, que colapsa para ~1.0x por construção (e vira a previsibilidade). Veja a [integração com BCP](docs/integration/bcp.md).
 
 PULSE usa o próprio remédio.
 
-Esse número não é o teto. É um ponto de dado. PULSE existe para que seu time encontre o dele.
+Esse número não é o teto, nem uma meta. É um ponto de dado vs um benchmark fixo. PULSE existe para que seu time encontre o dele — e a métrica-herói continua sendo **previsibilidade**, não o multiplicador.
 
 ---
 
@@ -273,7 +281,7 @@ Esse número não é o teto. É um ponto de dado. PULSE existe para que seu time
 > O PULSE está mudando sua métrica-norte de um multiplicador de alavancagem para **previsibilidade**. Cada marco abaixo operacionaliza essa mudança.
 
 - **v0.5 — Engine de medição honesto.** Estimador de `h/BCP` por média geométrica (não aritmética), segmentação micro vs story-size, faixa de confiança em vez de ponto, e contract test anti-Goodhart.
-- **v0.6 — Inverter o velocímetro.** A métrica-herói passa a ser convergência/acurácia (um ~1.0x estável é saudável; um multiplicador alto sinaliza estimativa inflada, não velocidade) mais o drift auto-referente de `h/BCP`. Detecção de regime via `estimated_hours_basis`. Multiplicadores sempre lidos como "vs PLANO", nunca "vs humano".
+- **v0.6 — Inverter o velocímetro.** A métrica-herói passa a ser convergência/acurácia (um ~1.0x estável é saudável; um multiplicador alto sinaliza estimativa inflada, não velocidade) mais o drift auto-referente de `h/BCP`. Detecção de regime via `estimated_hours_basis`. **Três enquadramentos de multiplicador:** "vs PLANO" (colapsa → previsibilidade) e "vs REFERÊNCIA frozen" (denominador congelado, ROI estável que não colapsa, lendo `estimated_hours_reference` do `bmad-module-bcp`) — nunca "vs humano".
 - **v0.7 — A ação que importa.** Um alerta de drift no momento da estimativa — _"stories como X erraram +N% nas últimas K — reestimar?"_ — interrompendo a estimativa ruim antes de virar compromisso.
 - **v0.8 — Previsibilidade para precificar.** Forecast de projeto `BCP × h/BCP ± IC(90%)` para times que faturam por hora; quebras por desenvolvedor/agente e digests Slack/Linear entram aqui.
 - **v1.0 — Proposta à equipe principal do BMAD** para adoção nativa.

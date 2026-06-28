@@ -169,6 +169,22 @@ def test_estimate_error_pct_computed_in_both_recorders():
         assert "estimate_error_pct = round(abs(actual_hours - estimated_hours)" in text
 
 
+def test_estimate_error_pct_persisted_in_both_recorders():
+    """The per-story predictability signal must be PERSISTED to pulse_metrics,
+    not only shown in the card — so previsibilidade is visible per-story (next
+    to leverage_ratio, which mis-signals it), not only as the dashboard median.
+    leverage_ratio (vs PLAN) is a 1.0-centered ratio; estimate_error_pct is the
+    0-centered accuracy (lower is better) that actually reads as predictability."""
+    done = TRACK_DONE.read_text()
+    backfill = TRACK_BACKFILL.read_text()
+    assert "Add the `estimate_error_pct` field" in done, (
+        "track-done must persist estimate_error_pct in its pulse_metrics write list"
+    )
+    assert "estimate_error_pct:" in backfill, (
+        "track-backfill's written entry must include estimate_error_pct"
+    )
+
+
 def test_celebration_triggers_on_accuracy_not_leverage():
     """The track-done celebration must trigger on estimate accuracy (on-plan),
     and the old leverage-magnitude trophy must be gone."""
