@@ -165,6 +165,17 @@ drift_pct           = round((h_per_bcp_actual - h_per_bcp_estimated)
 PULSE does **not** update any BCP baseline — baseline maturation is the
 `bmad-module-bcp` module's responsibility (via `/bmad-bcp-recalibrate`).
 
+**Stable leverage vs frozen reference (issue #65 — only when available):**
+read `estimated_hours_reference` from the story frontmatter (read-only — the
+frozen leverage anchor written by `bmad-module-bcp`). When it is a positive
+number, record `leverage_vs_reference = round(estimated_hours_reference /
+actual_hours, 1)`. This denominator is **frozen** (governed upstream, never
+recalibrated), so unlike `leverage_ratio` (vs PLAN, which collapses to ~1.0x as
+the basis calibrates) it **does not collapse** — an honest ROI multiplier vs a
+fixed external benchmark, not vs human and not a target. Absent → omit the
+field, behave exactly as today. PULSE only reads and divides; it never computes
+the reference, reads the baseline, or writes the story frontmatter.
+
 ### Step 5: Write the Retroactive Entry
 
 In the `pulse_metrics:` section of `{sprint_status_file}`, create or overwrite
@@ -185,6 +196,7 @@ pulse_metrics:
     actual_hours: 1.0          # retroactive backfill: HF 15:00 - HI 14:00
     review_cycles: 1
     leverage_ratio: 103.0
+    estimate_error_pct: 99.0   # predictability: |actual - estimated| / estimated (lower is better)
     first_pass: true
     retroactive: true
     retroactive_note: "Data inserted manually via track-backfill — TS/TD not invoked in the original cycle"
@@ -201,12 +213,19 @@ Rules:
 3. Annotate `actual_hours` with a YAML comment showing the HI/HF derivation
    (or `effective_hours override` when `--effective-hours` was supplied) so the
    math stays traceable.
-4. **BCP snapshot (only when a valid `bcp:` block was captured):** add
+4. Always write `estimate_error_pct` (the per-story **predictability** signal —
+   accuracy of plan vs reality, **lower is better**). It is the field that reads
+   as previsibilidade per-story; `leverage_ratio` is a 1.0-centered ratio that
+   mis-signals it. The dashboard medians this across stories.
+5. **BCP snapshot (only when a valid `bcp:` block was captured):** add
    `estimation_basis: <method>`, `bcp_at_start:` (`total`, `rule_version`,
    `scored_by`), and `bcp_recorded:` (`total`, `h_per_bcp_actual`,
    `h_per_bcp_estimated`, `drift_pct`). When no valid `bcp:` block is present,
    omit all BCP fields entirely.
-5. Do not write `process_health` — flow/halt/skill checks require real-time
+6. **Frozen-reference leverage (only when `estimated_hours_reference` is present
+   in the story frontmatter):** add `leverage_vs_reference` (issue #65). Omit it
+   entirely when the field is absent — never fabricate it.
+7. Do not write `process_health` — flow/halt/skill checks require real-time
    observation `track-done` performs live. Backfill deliberately leaves
    `process_health` absent; readers already treat it as optional.
 
@@ -222,6 +241,7 @@ Display (respect `pulse_levi_verbosity`):
    Human estimate: {estimated_hours}h ({dev_count} devs)
    Actual AI time: {actual_hours}h ({elapsed_minutes}min wall-clock)
    AI Leverage: {leverage_ratio}x (vs PLAN, not vs human)
+   {if leverage_vs_reference}AI Leverage: {leverage_vs_reference}x (vs REFERENCE, frozen — stable ROI, does not collapse){end}
    Estimate accuracy: {estimate_error_pct}% off plan
    {if bcp_recorded}BCP: {bcp_recorded.total} pts | {bcp_recorded.h_per_bcp_actual}h/BCP actual vs {bcp_recorded.h_per_bcp_estimated}h/BCP est ({bcp_recorded.drift_pct:+}% drift){end}
    Quality: {first_pass ? "✅ first-pass" : "🔄 " + review_cycles + " cycles"}

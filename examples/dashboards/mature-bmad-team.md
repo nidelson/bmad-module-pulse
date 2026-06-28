@@ -1,24 +1,29 @@
 # ⚡ PULSE — Dashboard de Eficiência
 
 > Process Utilization & Leverage Statistics Engine
-> Gerado em: 2026-04-28 22:46 | Projeto: SIP
+> Gerado em: 2026-06-27 22:46 | Projeto: SIP
 
 ---
 
 ## 🏆 Estatísticas Gerais
 
-| Métrica                 | Valor     |
-| ----------------------- | --------- |
-| Stories medidas         | 12        |
-| AI Leverage médio       | **6.9x**  |
-| Horas estimadas (humano)| 152h      |
-| Horas reais (IA)        | 22h       |
-| Horas economizadas      | **130h**  |
-| Taxa de first-pass      | 83%       |
+| Métrica                                   | Valor                                |
+| ----------------------------------------- | ------------------------------------ |
+| Stories medidas                           | 12                                   |
+| **Previsibilidade**                       | **12% de erro (mediana) ↓ convergindo** |
+| Horas reais (IA)                          | 24h                                  |
+| Taxa de first-pass                        | 83%                                  |
+| AI Leverage (vs PLANO, bcp)               | 1.1x — contexto, não meta            |
+| AI Leverage (vs REFERÊNCIA frozen)        | **6.9x — ROI estável (não colapsa)** |
+| Horas vs benchmark de referência (152h)   | **128h economizadas**                |
 
-## 📈 Tendência de Leverage por Epic
+> **Previsibilidade é o número-herói** (menor = estimativas mais perto da realidade; `↓` = convergindo). Este time já **calibrou**: a alavancagem **vs PLANO colapsou para ~1.1x** — e esse colapso é o produto funcionando (virou previsibilidade), não falhando. O multiplicador que **permanece** é a alavancagem **vs REFERÊNCIA frozen** (`estimated_hours_reference`, denominador congelado e governado pelo `bmad-module-bcp`): **não colapsa**, porque a referência é um benchmark fixo, não o plano recalibrado.
 
-Sparkline: cada █ = 0.5x de leverage, máximo 20 caracteres.
+> **Invariante anti-Goodhart — leverage não é meta.** `leverage = estimated_hours / actual_hours`. Quando a base de estimativa calibra, a razão vs-PLANO colapsa para **~1.0x por construção** — então um multiplicador vs-plano *alto* sinaliza base inflada, **não** velocidade. O sinal durável é a **previsibilidade** (drift de h/BCP convergindo a zero). A alavancagem vs REFERÊNCIA frozen é reportada como **ROI honesto vs um benchmark fixo** (cadência de board), nunca "vs humano" e nunca como meta.
+
+## 📈 Tendência de Alavancagem (vs REFERÊNCIA frozen) por Epic
+
+Sparkline: cada █ = 0.5x de alavancagem vs referência frozen, máximo 20 caracteres.
 
 ```text
 Epic  1: ████████░░░░░░░░░░░░  4.2x (3 stories)
@@ -28,49 +33,81 @@ Epic 14: ██████████████░░░░░░  6.9x (3 s
 Epic 15: ████████████████████  8.4x (1 story)
 ```
 
-## 📊 Leverage por Categoria
+> Estável por construção: o denominador (referência frozen) não muda quando o time calibra. A alavancagem vs PLANO destes mesmos epics já colapsou para ~1.0–1.2x (veja o detalhamento) — é a previsibilidade.
 
-| Categoria  | Leverage médio | Stories | Melhor |
-| ---------- | -------------- | ------- | ------ |
-| backend    | 7.2x           | 4       | 8.4x   |
-| web        | 6.5x           | 3       | 7.8x   |
-| mobile     | 5.8x           | 2       | 6.9x   |
-| fullstack  | **7.8x**       | 3       | 9.1x   |
+## 📊 Alavancagem por Categoria (vs REFERÊNCIA frozen)
 
-## 🔮 Previsão de Capacidade
+| Categoria  | Leverage médio (vs REF) | Leverage médio (vs PLANO) | Stories | Melhor (vs REF) |
+| ---------- | ----------------------- | ------------------------- | ------- | --------------- |
+| backend    | 7.2x                    | 1.1x                      | 4       | 8.4x            |
+| web        | 6.5x                    | 1.0x                      | 3       | 7.8x            |
+| mobile     | 5.8x                    | 0.9x                      | 2       | 6.9x            |
+| fullstack  | **7.8x**                | 1.2x                      | 3       | 9.1x            |
 
-Baseado no leverage médio de 6.9x:
+## 📊 Produtividade BCP
 
-- 10h estimadas → ~1.4h reais
-- 40h estimadas → ~5.8h reais
-- 80h estimadas → ~11.6h reais
+> Telemetria de Business Complexity Points. As horas foram derivadas upstream pelo
+> [`bmad-module-bcp`](https://github.com/nidelson/bmad-module-bcp); PULSE só
+> reporta produtividade observada e nunca é dono do baseline BCP.
+
+| Métrica            | Valor |
+| ------------------ | ----- |
+| Stories com BCP    | 12    |
+| Total BCP pontuado | 38    |
+
+**h/BCP real por categoria e segmento de tamanho** (mediana de BCP `segment_split` = 3):
+
+| Categoria | Segmento | n | h/BCP real (faixa típica) | h/BCP est. | Drift |
+| --------- | -------- | - | ------------------------- | ---------- | ----- |
+| backend   | all      | 4 | 0.64h [0.58–0.71]         | 0.62h      | +3%   |
+| web       | all      | 3 | 0.58h [0.52–0.65]         | 0.60h      | −3%   |
+| fullstack | all      | 3 | 0.61h [0.55–0.68]         | 0.60h      | +2%   |
+
+**Convergência do baseline (h/BCP está estabilizando?):** **converging** — a mediana de |drift| foi de 19% (1ª metade) para 4% (2ª metade); a faixa de confiança estreitou no mesmo split. Estimativas se fechando na realidade.
+
+> **Referência frozen vs plano recalibrado:** o `h/BCP` real (~0.6h) é o **fator vivo** (plano → previsibilidade). A **reference rate frozen** (`reference_h_per_bcp` = 4.0h, benchmark governado) é o que ancora a alavancagem vs REFERÊNCIA — não recalibra, então o ROI não colapsa.
+
+## 🔮 Previsão de Projeto
+
+> Horas pra concluir o backlog pontuado restante (14 BCP não-iniciado), por `BCP × h/BCP` calibrado, com IC de 90%. Pra times que faturam por hora.
+
+**Total: 8.6h** — faixa [6.9–11.2]h (IC 90%)
+
+| Categoria | BCP restante | Previsão (IC 90%)   | Confiança |
+| --------- | ------------ | ------------------- | --------- |
+| backend   | 8            | 5.1h [4.0–6.7]h     | ok        |
+| web       | 6            | 3.5h [2.9–4.5]h     | ok        |
+
+> Faixa conservadora: o IC do total soma os limites por categoria. O forecast é read-only — não muda estimativa nem baseline.
 
 ## 💡 Insights de Processo
 
-⚡ **Levi:** Operando a 6.9x de leverage médio — bem além do limiar excepcional de 3.0x. Três sinais fortes:
+⚡ **Levi:** A manchete é **previsibilidade**: 12% de erro mediano, convergindo (`↓`). As estimativas deste time casam com a realidade — é o sinal que sobrevive a uma reunião de board. Três leituras:
 
-1. **Stories fullstack são seu maior leverage** (7.8x médio). O ganho composto quando a IA cuida do scaffolding cross-layer é real. Documente o workflow.
-2. **Taxa de first-pass de 83%** significa que a qualidade se mantém alta mesmo com a velocidade subindo. A IA não troca rigor por velocidade — amplifica os dois.
-3. **Epic 15 chegou a 8.4x numa única story** — outlier que vale estudar. O que foi diferente? Replique.
+1. **Alavancagem vs PLANO já colapsou para ~1.1x.** Isso é o produto funcionando: base calibrada ⇒ multiplicador vs-plano → 1.0x por construção. Não persiga esse número.
+2. **O ROI durável é a alavancagem vs REFERÊNCIA frozen (6.9x)** — vs um benchmark de 4.0h/BCP que não recalibra. É o que você leva pro board, honesto e estável.
+3. **Convergência do baseline (19% → 4%)** confirma que a calibração está madura. A faixa de confiança do h/BCP estreitou junto.
 
 ⚠ **Atenção:** 2 stories mostram `pulse-track-start` invocado retroativamente. Conecte ao `/bmad-dev-story` pra capturar timestamps de início limpos automaticamente.
 
 ## 📋 Detalhamento por Story
 
-| Story                                      | Est.  | Real   | Leverage | Qualidade | Categoria  |
-| ------------------------------------------ | ----- | ------ | -------- | --------- | ---------- |
-| 1.1 login-supabase-auth                    | 8h    | 2.1h   | 3.8x     | ✅ passou | backend    |
-| 1.3 download-cache-usuarios                | 6h    | 1.4h   | 4.3x     | ✅ passou | backend    |
-| 4.4 coresync-pull-bidirectional            | 14h   | 2.8h   | 5.0x     | ✅ passou | backend    |
-| 4.6 coresync-ack-mobile                    | 10h   | 1.9h   | 5.3x     | 🔁 1x     | mobile     |
-| 5.3 projetos-crud-list                     | 12h   | 1.6h   | 7.5x     | ✅ passou | fullstack  |
-| 5.8-mvp publish-flag                       | 15h   | 1.92h  | **7.8x** | ✅ passou | fullstack  |
-| 5.9 importacao-questionarios               | 18h   | 2.4h   | 7.5x     | ✅ passou | fullstack  |
-| 14.1 role-impersonator-endpoint            | 16h   | 2.3h   | 7.0x     | ✅ passou | backend    |
-| 14.5 audit-log-completo-lgpd               | 12h   | 1.7h   | 7.1x     | ✅ passou | backend    |
-| 14.8 remocao-customer-select               | 10h   | 1.5h   | 6.7x     | ✅ passou | web        |
-| 15.2 migrar-crud-clientes-admin            | 14h   | 1.8h   | 7.8x     | 🔁 1x     | web        |
-| 15.4 dashboard-visao-geral-plataforma      | 17h   | 2.0h   | **8.4x** | ✅ passou | web        |
+> `Plano` = horas estimadas recalibradas (vivo); `vs PLANO` = plano/real (colapsa ao calibrar → previsibilidade); `vs REF` = referência frozen / real (ROI estável). Linhas ilustrativas.
+
+| Story                                 | Plano | Real   | vs PLANO | vs REF   | Qualidade | Categoria  |
+| ------------------------------------- | ----- | ------ | -------- | -------- | --------- | ---------- |
+| 1.1 login-supabase-auth               | 2.3h  | 2.1h   | 1.1x     | 3.8x     | ✅ passou | backend    |
+| 1.3 download-cache-usuarios           | 1.5h  | 1.4h   | 1.1x     | 4.3x     | ✅ passou | backend    |
+| 4.4 coresync-pull-bidirectional       | 3.1h  | 2.8h   | 1.1x     | 5.0x     | ✅ passou | backend    |
+| 4.6 coresync-ack-mobile               | 1.8h  | 1.9h   | 0.9x     | 5.3x     | 🔁 1x     | mobile     |
+| 5.3 projetos-crud-list                | 2.0h  | 1.6h   | 1.3x     | 7.5x     | ✅ passou | fullstack  |
+| 5.8-mvp publish-flag                  | 2.1h  | 1.92h  | 1.1x     | **7.8x** | ✅ passou | fullstack  |
+| 5.9 importacao-questionarios          | 2.5h  | 2.4h   | 1.0x     | 7.5x     | ✅ passou | fullstack  |
+| 14.1 role-impersonator-endpoint       | 2.4h  | 2.3h   | 1.0x     | 7.0x     | ✅ passou | backend    |
+| 14.5 audit-log-completo-lgpd          | 1.9h  | 1.7h   | 1.1x     | 7.1x     | ✅ passou | backend    |
+| 14.8 remocao-customer-select          | 1.4h  | 1.5h   | 0.9x     | 6.7x     | ✅ passou | web        |
+| 15.2 migrar-crud-clientes-admin       | 2.0h  | 1.8h   | 1.1x     | 7.8x     | 🔁 1x     | web        |
+| 15.4 dashboard-visao-geral-plataforma | 2.2h  | 2.0h   | 1.1x     | **8.4x** | ✅ passou | web        |
 
 ---
 

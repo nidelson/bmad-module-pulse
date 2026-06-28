@@ -111,6 +111,7 @@ Load the `pulse` section from `{main_config}` and resolve module variables:
      - Read `bcp.schema_version`. If it is a value this skill does not recognize (anything other than `"1.0"`), emit a one-line warning (`⚠ Unknown bcp.schema_version <v> — ignoring bcp.* for this story`) and treat the block as absent for the rest of the workflow.
      - Otherwise capture `bcp.total`, `bcp.rule_version`, and `bcp.scored_by` for the snapshot in Step 3. PULSE does not interpret `bcp.breakdown` or `bcp.history`.
      - This extraction is **read-only** — PULSE never writes back to the story frontmatter.
+   - The `estimated_hours_reference` field, **only if present** (frozen leverage anchor written by `bmad-module-bcp`, issue #65). It is `bcp.total × reference_h_per_bcp` — a **frozen** denominator for stable leverage that does not collapse as the team calibrates. Capture it read-only for the snapshot in Step 3. PULSE never computes it, never reads the BCP baseline, and never writes it back to the story frontmatter. When absent (BCP not installed, or older BCP), omit it — behave exactly as today.
 
 ### Step 3: Record in the file configured in `pulse_sprint_status_filename`
 
@@ -131,6 +132,7 @@ Load the `pulse` section from `{main_config}` and resolve module variables:
        start_ts: "..."
        estimated_hours: 86.7
        estimation_basis: bcp
+       estimated_hours_reference: 105.0   # frozen leverage anchor (issue #65) — only when present
        bcp_at_start:
          total: 21
          rule_version: "1.0"
@@ -141,6 +143,7 @@ Load the `pulse` section from `{main_config}` and resolve module variables:
    snapshot is still recorded as opt-in telemetry (`estimation_basis` reflects the
    configured method, `bcp_at_start` is added alongside). When no valid `bcp:` block is
    present, omit both fields entirely — behave exactly as today.
+4. **Frozen reference snapshot (only when `estimated_hours_reference` was captured in Step 2):** add `estimated_hours_reference` to the same story entry, copied verbatim from the story frontmatter. This is the frozen denominator track-done uses for the stable `leverage_vs_reference` (issue #65). Omit the field entirely when it is absent — it is opt-in telemetry, never fabricated.
 
 ### Step 4: Estimation drift check (advisory — non-blocking)
 
