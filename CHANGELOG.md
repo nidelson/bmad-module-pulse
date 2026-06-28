@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.2](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.1...v0.8.2) (2026-06-28)
+
+
+### Features
+
+* **dashboard:** Previsibilidade como acurácia (100 − erro), não margem de erro crua ([#69](https://github.com/nidelson/bmad-module-pulse/issues/69)) ([3ebf0d3](https://github.com/nidelson/bmad-module-pulse/commit/3ebf0d32b9b1c6b2b447aa3c45f987112f0d755e))
+
 ## [0.8.1](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.0...v0.8.1) (2026-06-28)
 
 
