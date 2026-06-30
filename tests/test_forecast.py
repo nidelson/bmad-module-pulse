@@ -85,11 +85,16 @@ def test_forecast_section_replaces_capacity_forecast():
     assert "Baseado no leverage médio de {avg}x" not in text
 
 
-def test_forecast_section_shows_total_and_ci90():
-    """The section must show the total hours and the 90% interval (PT-BR)."""
+def test_forecast_section_leads_with_band_not_point():
+    """The section must LEAD with the 90% band (the honest figure) and carry a
+    precision flag from coverage — never headline the bare point estimate (false
+    precision when baselines are thin). The point appears as secondary context."""
     text = DASHBOARD.read_text()
-    assert "**Total: {forecast_total}h**" in text
-    assert "[{forecast_low_90}–{forecast_high_90}]h (IC 90%)" in text
+    assert "**Faixa: [{forecast_low_90}–{forecast_high_90}]h**" in text
+    assert "(IC 90%)" in text
+    assert "**Total: {forecast_total}h**" not in text, "bare-point headline must be gone"
+    assert "ponto ~{forecast_total}h" in text, "point survives only as secondary context"
+    assert "forecast_precision" in text and "pooled_pct" in text
 
 
 def test_forecast_section_has_per_category_table():

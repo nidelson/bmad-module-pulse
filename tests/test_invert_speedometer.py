@@ -238,10 +238,18 @@ def test_leverage_thresholds_marked_legacy():
 
 def test_leverage_labeled_vs_plan_in_cards_and_tables():
     """The track-done card still reports both framings per-story (vs PLAN context +
-    vs REFERENCE ROI). On the dashboard, the board-facing tables now lead with the
-    Alavancagem (vs REFERÊNCIA) multiplier — the vs-PLANO ratio is not a column."""
+    vs REFERENCE ROI). On the dashboard, the full "(vs REFERÊNCIA)" qualifier is
+    DEFINED ONCE in General Statistics; the board-facing tables use the short
+    "Alavancagem" label (the reader already saw the definition). The vs-PLANO ratio
+    is not a column."""
     done = TRACK_DONE.read_text()
     assert "AI Leverage: {leverage_ratio}x (vs PLAN" in done  # track-done card stays EN
     dash = DASHBOARD.read_text()
-    assert "Alavancagem média (vs REFERÊNCIA)" in dash  # category table
-    assert "Alavancagem (vs REFERÊNCIA) | Qualidade" in dash  # story detail column
+    # full qualifier defined once, in General Statistics
+    assert "**Alavancagem (vs REFERÊNCIA)**" in dash
+    # tables use the short label
+    assert "| Alavancagem média | Stories |" in dash  # category table
+    assert "| Alavancagem | Qualidade |" in dash       # story detail column
+    # the long qualifier must NOT be repeated on the tables
+    assert "Alavancagem média (vs REFERÊNCIA)" not in dash
+    assert "Alavancagem (vs REFERÊNCIA) | Qualidade" not in dash
