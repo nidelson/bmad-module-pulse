@@ -1,6 +1,6 @@
-# ⚡ PULSE — Dashboard de Eficiência
+# ⚡ PULSE — O Pulso de Entrega do Time
 
-> Process Utilization & Leverage Statistics Engine
+> Sinais de previsibilidade e alavancagem de entrega para times BMAD<br>
 > Gerado em: 2026-06-27 22:46 | Projeto: SIP
 
 ---
@@ -13,11 +13,10 @@
 | **Previsibilidade**                       | **88% (mediana) ↑ convergindo** — margem de erro 12% |
 | Horas reais (IA)                          | 24h                                  |
 | Taxa de first-pass                        | 83%                                  |
-| AI Leverage (vs PLANO, bcp)               | 1.1x — contexto, não meta            |
-| AI Leverage (vs REFERÊNCIA frozen)        | **6.9x — ROI estável (não colapsa)** |
+| **Alavancagem (vs REFERÊNCIA)**           | **6.9x — o número que vende (vs cotação de mercado, não colapsa)** |
 | Horas vs benchmark de referência (152h)   | **128h economizadas**                |
 
-> **Previsibilidade é o número-herói** (menor = estimativas mais perto da realidade; `↓` = convergindo). Este time já **calibrou**: a alavancagem **vs PLANO colapsou para ~1.1x** — e esse colapso é o produto funcionando (virou previsibilidade), não falhando. O multiplicador que **permanece** é a alavancagem **vs REFERÊNCIA frozen** (`estimated_hours_reference`, denominador congelado e governado pelo `bmad-module-bcp`): **não colapsa**, porque a referência é um benchmark fixo, não o plano recalibrado.
+> **Previsibilidade é o número-herói** — acurácia, **maior = melhor, meta 100%** (`↑` = subindo). **Três conceitos fixos:** *Previsibilidade* (88%, meta 100%) e *Margem de erro* (12%, meta 0% quando calibrado) são duas faces da acurácia; *Alavancagem* (6.9x vs REFERÊNCIA) é o multiplicador ortogonal que vende. A razão `estimated_hours / actual_hours` (vs PLANO) colapsou pra ~1.0x ao calibrar — **é a previsibilidade, não é mostrada como alavancagem**. A Alavancagem usa um denominador **frozen** (cotação de mercado, governado pelo `bmad-module-bcp`), que **não colapsa**.
 
 > **Invariante anti-Goodhart — leverage não é meta.** `leverage = estimated_hours / actual_hours`. Quando a base de estimativa calibra, a razão vs-PLANO colapsa para **~1.0x por construção** — então um multiplicador vs-plano *alto* sinaliza base inflada, **não** velocidade. O sinal durável é a **previsibilidade** (drift de h/BCP convergindo a zero). A alavancagem vs REFERÊNCIA frozen é reportada como **ROI honesto vs um benchmark fixo** (cadência de board), nunca "vs humano" e nunca como meta.
 

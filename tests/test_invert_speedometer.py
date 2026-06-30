@@ -70,23 +70,30 @@ def test_predictability_has_trend_arrow():
 
 def test_predictability_leads_table_before_leverage():
     """Ordering invariant: in General Statistics the Predictability row must
-    appear BEFORE the leverage row — leverage is no longer the headline."""
+    appear BEFORE the Alavancagem row — leverage is no longer the headline."""
     text = DASHBOARD.read_text()
     pred_idx = text.find("| **Previsibilidade**")
-    lev_idx = text.find("| AI Leverage (vs PLANO")
+    lev_idx = text.find("| **Alavancagem (vs REFERÊNCIA)**")
     assert pred_idx != -1 and lev_idx != -1, "both rows must be present"
-    assert pred_idx < lev_idx, "Predictability must lead; leverage comes after"
+    assert pred_idx < lev_idx, "Predictability must lead; Alavancagem comes after"
 
 
-def test_leverage_demoted_to_context():
-    """Leverage must be labelled vs PLAN and explicitly marked as context, not
-    a target — and the old 'Avg AI Leverage' headline row must be gone."""
+def test_leverage_vs_plan_is_not_a_displayed_metric():
+    """Concept lock: the vs-PLANO ratio (estimated_hours / actual_hours) collapses
+    to ~1.0x = it IS predictability, so it is NOT rendered as a metric row/column.
+    'Alavancagem' on the dashboard means the sellable vs-REFERÊNCIA multiplier. The
+    vs-PLANO ratio survives only as the anti-Goodhart explanation, never as a number
+    the board reads as 'leverage'."""
     text = DASHBOARD.read_text()
-    assert "AI Leverage (vs PLANO" in text
-    assert "contexto, não meta" in text
-    assert "| Avg AI Leverage         | {avg}x             |" not in text, (
-        "the pre-v0.6 leverage headline row must be replaced"
-    )
+    # the Alavancagem metric is the frozen-reference multiplier
+    assert "| **Alavancagem (vs REFERÊNCIA)**" in text
+    # the old pre-v0.6 headline row must be gone
+    assert "| Avg AI Leverage         | {avg}x             |" not in text
+    # the vs-PLANO ratio must NOT be a rendered metric row/column
+    assert "AI Leverage (vs PLANO," not in text, "vs-PLANO must not be a metric row"
+    assert "Leverage (vs PLANO) | Qualidade" not in text, "story column must be Alavancagem"
+    # but it MUST remain in the anti-Goodhart note as the explanation
+    assert "vs PLANO" in text and "~1.0x por construção" in text
 
 
 # --- Phase 2: self-referential h/BCP convergence ----------------------------
@@ -230,9 +237,19 @@ def test_leverage_thresholds_marked_legacy():
 
 
 def test_leverage_labeled_vs_plan_in_cards_and_tables():
-    """Every leverage display reads 'vs PLAN', never 'vs human' as a target."""
+    """The track-done card still reports both framings per-story (vs PLAN context +
+    vs REFERENCE ROI). On the dashboard, the full "(vs REFERÊNCIA)" qualifier is
+    DEFINED ONCE in General Statistics; the board-facing tables use the short
+    "Alavancagem" label (the reader already saw the definition). The vs-PLANO ratio
+    is not a column."""
     done = TRACK_DONE.read_text()
     assert "AI Leverage: {leverage_ratio}x (vs PLAN" in done  # track-done card stays EN
     dash = DASHBOARD.read_text()
-    assert "Leverage médio (vs PLANO)" in dash
-    assert "Leverage (vs PLANO) | Qualidade" in dash
+    # full qualifier defined once, in General Statistics
+    assert "**Alavancagem (vs REFERÊNCIA)**" in dash
+    # tables use the short label
+    assert "| Alavancagem média | Stories |" in dash  # category table
+    assert "| Alavancagem | Qualidade |" in dash       # story detail column
+    # the long qualifier must NOT be repeated on the tables
+    assert "Alavancagem média (vs REFERÊNCIA)" not in dash
+    assert "Alavancagem (vs REFERÊNCIA) | Qualidade" not in dash
