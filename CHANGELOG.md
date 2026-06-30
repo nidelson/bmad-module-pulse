@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.3](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.2...v0.8.3) (2026-06-30)
+
+
+### Features
+
+* **dashboard:** trava conceitual — Alavancagem = vs REFERÊNCIA; novo header ([#71](https://github.com/nidelson/bmad-module-pulse/issues/71)) ([310c291](https://github.com/nidelson/bmad-module-pulse/commit/310c291478879877e6ea8499f49f349eb7016eb5))
+
 ## [0.8.2](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.1...v0.8.2) (2026-06-28)
 
 
