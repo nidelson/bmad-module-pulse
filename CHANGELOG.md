@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.4](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.3...v0.8.4) (2026-07-16)
+
+
+### Features
+
+* **config:** PULSE toml-first — resolve_config.py + fallback yaml ([#73](https://github.com/nidelson/bmad-module-pulse/issues/73)) ([#74](https://github.com/nidelson/bmad-module-pulse/issues/74)) ([af23b40](https://github.com/nidelson/bmad-module-pulse/commit/af23b40d5f076ff3e1b3fc6ad810b090a4ef26a5))
+
 ## [0.8.3](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.2...v0.8.3) (2026-06-30)
 
 
