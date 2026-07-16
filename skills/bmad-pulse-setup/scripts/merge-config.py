@@ -1,14 +1,24 @@
 #!/usr/bin/env python3
 # /// script
-# requires-python = ">=3.9"
-# dependencies = ["pyyaml"]
+# requires-python = ">=3.11"
+# dependencies = ["pyyaml", "tomlkit"]
 # ///
-"""Merge module configuration into shared _bmad/config.yaml and config.user.yaml.
+"""Merge module configuration into _bmad/custom/config.toml and config.user.yaml.
 
-Reads a module.yaml definition and a JSON answers file, then writes or updates
-the shared config.yaml (core values at root + module section) and config.user.yaml
-(user_name, communication_language, plus any module variable with user_setting: true).
-Uses an anti-zombie pattern for the module section in config.yaml.
+Reads a module.yaml definition and a JSON answers file, then:
+
+- writes the module variable values (``pulse_*``) into
+  ``_bmad/custom/config.toml`` under ``[modules.<code>]`` — the layer
+  ``resolve_config.py`` reads with higher priority than the installer defaults
+  in ``config.toml`` (issue #73, toml-first). Existing comments and other
+  sections in that human-owned file are preserved (tomlkit round-trip);
+- writes core values (``output_folder`` etc.) at the root of ``config.yaml``;
+- writes ``config.user.yaml`` (``user_name``, ``communication_language``, plus
+  any module variable with ``user_setting: true``).
+
+The legacy ``<code>:`` module section is **no longer** written to
+``config.yaml`` and any stale one there is stripped on run — that strip is the
+yaml→toml migration path (re-run setup to migrate an existing install).
 
 Legacy migration: when --legacy-dir is provided, reads old per-module config files
 from {legacy-dir}/{module-code}/config.yaml and {legacy-dir}/core/config.yaml.
@@ -30,6 +40,12 @@ except ImportError:
     print("Error: pyyaml is required (PEP 723 dependency)", file=sys.stderr)
     sys.exit(2)
 
+try:
+    import tomlkit
+except ImportError:
+    print("Error: tomlkit is required (PEP 723 dependency)", file=sys.stderr)
+    sys.exit(2)
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -38,7 +54,13 @@ def parse_args():
     parser.add_argument(
         "--config-path",
         required=True,
-        help="Path to the target _bmad/config.yaml file",
+        help="Path to the target _bmad/config.yaml file (core keys only)",
+    )
+    parser.add_argument(
+        "--custom-config-path",
+        help="Path to the target _bmad/custom/config.toml file where the module "
+        "section [modules.<code>] is written. Defaults to "
+        "{config-path dir}/custom/config.toml.",
     )
     parser.add_argument(
         "--module-yaml",
@@ -179,18 +201,6 @@ def cleanup_legacy_configs(
     return deleted
 
 
-def extract_module_metadata(module_yaml: dict) -> dict:
-    """Extract non-variable metadata fields from module.yaml."""
-    meta = {}
-    for k in ("name", "description"):
-        if k in module_yaml:
-            meta[k] = module_yaml[k]
-    meta["version"] = module_yaml.get("module_version")  # null if absent
-    if "default_selected" in module_yaml:
-        meta["default_selected"] = module_yaml["default_selected"]
-    return meta
-
-
 def apply_result_templates(
     module_yaml: dict, module_answers: dict, verbose: bool = False
 ) -> dict:
@@ -268,31 +278,93 @@ def merge_config(
                 print(f"Writing core config at root: {list(shared_core.keys())}", file=sys.stderr)
             config.update(shared_core)
 
-    # Anti-zombie: remove existing module section
+    # Toml-first (issue #73): the module section is written to
+    # custom/config.toml (see write_module_toml), NOT here. Strip any stale
+    # legacy section from config.yaml so the yaml stops shadowing the resolved
+    # toml — this strip is the yaml→toml migration when an existing install
+    # re-runs setup.
     if module_code in config:
         if verbose:
             print(
-                f"Removing existing '{module_code}' section (anti-zombie)",
+                f"Stripping legacy '{module_code}:' section from config.yaml "
+                f"(now written to custom/config.toml)",
                 file=sys.stderr,
             )
         del config[module_code]
 
-    # Build module section: metadata + variable values
-    module_section = extract_module_metadata(module_yaml)
-    module_answers = apply_result_templates(
-        module_yaml, answers.get("module", {}), verbose
-    )
-    module_section.update(module_answers)
+    return config
+
+
+def coerce_toml_scalar(value):
+    """Coerce a config value to the module.yaml string contract.
+
+    Every ``pulse_*`` value is a string by design (module.yaml uses
+    ``result: '{value}'`` and string-valued single-selects). Booleans only
+    appear via the YAML 1.1 unquoted ``yes``/``no`` footgun when values are
+    read back from config.yaml — map them to the ``yes``/``no`` strings the
+    consumers expect. Everything else is stringified.
+    """
+    if isinstance(value, bool):
+        return "yes" if value else "no"
+    return str(value)
+
+
+def build_module_values(module_yaml: dict, answers: dict, verbose: bool = False) -> dict:
+    """Return the module variable values to pin, result-templated and coerced.
+
+    Metadata (name/description/version) is intentionally excluded — consumers
+    resolve those from module.yaml, not from config. Only the answered module
+    variables are written to [modules.<code>].
+    """
+    module_answers = apply_result_templates(module_yaml, answers.get("module", {}), verbose)
+    return {key: coerce_toml_scalar(value) for key, value in module_answers.items()}
+
+
+def write_module_toml(
+    custom_config_path: str,
+    module_code: str,
+    module_values: dict,
+    verbose: bool = False,
+) -> list:
+    """Upsert module values into [modules.<code>] of custom/config.toml.
+
+    Preserves existing comments and other sections (tomlkit round-trip).
+    Answered keys are overwritten (setup reflects the user's fresh intent);
+    any human-authored key not in this run is left untouched.
+
+    Returns the list of keys written.
+    """
+    path = Path(custom_config_path)
+
+    if path.exists():
+        doc = tomlkit.parse(path.read_text(encoding="utf-8"))
+    else:
+        doc = tomlkit.document()
+
+    modules = doc.get("modules")
+    if modules is None:
+        modules = tomlkit.table(is_super_table=True)
+        doc["modules"] = modules
+
+    module_table = modules.get(module_code)
+    if module_table is None:
+        module_table = tomlkit.table()
+        modules[module_code] = module_table
+
+    for key, value in module_values.items():
+        module_table[key] = value
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(tomlkit.dumps(doc), encoding="utf-8")
 
     if verbose:
         print(
-            f"Writing '{module_code}' section with keys: {list(module_section.keys())}",
+            f"Wrote [modules.{module_code}] to {path} "
+            f"with keys: {list(module_values.keys())}",
             file=sys.stderr,
         )
 
-    config[module_code] = module_section
-
-    return config
+    return list(module_values.keys())
 
 
 # Core keys that are always written to config.user.yaml
@@ -369,7 +441,18 @@ def main():
             if args.verbose:
                 print("Applied legacy values as fallback defaults", file=sys.stderr)
 
-    # Merge and write config.yaml
+    module_code = module_yaml["code"]
+
+    # Write the module section to custom/config.toml (toml-first, issue #73).
+    custom_config_path = args.custom_config_path or str(
+        Path(args.config_path).parent / "custom" / "config.toml"
+    )
+    module_values = build_module_values(module_yaml, answers, args.verbose)
+    module_keys = write_module_toml(
+        custom_config_path, module_code, module_values, args.verbose
+    )
+
+    # Merge and write config.yaml (core keys only; module section stripped)
     updated_config = merge_config(existing_config, module_yaml, answers, args.verbose)
     write_config(updated_config, args.config_path, args.verbose)
 
@@ -389,14 +472,14 @@ def main():
         )
 
     # Output result summary as JSON
-    module_code = module_yaml["code"]
     result = {
         "status": "success",
         "config_path": str(Path(args.config_path).resolve()),
+        "custom_config_path": str(Path(custom_config_path).resolve()),
         "user_config_path": str(Path(args.user_config_path).resolve()),
         "module_code": module_code,
         "core_updated": bool(answers.get("core")),
-        "module_keys": list(updated_config.get(module_code, {}).keys()),
+        "module_keys": module_keys,
         "user_keys": list(user_settings.keys()),
         "legacy_configs_found": legacy_files_found,
         "legacy_configs_deleted": legacy_deleted,

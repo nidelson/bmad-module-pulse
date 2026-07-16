@@ -7,13 +7,16 @@ description: Installs and configures the PULSE module in a BMAD project. Use whe
 
 ## Overview
 
-Installs and configures a BMad module into a project. Module identity (name, code, version) comes from `./assets/module.yaml`. Collects user preferences and writes them to three files:
+Installs and configures a BMad module into a project. Module identity (name, code, version) comes from `./assets/module.yaml`. Collects user preferences and writes them to these files:
 
-- **`{project-root}/_bmad/config.yaml`** — shared project config: core settings at root (e.g. `output_folder`, `document_output_language`) plus a section per module with metadata and module-specific values. User-only keys (`user_name`, `communication_language`) are **never** written here.
+- **`{project-root}/_bmad/custom/config.toml`** — the module section `[modules.pulse]` with the `pulse_*` values (issue #73, toml-first). This is the layer `resolve_config.py` reads with higher priority than the installer defaults in `config.toml`, so the team's answers win. Existing comments and other sections in this human-owned file are preserved (tomlkit round-trip).
+- **`{project-root}/_bmad/config.yaml`** — shared project config: core settings at root only (e.g. `output_folder`, `document_output_language`). The legacy `pulse:` module section is **no longer** written here; a stale one is stripped on run (that strip is the yaml→toml migration). User-only keys (`user_name`, `communication_language`) are **never** written here.
 - **`{project-root}/_bmad/config.user.yaml`** — personal settings intended to be gitignored: `user_name`, `communication_language`, and any module variable marked `user_setting: true` in `./assets/module.yaml`. These values live exclusively here.
 - **`{project-root}/_bmad/module-help.csv`** — registers module capabilities for the help system.
 
-Both config scripts use an anti-zombie pattern — existing entries for this module are removed before writing fresh ones, so stale values never persist.
+The config scripts use an anti-zombie pattern — the module's answered keys are overwritten with fresh values on each run, and the stale legacy `pulse:` yaml section is removed, so stale values never persist.
+
+**Migrating an existing yaml install (issue #73):** re-running this setup is the migration path. Before prompting, read the current effective values (via `resolve_config.py --key modules.pulse` and the legacy `pulse:` section of `config.yaml`) and offer them as the prompt defaults, so accepting the defaults carries the team's existing answers into `custom/config.toml` and strips the legacy yaml section.
 
 `{project-root}` is a **literal token** in config values — never substitute it with an actual path. It signals to the consuming LLM that the value is relative to the project root, not the skill root.
 
@@ -68,7 +71,7 @@ Ask the user for values. Show defaults in brackets. Present all values together 
 
 **Core config** (only if no core keys exist yet): `user_name` (default: BMad), `communication_language` and `document_output_language` (default: English — ask as a single language question, both keys get the same answer), `output_folder` (default: `{project-root}/_bmad-output`). Of these, `user_name` and `communication_language` are written exclusively to `config.user.yaml`. The rest go to `config.yaml` at root and are shared across all modules.
 
-**Module config**: Read each variable in `./assets/module.yaml` that has a `prompt` field. Ask using that prompt with its default value (or legacy value if available).
+**Module config**: Read each variable in `./assets/module.yaml` that has a `prompt` field. Ask using that prompt, pre-filling the default with the **current effective value** when re-running on an existing install: prefer the resolved `modules.pulse` value (`resolve_config.py --key modules.pulse`), then the legacy `pulse:` value in `config.yaml`, then any legacy per-module value, then the `module.yaml` default. This is what carries an existing team's answers into `custom/config.toml` on the migration re-run.
 
 **Validation rules:**
 - If `pulse_estimation_method` = `story_points` and `pulse_story_point_hours_factor` has not been set, warn before continuing
@@ -83,6 +86,8 @@ Write a temp JSON file with the collected answers structured as `{"core": {...},
 python3 ./scripts/merge-config.py --config-path "{project-root}/_bmad/config.yaml" --user-config-path "{project-root}/_bmad/config.user.yaml" --module-yaml ./assets/module.yaml --answers {temp-file} --legacy-dir "{project-root}/_bmad"
 python3 ./scripts/merge-help-csv.py --target "{project-root}/_bmad/module-help.csv" --source ./assets/module-help.csv --legacy-dir "{project-root}/_bmad" --module-code pulse
 ```
+
+`merge-config.py` writes the `[modules.pulse]` section to `{project-root}/_bmad/custom/config.toml` (derived from the `--config-path` directory; override with `--custom-config-path`), writes core keys to `config.yaml`, strips any legacy `pulse:` yaml section, and writes user settings to `config.user.yaml`. Check `custom_config_path` and `module_keys` in the output.
 
 Both scripts output JSON to stdout with results. If either exits non-zero, surface the error and stop. The scripts automatically read legacy config values as fallback defaults, then delete the legacy files after a successful merge. Check `legacy_configs_deleted` and `legacy_csvs_deleted` in the output to confirm cleanup.
 

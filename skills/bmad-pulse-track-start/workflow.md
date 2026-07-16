@@ -53,7 +53,15 @@ Load the PULSE configuration as described in INITIALIZATION below, then execute 
 
 ### Configuration Loading
 
-Load the `pulse` section from `{main_config}` and resolve module variables:
+Resolve the PULSE configuration **toml-first** (issue #73):
+
+1. Run `python3 {project-root}/_bmad/scripts/resolve_config.py --project-root {project-root} --key modules.pulse --key core` and read `pulse_*` from the `modules.pulse` table and core keys (`output_folder`, `user_name`, `communication_language`) from `core`.
+2. **Per-key fallback** — for any key absent from the resolved toml, read it from the legacy `pulse:` section (module keys) or root (core keys) of `{main_config}`; the yaml is the lowest-priority layer, never authoritative over the toml.
+3. **Default last** — if neither has the key, use the `module.yaml` default.
+
+If `resolve_config.py` is unavailable (pre-#2285 install), read `{main_config}` directly as before.
+
+The keys this workflow uses:
 
 - `output_folder`, `user_name`, `communication_language`
 - `pulse_estimation_method` — `hours` / `story_points` / `tshirt` / `bcp`
