@@ -5,6 +5,44 @@ skip to the version you are migrating from.
 
 ---
 
+## toml-first config — `config.toml` with per-key `config.yaml` fallback (issue #73)
+
+**Who this affects:** installs on post-#2285 BMAD, where the canonical config is
+`_bmad/config.toml` (resolved by `_bmad/scripts/resolve_config.py` across four
+layers) and `_bmad/config.yaml` is legacy. Before this change PULSE read/wrote
+**only** the yaml, so it never saw `config.toml` nor the `custom/config.toml`
+overrides — a split-brain where the values diverged and PULSE stayed on the
+legacy file.
+
+**What changed:**
+
+- **Consumers resolve toml-first.** Every workflow/agent now runs
+  `resolve_config.py --key modules.pulse`, reads `pulse_*` from the resolved
+  toml, **falls back per key** to the legacy `pulse:` section of `config.yaml`,
+  and uses the `module.yaml` default only when neither has the key.
+- **Setup writes toml.** `merge-config.py` writes the module section to
+  `_bmad/custom/config.toml` under `[modules.pulse]` (the layer that wins over
+  installer defaults), preserving that file's comments and other sections. It
+  no longer writes the `pulse:` section into `config.yaml` and **strips** a
+  stale one on run.
+
+**⚠ Caveat crítico (pareamento obrigatório).** The `[modules.pulse]` in
+`config.toml` on a post-#2285 install carries the *install defaults*
+(`pulse_dev_categories = "standard_4"`, `pulse_estimation_method = "hours"`),
+which do **not** match a team using a custom taxonomy (e.g.
+`frontend, backend, fullstack, mobile, security`) or `bcp`. If PULSE goes
+toml-first **without** the team's real values pinned in `custom/config.toml`,
+it silently regresses to the install defaults and loses the custom taxonomy.
+
+**How to migrate (re-run setup):** re-running `bmad-pulse-setup` is the
+migration. It reads the current effective values (resolved toml, then the legacy
+`pulse:` in `config.yaml`) and offers them as the prompt defaults; accepting the
+defaults pins the team's answers into `custom/config.toml [modules.pulse]` and
+strips the legacy yaml section. Verify `pulse_dev_categories` and
+`pulse_estimation_method` in `custom/config.toml` after migrating.
+
+---
+
 ## Upgrading over an existing install — automatic self-heal
 
 This applies to **every** PULSE upgrade, not a specific version.

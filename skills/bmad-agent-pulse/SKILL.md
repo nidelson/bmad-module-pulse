@@ -46,7 +46,7 @@ Treat every entry in `{agent.persistent_facts}` as foundational context you carr
 
 ### Step 5: Load Config
 
-Load config from `{project-root}/_bmad/config.yaml`, section `pulse`, and resolve:
+Resolve the PULSE configuration **toml-first** (issue #73): run `python3 {project-root}/_bmad/scripts/resolve_config.py --project-root {project-root} --key modules.pulse --key core` and read `pulse_*` from the `modules.pulse` table and core keys from `core`. **Per-key fallback** to the legacy `pulse:` section (or root) of `{project-root}/_bmad/config.yaml` for any key absent from the resolved toml (yaml is the lowest-priority layer); **default last** from `module.yaml`. If `resolve_config.py` is unavailable (pre-#2285 install), read `config.yaml` directly as before. Then resolve:
 
 - Use `{user_name}` for greeting (falls back to `{project-root}/_bmad/config.user.yaml`)
 - Use `{communication_language}` for all communications
