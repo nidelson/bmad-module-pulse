@@ -61,7 +61,7 @@ def read_yaml(project_root: Path) -> dict:
 
 
 # The custom taxonomy that must survive the cutover (caveat crítico da issue).
-SIP_MODULE_ANSWERS = {
+CUSTOM_MODULE_ANSWERS = {
     "module": {
         "pulse_estimation_method": "bcp",
         "pulse_dev_categories": "frontend, backend, fullstack, mobile, security",
@@ -75,7 +75,7 @@ SIP_MODULE_ANSWERS = {
 # --- fresh: writes toml, never a pulse: section in config.yaml ---
 
 def test_fresh_writes_pulse_to_custom_toml(tmp_path: Path):
-    result = run(tmp_path, SIP_MODULE_ANSWERS)
+    result = run(tmp_path, CUSTOM_MODULE_ANSWERS)
     assert result.returncode == 0, result.stderr
 
     pinned = read_custom_pulse(tmp_path)
@@ -84,12 +84,12 @@ def test_fresh_writes_pulse_to_custom_toml(tmp_path: Path):
 
 
 def test_fresh_never_writes_pulse_section_to_yaml(tmp_path: Path):
-    assert run(tmp_path, SIP_MODULE_ANSWERS).returncode == 0
+    assert run(tmp_path, CUSTOM_MODULE_ANSWERS).returncode == 0
     assert "pulse" not in read_yaml(tmp_path)
 
 
 def test_metadata_not_pinned_only_pulse_values(tmp_path: Path):
-    assert run(tmp_path, SIP_MODULE_ANSWERS).returncode == 0
+    assert run(tmp_path, CUSTOM_MODULE_ANSWERS).returncode == 0
     pinned = read_custom_pulse(tmp_path)
     for meta in ("name", "description", "version", "default_selected"):
         assert meta not in pinned
@@ -97,7 +97,7 @@ def test_metadata_not_pinned_only_pulse_values(tmp_path: Path):
 
 
 def test_values_are_strings(tmp_path: Path):
-    assert run(tmp_path, SIP_MODULE_ANSWERS).returncode == 0
+    assert run(tmp_path, CUSTOM_MODULE_ANSWERS).returncode == 0
     pinned = read_custom_pulse(tmp_path)
     assert pinned["pulse_min_stories_for_trend"] == "3"
     assert pinned["pulse_include_trend_chart"] == "yes"
@@ -116,7 +116,7 @@ def test_migration_strips_legacy_yaml_pulse_section(tmp_path: Path):
         "  pulse_dev_categories: standard_4\n",
         encoding="utf-8",
     )
-    assert run(tmp_path, SIP_MODULE_ANSWERS).returncode == 0
+    assert run(tmp_path, CUSTOM_MODULE_ANSWERS).returncode == 0
 
     cfg = read_yaml(tmp_path)
     assert "pulse" not in cfg  # legacy section removed
@@ -137,7 +137,7 @@ def test_preserves_existing_custom_toml_content(tmp_path: Path):
         'pulse_levi_verbosity = "verbose"\n',
         encoding="utf-8",
     )
-    assert run(tmp_path, SIP_MODULE_ANSWERS).returncode == 0
+    assert run(tmp_path, CUSTOM_MODULE_ANSWERS).returncode == 0
 
     text = (custom / "config.toml").read_text(encoding="utf-8")
     assert "# human-owned team config" in text  # comment preserved
@@ -151,8 +151,8 @@ def test_preserves_existing_custom_toml_content(tmp_path: Path):
 
 
 def test_rerun_overwrites_managed_keys(tmp_path: Path):
-    assert run(tmp_path, SIP_MODULE_ANSWERS).returncode == 0
-    changed = {"module": dict(SIP_MODULE_ANSWERS["module"], pulse_estimation_method="hours")}
+    assert run(tmp_path, CUSTOM_MODULE_ANSWERS).returncode == 0
+    changed = {"module": dict(CUSTOM_MODULE_ANSWERS["module"], pulse_estimation_method="hours")}
     assert run(tmp_path, changed).returncode == 0
     assert read_custom_pulse(tmp_path)["pulse_estimation_method"] == "hours"
 
@@ -160,7 +160,7 @@ def test_rerun_overwrites_managed_keys(tmp_path: Path):
 # --- none: core-only answers still land in config.yaml, no toml module noise ---
 
 def test_core_keys_still_written_to_yaml(tmp_path: Path):
-    answers = {"core": {"output_folder": "custom-out"}, "module": SIP_MODULE_ANSWERS["module"]}
+    answers = {"core": {"output_folder": "custom-out"}, "module": CUSTOM_MODULE_ANSWERS["module"]}
     assert run(tmp_path, answers).returncode == 0
     cfg = read_yaml(tmp_path)
     assert cfg["output_folder"] == "custom-out"
