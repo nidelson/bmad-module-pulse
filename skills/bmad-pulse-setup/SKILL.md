@@ -95,23 +95,27 @@ Both scripts output JSON to stdout with results. If either exits non-zero, surfa
 
 Run `uv run ./scripts/merge-config.py --help` or `./scripts/merge-help-csv.py --help` for full usage.
 
-## Register Agent in Manifest
+## Register Agent in Party Mode Roster
 
-After writing config and help CSV, register the Levi agent in the project's agent manifest so it appears in Party Mode and other agent-aware features.
+After writing config and help CSV, register the Levi agent so it joins the Party Mode roster and other agent-aware features.
 
-Check if `{project-root}/_bmad/_config/agent-manifest.csv` exists:
-- If **yes**: merge the PULSE agent entry using the same anti-zombie pattern (remove existing rows with `name="pulse"`, then append)
-- If **no**: skip this step and inform the user that the agent manifest was not found — Levi will still work via direct skill invocation but won't appear in Party Mode
+Party Mode builds its roster from the `[agents]` table resolved by `resolve_config.py` — a deep-merge of `{project-root}/_bmad/config.toml` (base) and `{project-root}/_bmad/custom/config.toml` (team). Official modules get their `[agents.*]` entries written into the base `config.toml` by the BMAD core installer, but a **custom module** like PULSE is never written there — so without this step Levi is installed as a skill yet stays invisible to Party Mode (`/bmad-party-mode` never lists him). Register him in the team-owned `custom/config.toml` layer, which survives re-install:
 
-To merge, reuse the `merge-help-csv.py` script since it handles generic CSV merge with anti-zombie:
+```bash
+uv run ./scripts/register-party-agent.py --project-root "{project-root}" --fragment ./assets/agent-manifest-fragment.csv
+```
+
+The script upserts `[agents.bmad-agent-pulse]` (anti-zombie, idempotent) from the `agent-manifest-fragment.csv` values, preserving existing comments and sections (tomlkit round-trip). It runs via `uv run` for its PEP 723 `tomlkit` dependency. Check `agent_key` and `custom_config_path` in the JSON output.
+
+If successful, inform the user: "Agent Levi registered in the Party Mode roster (`_bmad/custom/config.toml` -> `[agents.bmad-agent-pulse]`) — run `/bmad-party-mode` to see him. To spotlight him, add a curated party group (e.g. a delivery/retro room) to `_bmad/custom/bmad-party-mode.toml`."
+
+### Legacy `agent-manifest.csv` (optional, compat)
+
+Older BMAD layouts also read `{project-root}/_bmad/_config/agent-manifest.csv`. If that file exists, additionally merge the fragment into it (harmless where unused). If it does not exist, skip — the `[agents]` registration above is what Party Mode actually reads.
 
 ```bash
 python3 ./scripts/merge-help-csv.py --target "{project-root}/_bmad/_config/agent-manifest.csv" --source ./assets/agent-manifest-fragment.csv --module-code pulse
 ```
-
-Note: the `--module-code` flag scopes the anti-zombie removal to rows where the first column matches "pulse", which corresponds to the `name` column in agent-manifest.csv.
-
-If successful, inform the user: "Agent Levi registered in agent-manifest.csv — available in Party Mode and agent-aware features."
 
 ## Create Output Directories
 
