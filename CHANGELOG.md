@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.5](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.4...v0.8.5) (2026-07-18)
+
+
+### Features
+
+* **bmad-pulse-setup:** register Levi in the party-mode roster on install ([#77](https://github.com/nidelson/bmad-module-pulse/issues/77)) ([26db87e](https://github.com/nidelson/bmad-module-pulse/commit/26db87e508f353a62ad89d77d8735efa0478339e))
+
+
+### Bug Fixes
+
+* **bmad-pulse-setup:** run merge-config.py via uv run for PEP 723 tomlkit dep ([#76](https://github.com/nidelson/bmad-module-pulse/issues/76)) ([819ed54](https://github.com/nidelson/bmad-module-pulse/commit/819ed5424231b276bb954fc4548db5c72c5edf6b))
+
 ## [0.8.4](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.3...v0.8.4) (2026-07-16)
 
 
