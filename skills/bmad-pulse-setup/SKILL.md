@@ -83,15 +83,17 @@ Ask the user for values. Show defaults in brackets. Present all values together 
 Write a temp JSON file with the collected answers structured as `{"core": {...}, "module": {...}}` (omit `core` if it already exists). Then run both scripts — they can run in parallel since they write to different files:
 
 ```bash
-python3 ./scripts/merge-config.py --config-path "{project-root}/_bmad/config.yaml" --user-config-path "{project-root}/_bmad/config.user.yaml" --module-yaml ./assets/module.yaml --answers {temp-file} --legacy-dir "{project-root}/_bmad"
+uv run ./scripts/merge-config.py --config-path "{project-root}/_bmad/config.yaml" --user-config-path "{project-root}/_bmad/config.user.yaml" --module-yaml ./assets/module.yaml --answers {temp-file} --legacy-dir "{project-root}/_bmad"
 python3 ./scripts/merge-help-csv.py --target "{project-root}/_bmad/module-help.csv" --source ./assets/module-help.csv --legacy-dir "{project-root}/_bmad" --module-code pulse
 ```
+
+> **Note (PEP 723):** only `merge-config.py` runs via `uv run` — it declares third-party dependencies (`pyyaml`, `tomlkit`) in its inline `# /// script` header. Plain `python3` fails with `Error: tomlkit is required (PEP 723 dependency)`. `uv run` reads the header and provisions the libraries in an ephemeral environment. The other scripts in this skill are stdlib-only (`dependencies = []`) and run under plain `python3`.
 
 `merge-config.py` writes the `[modules.pulse]` section to `{project-root}/_bmad/custom/config.toml` (derived from the `--config-path` directory; override with `--custom-config-path`), writes core keys to `config.yaml`, strips any legacy `pulse:` yaml section, and writes user settings to `config.user.yaml`. Check `custom_config_path` and `module_keys` in the output.
 
 Both scripts output JSON to stdout with results. If either exits non-zero, surface the error and stop. The scripts automatically read legacy config values as fallback defaults, then delete the legacy files after a successful merge. Check `legacy_configs_deleted` and `legacy_csvs_deleted` in the output to confirm cleanup.
 
-Run `./scripts/merge-config.py --help` or `./scripts/merge-help-csv.py --help` for full usage.
+Run `uv run ./scripts/merge-config.py --help` or `./scripts/merge-help-csv.py --help` for full usage.
 
 ## Register Agent in Manifest
 
