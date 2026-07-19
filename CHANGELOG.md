@@ -1,5 +1,104 @@
 # Changelog
 
+## [0.8.5](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.4...v0.8.5) (2026-07-18)
+
+
+### Features
+
+* **bmad-pulse-setup:** register Levi in the party-mode roster on install ([#77](https://github.com/nidelson/bmad-module-pulse/issues/77)) ([26db87e](https://github.com/nidelson/bmad-module-pulse/commit/26db87e508f353a62ad89d77d8735efa0478339e))
+
+
+### Bug Fixes
+
+* **bmad-pulse-setup:** run merge-config.py via uv run for PEP 723 tomlkit dep ([#76](https://github.com/nidelson/bmad-module-pulse/issues/76)) ([819ed54](https://github.com/nidelson/bmad-module-pulse/commit/819ed5424231b276bb954fc4548db5c72c5edf6b))
+
+## [0.8.4](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.3...v0.8.4) (2026-07-16)
+
+
+### Features
+
+* **config:** PULSE toml-first — resolve_config.py + fallback yaml ([#73](https://github.com/nidelson/bmad-module-pulse/issues/73)) ([#74](https://github.com/nidelson/bmad-module-pulse/issues/74)) ([af23b40](https://github.com/nidelson/bmad-module-pulse/commit/af23b40d5f076ff3e1b3fc6ad810b090a4ef26a5))
+
+## [0.8.3](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.2...v0.8.3) (2026-06-30)
+
+
+### Features
+
+* **dashboard:** trava conceitual — Alavancagem = vs REFERÊNCIA; novo header ([#71](https://github.com/nidelson/bmad-module-pulse/issues/71)) ([310c291](https://github.com/nidelson/bmad-module-pulse/commit/310c291478879877e6ea8499f49f349eb7016eb5))
+
+## [0.8.2](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.1...v0.8.2) (2026-06-28)
+
+
+### Features
+
+* **dashboard:** Previsibilidade como acurácia (100 − erro), não margem de erro crua ([#69](https://github.com/nidelson/bmad-module-pulse/issues/69)) ([3ebf0d3](https://github.com/nidelson/bmad-module-pulse/commit/3ebf0d32b9b1c6b2b447aa3c45f987112f0d755e))
+
+## [0.8.1](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.0...v0.8.1) (2026-06-28)
+
+
+### Features
+
+* **metrics:** alavancagem estável vs referência frozen + previsibilidade por story ([#67](https://github.com/nidelson/bmad-module-pulse/issues/67)) ([eb6c4d5](https://github.com/nidelson/bmad-module-pulse/commit/eb6c4d5fcb544acf745aad4f2c789628f47527b5)), closes [#65](https://github.com/nidelson/bmad-module-pulse/issues/65)
+
+## [0.8.0](https://github.com/nidelson/bmad-module-pulse/compare/v0.7.1...v0.8.0) (2026-06-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* **dashboard:** a seção do dashboard "🔮 Previsão de Capacidade" (extrapolação por leverage) foi substituída por "🔮 Previsão de Projeto" (BCP x h/BCP ± IC 90%). Quem parseava a seção antiga ou dependia da extrapolação por leverage deve migrar.
+
+### Features
+
+* **dashboard:** v0.8 previsibilidade para precificar (forecast BCP x h/BCP ± IC 90% + digest) ([#63](https://github.com/nidelson/bmad-module-pulse/issues/63)) ([0b9390f](https://github.com/nidelson/bmad-module-pulse/commit/0b9390ff708e2b4f79ea059b3c1432e2ea0da40a))
+
+## [0.7.1](https://github.com/nidelson/bmad-module-pulse/compare/v0.7.0...v0.7.1) (2026-06-18)
+
+
+### Features
+
+* **dashboard:** saída do dashboard em PT-BR (jargão mantido) ([#61](https://github.com/nidelson/bmad-module-pulse/issues/61)) ([ea6ae3e](https://github.com/nidelson/bmad-module-pulse/commit/ea6ae3ecfdf76f8963dc26cec4fda548377431f9))
+
+## [0.7.0](https://github.com/nidelson/bmad-module-pulse/compare/v0.6.0...v0.7.0) (2026-06-18)
+
+
+### Features
+
+* **track-start:** v0.7 a ação que importa (alerta de drift na estimativa + watch-list) ([#59](https://github.com/nidelson/bmad-module-pulse/issues/59)) ([eceb9d6](https://github.com/nidelson/bmad-module-pulse/commit/eceb9d6e99fe6fc3b181ab9ef0aeecfaca018333))
+
+## [0.6.0](https://github.com/nidelson/bmad-module-pulse/compare/v0.5.0...v0.6.0) (2026-06-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* **dashboard:** o General Statistics do dashboard foi reordenado (Predictability lidera, leverage vira contexto), colunas de leverage ganharam "(vs PLAN)" e a celebração do track-done passou a disparar por acurácia, não por magnitude de leverage. Parsers do dashboard e automações sobre "🔥 Exceptional" precisam atualizar.
+
+### Features
+
+* **dashboard:** v0.6 inverter o velocímetro (previsibilidade como métrica-herói, regime, celebração por acurácia) ([#57](https://github.com/nidelson/bmad-module-pulse/issues/57)) ([2d70eed](https://github.com/nidelson/bmad-module-pulse/commit/2d70eed0c20bc47c3cad52ee63b13db6120736e4))
+
+## [0.5.0](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.11...v0.5.0) (2026-06-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* **dashboard:** a tabela BCP Productivity do dashboard ganhou colunas Segment e n e a célula h/BCP agora carrega faixa [low-high]. Ferramentas que parseiam o markdown do dashboard precisam atualizar. O dashboard legível e todas as seções sem BCP ficam inalterados.
+
+### Features
+
+* **dashboard:** v0.5 engine de medição honesto (média geométrica, segmentação, faixa de confiança, anti-Goodhart) ([#56](https://github.com/nidelson/bmad-module-pulse/issues/56)) ([b5ea720](https://github.com/nidelson/bmad-module-pulse/commit/b5ea720a4e116a8de516792093212cc1aa2c2e7c))
+
+
+### Documentation
+
+* **readme:** reposicionar em torno de previsibilidade + tornar PT-BR primário ([#54](https://github.com/nidelson/bmad-module-pulse/issues/54)) ([8169ca4](https://github.com/nidelson/bmad-module-pulse/commit/8169ca42516aaeb7e6461b6faa658dce9d5ed1ef))
+
+## [0.4.11](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.10...v0.4.11) (2026-05-31)
+
+
+### Features
+
+* **pulse:** opt-in auto-dashboard via on_complete (pulse_auto_dashboard) ([#52](https://github.com/nidelson/bmad-module-pulse/issues/52)) ([6b93259](https://github.com/nidelson/bmad-module-pulse/commit/6b93259a323b17331c31eaff6192b574595fa85b))
+
 ## [0.4.10](https://github.com/nidelson/bmad-module-pulse/compare/v0.4.9...v0.4.10) (2026-05-22)
 
 

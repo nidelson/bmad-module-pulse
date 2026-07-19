@@ -5,6 +5,44 @@ skip to the version you are migrating from.
 
 ---
 
+## toml-first config — `config.toml` with per-key `config.yaml` fallback (issue #73)
+
+**Who this affects:** installs on post-#2285 BMAD, where the canonical config is
+`_bmad/config.toml` (resolved by `_bmad/scripts/resolve_config.py` across four
+layers) and `_bmad/config.yaml` is legacy. Before this change PULSE read/wrote
+**only** the yaml, so it never saw `config.toml` nor the `custom/config.toml`
+overrides — a split-brain where the values diverged and PULSE stayed on the
+legacy file.
+
+**What changed:**
+
+- **Consumers resolve toml-first.** Every workflow/agent now runs
+  `resolve_config.py --key modules.pulse`, reads `pulse_*` from the resolved
+  toml, **falls back per key** to the legacy `pulse:` section of `config.yaml`,
+  and uses the `module.yaml` default only when neither has the key.
+- **Setup writes toml.** `merge-config.py` writes the module section to
+  `_bmad/custom/config.toml` under `[modules.pulse]` (the layer that wins over
+  installer defaults), preserving that file's comments and other sections. It
+  no longer writes the `pulse:` section into `config.yaml` and **strips** a
+  stale one on run.
+
+**⚠ Caveat crítico (pareamento obrigatório).** The `[modules.pulse]` in
+`config.toml` on a post-#2285 install carries the *install defaults*
+(`pulse_dev_categories = "standard_4"`, `pulse_estimation_method = "hours"`),
+which do **not** match a team using a custom taxonomy (e.g.
+`frontend, backend, fullstack, mobile, security`) or `bcp`. If PULSE goes
+toml-first **without** the team's real values pinned in `custom/config.toml`,
+it silently regresses to the install defaults and loses the custom taxonomy.
+
+**How to migrate (re-run setup):** re-running `bmad-pulse-setup` is the
+migration. It reads the current effective values (resolved toml, then the legacy
+`pulse:` in `config.yaml`) and offers them as the prompt defaults; accepting the
+defaults pins the team's answers into `custom/config.toml [modules.pulse]` and
+strips the legacy yaml section. Verify `pulse_dev_categories` and
+`pulse_estimation_method` in `custom/config.toml` after migrating.
+
+---
+
 ## Upgrading over an existing install — automatic self-heal
 
 This applies to **every** PULSE upgrade, not a specific version.
@@ -58,6 +96,115 @@ writing:
 python3 .claude/skills/bmad-pulse-setup/scripts/reconcile-skills.py \
     --project-root . --dry-run
 ```
+
+---
+
+## v0.7.x → v0.8.0 — Previsibilidade para precificar (forecast de projeto)
+
+**Quem isto afeta:** quem usa a seção de previsão do dashboard com BCP. **Breaking** numa seção: a antiga `Previsão de Capacidade` (extrapolação por leverage) foi **substituída** por `Previsão de Projeto` (`BCP × h/BCP ± IC 90%`).
+
+A v0.8 vira a engine honesta pra **frente**: dado o backlog pontuado restante, prevê quantas horas falta — com intervalo de confiança de 90% — pra times que faturam por hora.
+
+### O que muda
+
+- **Previsão de Projeto** (substitui Previsão de Capacidade). PULSE enumera (read-only) as stories pontuadas **não-iniciadas** (com `bcp.total`, sem entrada em `pulse_metrics`) → BCP restante por categoria, e prevê `horas = BCP × h/BCP` (geométrico, calibrado da v0.5) com **IC de 90%** (escala a banda de confiança de k=1 ~68% pra k=1.645 ~90%). O total soma os limites por categoria (faixa **conservadora**, declarada). Categorias finas (n<3) usam baseline pooled e marcam **baixa confiança**. Backlog vazio → sem seção.
+- **Digest** (`digest.md`). Um resumo conciso (previsibilidade + forecast + coortes em risco) é gerado junto do dashboard. **Entrega thin:** PULSE **não** chama Slack/Linear direto — você aponta `on_complete` pra um comando que posta o `digest.md` (ex.: webhook Slack via `curl`). Credenciais ficam no seu ambiente.
+- **Quebra por desenvolvedor/agente:** **adiada** — PULSE não captura identidade hoje (só `dev_count`); fica pra um marco futuro com decisão de privacidade à parte. A v0.8 quebra por **categoria** (que já existe).
+
+### O que você precisa fazer
+
+**Nada no disco** além do upgrade normal. O forecast usa dados que PULSE já lê + os story files pontuados (read-only). Se o backlog não for enumerável, informe um total manual em `pulse_forecast_remaining_bcp`. Pra digests, configure `on_complete`.
+
+> ⚠ **Breaking:** a seção `🔮 Previsão de Capacidade` deixou de existir; quem parseava ela (ou dependia da extrapolação por leverage) deve migrar pra `🔮 Previsão de Projeto`. As demais seções não mudaram de formato.
+
+---
+
+## v0.6.0 → v0.7.0 — A ação que importa (alerta de drift na estimativa)
+
+**Quem isto afeta:** quem usa `/bmad-pulse-track-start` e o dashboard. **Aditivo** — nada existente muda de formato; a v0.7 só **acrescenta** um aviso e uma seção.
+
+A v0.5/v0.6 são retrospectivas (você vê o drift depois que a story fechou). A v0.7 leva o sinal pro **momento do compromisso**: ao iniciar uma story, PULSE avisa se a coorte dela vem errando a estimativa — _antes_ de virar promessa. PULSE segue passivo: o alerta **informa, nunca dirige**.
+
+### O que muda (tudo aditivo)
+
+- **Alerta no track-start.** Ao registrar o start, PULSE computa o drift recente da coorte da story (`category` + segmento de tamanho quando há BCP) e, se as últimas 5 erraram > 25% na mediana (mínimo 3 stories), mostra uma linha **não-bloqueante**: `⚠ Heads up: stories like backend/story were off +N% (median) over the last 5 — re-estimate before committing?`. O start é registrado normalmente; **PULSE nunca altera `estimated_hours`** — reestimar é decisão sua.
+- **Watch-list no dashboard.** Nova seção `🚦 Estimation drift watch` lista as coortes que estão estimando mal agora (mediana > 25%, ≥3 stories), ordenadas por drift, com tendência. Coortes saudáveis são omitidas; tudo saudável → "No cohorts drifting — estimates are tracking".
+
+### O que você precisa fazer
+
+**Nada.** Aditivo, sem migração de dados. Próximo `/bmad-pulse-track-start` e `/bmad-pulse-dashboard` já trazem o aviso e a seção. Os thresholds (`K=5`, `T=25%`) são inline nesta versão.
+
+> ℹ️ **Não-breaking.** Nenhum formato existente foi reordenado ou removido; só houve acréscimos. O alerta é advisory e nunca toca a sua estimativa.
+
+---
+
+## v0.5.0 → v0.6.0 — Inverter o velocímetro (previsibilidade como herói)
+
+**Quem isto afeta:** todos os usuários do dashboard e do track-done; mais profundamente quem usa `pulse_estimation_method=bcp`. Nada na coleta de dados muda — a virada é em como os números são **enquadrados**.
+
+A v0.6 age sobre a engine honesta da v0.5: troca a métrica-herói de **alavancagem** → **previsibilidade/acurácia**. Um `~1.0x` estável é saudável; um multiplicador alto sinaliza estimativa inflada, não velocidade. PULSE segue passivo e zero-**write**-coupled ao `bmad-module-bcp`.
+
+### O que muda
+
+- **Métrica-herói invertida.** O `General Statistics` do dashboard agora **lidera** com `Predictability` (mediana do erro de estimativa por story `|actual−estimated|/estimated`, menor = melhor, com seta de tendência) e demove `Avg AI Leverage` pra uma linha de contexto `AI Leverage (vs PLAN) — context, not a target`.
+- **Sinal de convergência.** Nova seção "Baseline convergence" mostra se o `h/BCP` está estabilizando (mediana de `|drift|` da 1ª vs 2ª metade + banda estreitando). Precisa de ≥4 stories BCP.
+- **Detecção de regime.** PULSE passa a **ler** `estimated_hours_basis` (read-only) pra rotular cada multiplicador pela base (`vs PLAN (bcp)`, `vs PLAN (hours)`, …), com fallback pro `pulse_estimation_method`. Nunca escreve o campo, nunca deriva horas dele.
+- **Celebração invertida.** O `track-done` (e `track-backfill`) param de premiar leverage alto (`🔥 Exceptional!` aposentado). O gatilho agora é **acurácia**: `🎯 On-plan` quando a estimativa erra ≤15%; `⚠ Off-plan — review the estimate basis` quando erra ≥50%. Os `pulse_leverage_threshold_*` ficam no `module.yaml` por back-compat, mas não disparam mais celebração.
+
+### O que você precisa fazer
+
+**Nada no disco** além do upgrade normal (`/bmad-pulse-setup`). A mudança é nos workflows; o próximo `/bmad-pulse-dashboard` e `/bmad-pulse-track-done` já renderizam o novo enquadramento. Sem migração de dados.
+
+> ⚠ **Breaking para parsers e para quem dependia do troféu de leverage.** O `General Statistics` foi reordenado, colunas de leverage ganharam "(vs PLAN)" e a celebração do track-done mudou de gatilho. Se você scrapeia o dashboard ou automatiza em cima do "🔥 Exceptional", atualize. O número de leverage continua visível, só sem troféu.
+
+---
+
+## v0.4.x → v0.5.0 — Honest measurement engine (BCP dashboard)
+
+**Who this affects:** only projects using `pulse_estimation_method=bcp`. If you
+do not use BCP, the dashboard is unchanged — skip this section.
+
+v0.5.0 reworks how the dashboard summarizes per-category **h/BCP** so the number
+is honest rather than flattering. Nothing about tracking, frontmatter, or the
+BCP module boundary changes — PULSE stays passive and zero-coupled to
+`bmad-module-bcp` (it still only *reads* `bcp.*`, never writes a baseline). The
+shift is entirely in how the **BCP Productivity** section is computed and
+rendered.
+
+### What changes
+
+- **Geometric mean, not arithmetic.** Per-category h/BCP baselines are now the
+  *geometric* mean of the per-story ratios (`exp(mean(ln(ratio)))`). h/BCP is a
+  multiplicative ratio, so the arithmetic mean was biased high and fragile to a
+  single outlier. **Baselines recomputed from the same data will shift** — this
+  is the intended correction, not a regression.
+- **Micro vs story-size segmentation.** Stories are split at the *observed
+  median* BCP total (`micro` below, `story` at/above) and each segment gets its
+  own baseline, so a 1-point fix no longer pollutes a 40-point story's number. A
+  pooled `all` row remains for continuity. The split is data-driven — PULSE
+  makes no assumption about your BCP point scale and there is **no new config
+  key**.
+- **Confidence band, not a point.** Each baseline now shows a *typical range*
+  `[low–high]` (geometric standard deviation, ~68%) plus the sample size `n`.
+  Ranges appear only at `n >= 3`; thinner samples show the bare point.
+- **Leverage reframed (anti-Goodhart).** A new dashboard note states that
+  leverage (`estimated_hours / actual_hours`) collapses to ~1.0x once the
+  estimate basis is calibrated — so a *high* multiplier signals an uncalibrated
+  estimate, not velocity, and the durable signal is **predictability** (h/BCP
+  drift converging on zero). The hero-metric inversion itself lands in v0.6;
+  v0.5 only locks the invariant.
+
+### What you must do
+
+**Nothing on disk** beyond a normal upgrade (`/bmad-pulse-setup`). The change is
+in the dashboard workflow; the next `/bmad-pulse-dashboard` run renders the new
+shape. There is no data migration — historical `pulse_metrics` are re-read and
+re-summarized in place.
+
+> ⚠ **Breaking only for tooling that parses the dashboard markdown.** The
+> **BCP Productivity** table gained `Segment` and `n` columns and the h/BCP cell
+> now carries a `[low–high]` range. If you scrape the dashboard, update your
+> parser. The human-readable dashboard and all non-BCP sections are unaffected.
 
 ---
 

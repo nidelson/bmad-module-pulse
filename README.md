@@ -7,26 +7,34 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub stars](https://img.shields.io/github/stars/nidelson/bmad-module-pulse?style=social)](https://github.com/nidelson/bmad-module-pulse/stargazers)
 
-> **AI leverage signals for BMAD teams.**
+> **PULSE — Sinais de previsibilidade de entrega para times BMAD.**
 
-**Prove your AI is actually shipping faster — or find where it stalls.**
+**Não prove só que você é 10x mais rápido — prove que seu plano estava certo, e erre menos sprint após sprint.**
 
-🌐 [Português 🇧🇷](README.pt-BR.md)
+🌐 [English 🇺🇸](README.en.md)
 
-> *Sample output of `/bmad-pulse-dashboard` — based on a real BMAD project:*
+> *Saída exemplo de `/bmad-pulse-dashboard` — baseado em projeto BMAD real:*
 
-### 🏆 General Statistics
+### 🏆 Estatísticas Gerais
 
-| Metric                | Value     |
-| --------------------- | --------- |
-| Stories measured      | 12        |
-| Avg AI Leverage       | **6.9x**  |
-| Human estimated hours | 152h      |
-| Actual AI hours       | 22h       |
-| Hours saved           | **130h**  |
-| First-pass rate       | 83%       |
+| Métrica                                | Valor     |
+| -------------------------------------- | --------- |
+| Stories medidas                        | 12        |
+| **Previsibilidade**                    | **88% (mediana) ↑** — margem de erro 12% |
+| Horas reais AI                         | 24h       |
+| Taxa de first-pass                     | 83%       |
+| Alavancagem AI (vs PLANO)              | 1.1x — contexto, não meta |
+| Alavancagem AI (vs REFERÊNCIA frozen)  | **6.9x — ROI estável (não colapsa)** |
+| Economia vs benchmark de referência (152h) | **128h** |
 
-### 📈 Leverage Trend by Epic
+> **Leia com honestidade — três enquadramentos, papéis distintos:**
+> - **Previsibilidade (herói):** suas estimativas estão convergindo para a realidade? Menor = melhor; `↓` = convergindo. É o sinal durável.
+> - **Alavancagem vs PLANO:** o número *andaime* — só é grande enquanto a base de estimativa não está calibrada. Este time já calibrou: ela **colapsou para ~1.1x** (e esse colapso é o produto funcionando — virou a previsibilidade). Contexto, nunca meta.
+> - **Alavancagem vs REFERÊNCIA frozen** (quando o `bmad-module-bcp` grava `estimated_hours_reference`): denominador **congelado** e governado, então **não colapsa** — o multiplicador de ROI honesto vs um benchmark fixo (4.0h/BCP), para a cadência de board. Continua não sendo meta nem "vs humano".
+
+Sem `estimated_hours_reference`, só aparecem previsibilidade + alavancagem-vs-plano. (Veja o [Roadmap](#roadmap).)
+
+### 📈 Tendência de Alavancagem (vs REFERÊNCIA frozen) por Epic
 
 ```text
 Epic  1: ████████░░░░░░░░░░░░  4.2x (3 stories)
@@ -36,59 +44,59 @@ Epic 14: ██████████████░░░░░░  6.9x (3 s
 Epic 15: ████████████████████  8.4x (1 story)
 ```
 
-📊 **[View full dashboard →](examples/dashboards/mature-bmad-team.md)** *(category breakdown, capacity forecast, Levi's insights, story-by-story breakdown)*
+📊 **[Ver dashboard completo →](examples/dashboards/mature-bmad-team.md)** *(quebra por categoria, previsão de capacidade, insights do Levi, breakdown story-a-story)*
 
-Browse [more dashboard scenarios](examples/dashboards/) for different team sizes and adoption stages.
-
----
-
-## The Problem
-
-At some point, every developer who works with AI has lived this moment: looked at the clock, realized they did in two hours what they estimated for two days, and didn't quite know what to do with that feeling.
-
-PULSE was built for that moment. To turn that feeling into a number. That number into a story. And that story into evidence.
-
-You adopted BMAD. You wired up Claude Code or Cursor. Your team feels faster — but when leadership asks **"how much faster?"**, you're guessing.
-
-Every AI productivity tool measures **lines of code**, **commits**, or **token spend**. None of those answer the question your CTO is actually asking: *are we shipping more user-visible value per engineering hour?*
-
-There are two kinds of teams in 2026: **the team that uses AI, and the team that has AI using AI.** The difference doesn't show up in lines of code. It shows up in stories shipped per estimated hour.
-
-PULSE measures that!
+Veja [mais cenários de dashboard](examples/dashboards/) para diferentes tamanhos de time e estágios de adoção.
 
 ---
 
-## What you get
+## O Problema
 
-- **A defensible ROI number for AI in your SDLC** — leverage ratio, computed sprint over sprint, ready for your stakeholder deck.
-- **Early warning on stalled work** — capacity forecasts and halt alerts before a sprint slips.
-- **A coach, not just a dashboard** — Levi (PULSE's agent) reads your signals and tells you *where* the leverage is leaking.
+Em algum momento, todo desenvolvedor que trabalha com IA já viveu este instante: olhou para o relógio, percebeu que fez em duas horas o que estimou em dois dias, e não soube muito bem o que fazer com aquela sensação.
 
----
+PULSE foi construído para esse momento. Para transformar essa sensação em número. Esse número em história. E essa história em evidência.
 
-## Why PULSE
+Você adotou BMAD. Plugou Claude Code ou Cursor. Seu time *parece* mais rápido — mas quando a liderança pergunta **"quão mais rápido?"**, você está chutando.
 
-**The market measures lines. PULSE measures stories.**
+Toda ferramenta de produtividade de IA mede **linhas de código**, **commits** ou **gasto de tokens**. Nenhuma responde a pergunta que seu CTO está realmente fazendo: *estamos entregando mais valor visível ao usuário por hora de engenharia?*
 
-It's the difference between **scale weight and body fat percentage**. LOC tells you something is moving. Leverage tells you whether it's muscle or bloat.
+Existem dois tipos de time em 2026: **o time que usa IA, e o time que tem IA usando IA.** A diferença não aparece em linhas de código. Aparece em stories entregues por hora estimada.
 
-A story is the smallest unit of value your users feel. Tracking AI leverage at the story level — estimated hours vs. real hours, planning to done — gives you the only metric that survives a board meeting.
-
-PULSE is also the **first BMAD-native observability plugin** on the marketplace. There is no incumbent. There is no second place yet. If you're running BMAD and you want SDLC analytics that speak BMAD's vocabulary (epics, stories, agents, workflows), this is the tool.
-
-> Stories, not lines.
-> Outcomes, not output.
-> Leverage, not activity.
+PULSE mede isso!
 
 ---
 
-## What PULSE measures
+## O que você ganha
 
-| Metric | What it is | Why it matters |
-|---|---|---|
-| **AI Leverage Ratio** | `estimated_hours / actual_hours` | How much AI multiplied your capacity |
-| **First-Pass Rate** | % of stories approved without revision | Quality of the development process |
-| **Process Health** | Adherence to the BMAD workflow | Halts, underused skills, drift |
+- **Um número defensável de previsibilidade do seu SDLC** — quão perto suas estimativas caem da realidade, sprint a sprint, pronto para o seu deck de stakeholders. (Alavancagem também — mas como sinal do primeiro mês, não a manchete.)
+- **Aviso antecipado de trabalho travado** — previsões de capacidade e alertas de halt antes da sprint escorregar.
+- **Um coach, não só um dashboard** — Levi (o agente do PULSE) lê seus sinais e te diz *onde* a alavancagem está vazando.
+
+---
+
+## Por que PULSE
+
+**O mercado mede linhas. PULSE mede stories.**
+
+É a diferença entre **peso na balança e percentual de gordura corporal**. LOC te diz que algo está se mexendo. Alavancagem te diz se é músculo ou inchaço.
+
+Uma story é a menor unidade de valor que seu usuário sente. Acompanhar alavancagem de IA no nível da story — horas estimadas vs. horas reais, do planning ao done — te dá a única métrica que sobrevive a uma reunião de board.
+
+PULSE também é o **primeiro plugin de observabilidade BMAD-native** do marketplace. Não existe incumbente. Não existe segundo lugar ainda. Se você roda BMAD e quer analytics de SDLC que falem o vocabulário BMAD (epics, stories, agentes, workflows), essa é a ferramenta.
+
+> Stories, não linhas.
+> Outcomes, não output.
+> Previsibilidade, não bravata.
+
+---
+
+## O que PULSE mede
+
+| Métrica | O que é | Por que importa |
+|---------|---------|-----------------|
+| **AI Leverage Ratio** | `horas_estimadas / horas_reais` | Sinal do primeiro mês; colapsa para ~1.0x conforme você calibra (e isso é saudável) |
+| **First-Pass Rate** | % de stories aprovadas sem revisão | Qualidade do processo de desenvolvimento |
+| **Process Health** | Aderência ao workflow BMAD | Halts, skills subutilizadas, drift |
 
 ---
 
@@ -98,98 +106,82 @@ PULSE is also the **first BMAD-native observability plugin** on the marketplace.
 npx bmad-method install --custom-source https://github.com/nidelson/bmad-module-pulse
 ```
 
-> **Production: pin a released version.** The command above tracks
-> `main` (the manifest records `version: main`), so every re-run pulls
-> whatever has since landed on `main` — non-deterministic across a team
-> and across CI. For production projects, pin an explicit released tag:
->
-> ```bash
-> npx bmad-method install \
->   --custom-source https://github.com/nidelson/bmad-module-pulse \
->   --version v0.4.5
-> ```
->
-> Bump the tag deliberately when you want a new version. Pick one from
-> the [releases](https://github.com/nidelson/bmad-module-pulse/releases).
-> Upgrading over an existing install self-heals automatically — see
-> [MIGRATION.md](docs/MIGRATION.md#upgrading-over-an-existing-install--automatic-self-heal).
-
-Then in your BMAD project:
+Depois, no seu projeto BMAD:
 
 ```bash
-/bmad-pulse-setup            # Configure once
-/bmad-pulse-track-start      # When you start a story
-/bmad-pulse-track-done       # When you finish — leverage is computed
-/bmad-pulse-track-backfill   # Forgot to track? Recover HI/HF after the fact
-/bmad-pulse-dashboard        # See the cumulative trend
+/bmad-pulse-setup            # Configure uma vez
+/bmad-pulse-track-start      # Quando começar uma story
+/bmad-pulse-track-done       # Quando terminar — alavancagem é calculada
+/bmad-pulse-track-backfill   # Esqueceu de medir? Recupere HI/HF depois do fato
+/bmad-pulse-dashboard        # Veja a tendência cumulativa
 ```
 
-PULSE attaches to your existing BMAD story files — no schema migrations, no separate database.
+PULSE se conecta aos seus arquivos de story BMAD existentes — sem migrations, sem banco separado.
 
 ---
 
-## Included Skills
+## Skills inclusas
 
-> ⚠ **Upgrading from v0.3.x?** Slash commands were renamed from `pulse-*` to `bmad-pulse-*` in v0.4.0. Read **[MIGRATION.md](docs/MIGRATION.md)** before upgrading — v0.4.0 has BREAKING CHANGES.
+> ⚠ **Atualizando da v0.3.x?** Os slash commands foram renomeados de `pulse-*` para `bmad-pulse-*` na v0.4.0. Leia **[MIGRATION.md](docs/MIGRATION.md)** antes de atualizar — v0.4.0 tem BREAKING CHANGES.
 
-| Skill | Command | Function |
+| Skill | Comando | Função |
 |---|---|---|
-| `bmad-pulse-setup` | `/bmad-pulse-setup` | Configure the module in your project |
-| `bmad-pulse-track-start` | `/bmad-pulse-track-start [story_id]` | Register story start |
-| `bmad-pulse-track-done` | `/bmad-pulse-track-done [story_id]` | Register completion + calculate metrics |
-| `bmad-pulse-track-backfill` | `/bmad-pulse-track-backfill [story_id] --hi <ts> --hf <ts>` | Retroactively record HI/HF + metrics for a story tracked too late |
-| `bmad-pulse-dashboard` | `/bmad-pulse-dashboard` | Generate cumulative dashboard |
+| `bmad-pulse-setup` | `/bmad-pulse-setup` | Configura o módulo no seu projeto |
+| `bmad-pulse-track-start` | `/bmad-pulse-track-start [story_id]` | Registra início da story |
+| `bmad-pulse-track-done` | `/bmad-pulse-track-done [story_id]` | Registra conclusão + calcula métricas |
+| `bmad-pulse-track-backfill` | `/bmad-pulse-track-backfill [story_id] --hi <ts> --hf <ts>` | Registra HI/HF + métricas retroativamente para story medida tarde demais |
+| `bmad-pulse-dashboard` | `/bmad-pulse-dashboard` | Gera dashboard cumulativo |
 
 ---
 
-## Levi — your coach agent
+## Levi — seu agente coach
 
-**Levi** is PULSE's Hyper-Efficiency Analyst. He reads your metrics and tells you, in plain English, where the squad is losing time: estimation drift, BMAD steps being skipped, agents being misused. He celebrates real wins, calls out drift, and suggests process fixes.
+**Levi** é o Analista de Hyper-Efficiency do PULSE. Ele lê suas métricas e te diz, em linguagem clara, onde o squad está perdendo tempo: drift de estimativa, etapas BMAD sendo puladas, agentes mal utilizados. Comemora vitórias reais, aponta desvios e sugere correções no processo.
 
-He doesn't moralize. He points.
+Ele não moraliza. Ele aponta.
 
 ---
 
-## How it works
+## Como funciona
 
-PULSE instruments three points in the BMAD story lifecycle:
+PULSE instrumenta três pontos no ciclo de vida da story BMAD:
 
-1. **Story start** — captures estimated hours from the story file.
-2. **Story done** — captures real hours and computes the leverage ratio.
-3. **Sprint rollup** — aggregates leverage across the active sprint and projects capacity.
+1. **Story start** — captura horas estimadas do arquivo da story.
+2. **Story done** — captura horas reais e calcula a razão de alavancagem.
+3. **Sprint rollup** — agrega alavancagem na sprint ativa e projeta capacidade.
 
-### Leverage thresholds
+### Limiares de alavancagem
 
-| Ratio | Signal | What it means |
+| Razão | Sinal | O que significa |
 |-------|--------|---------------|
-| **≥ 3.0x** | Exceptional | AI is materially compressing your SDLC. Document the pattern, replicate it. |
-| **1.8x – 2.9x** | Solid | Healthy AI leverage. The norm for mature BMAD teams. |
-| **1.2x – 1.7x** | Caution | Marginal gain. Investigate where the AI is slowing down. |
-| **< 1.2x** | Warning | AI is not pulling its weight. Levi will surface the likely cause. |
+| **≥ 3.0x** | Excepcional | IA está comprimindo materialmente seu SDLC. Documente o padrão, replique. |
+| **1.8x – 2.9x** | Sólido | Alavancagem saudável. A norma para times BMAD maduros. |
+| **1.2x – 1.7x** | Atenção | Ganho marginal. Investigue onde a IA está desacelerando. |
+| **< 1.2x** | Alerta | IA não está puxando o peso dela. Levi vai apontar a causa provável. |
 
-### Capabilities
+### Capacidades
 
-- **Track** — per-story estimated vs. real hours, start/done timestamps, agent attribution.
-- **Aggregate** — cumulative dashboard with weekly and sprint-level trends.
-- **Forecast** — capacity projection based on rolling leverage and team velocity.
-- **Audit** — process health checks for stories without estimates, halted work, missing artifacts.
-- **Alert** — halt detection when a story stalls beyond its estimate.
-- **Coach** — Levi reads the metrics and pinpoints bottlenecks in plain English.
+- **Track** — horas estimadas vs. reais por story, timestamps de início/fim, atribuição por agente.
+- **Aggregate** — dashboard cumulativo com tendências semanais e por sprint.
+- **Forecast** — projeção de capacidade baseada em alavancagem rolante e velocidade do time.
+- **Audit** — checagens de saúde de processo: stories sem estimativa, trabalho parado, artefatos faltando.
+- **Alert** — detecção de halt quando uma story trava além da estimativa.
+- **Coach** — Levi lê as métricas e aponta gargalos em linguagem clara.
 
-### Halt categories — separating dev work from wait time
+### Categorias de halt — separando trabalho de IA de tempo de espera
 
-Wall-clock time can be inflated by latencies that aren't dev work. PULSE captures these as structured halts in `process_health.halts` and subtracts them from `actual_hours` so leverage reflects real engineering effort.
+Wall-clock pode ser inflado por latências que não são trabalho de dev. PULSE captura essas latências como halts estruturados em `process_health.halts` e subtrai do `actual_hours` para que a alavancagem reflita esforço real de engenharia.
 
-| `kind`           | What it represents                                                                                  |
-| ---------------- | --------------------------------------------------------------------------------------------------- |
-| `approval_wait`  | Paused waiting for explicit user approval (admin merge, scope expansion, irreversible action).      |
-| `incident`       | External infra outage, GitHub down, dependency unavailable.                                         |
-| `external_pause` | User-initiated break that should not count as dev work.                                             |
-| `other`          | Anything else — document with `note`.                                                               |
+| `kind`           | O que representa                                                                                       |
+| ---------------- | ------------------------------------------------------------------------------------------------------ |
+| `approval_wait`  | Pausa aguardando aprovação explícita do usuário (admin merge, expansão de escopo, ação irreversível).  |
+| `incident`       | Indisponibilidade externa, GitHub fora, dependência indisponível.                                      |
+| `external_pause` | Pausa iniciada pelo usuário que não deve contar como trabalho de dev.                                  |
+| `other`          | Qualquer outro caso — documentar com `note`.                                                           |
 
-**Threshold:** only document halts longer than 2 minutes. Below that is conversational latency, not a halt.
+**Threshold:** documentar apenas halts maiores que 2 minutos. Abaixo disso é latência conversacional, não halt.
 
-**Pre-approved batch decisions:** when a prior story granted durable approval covering the current one (e.g., "Admin merge applies to the entire epic-setup batch"), set `pre_approved_batch: true` on the halt entry. PULSE reports it but does not subtract — this rewards batch-decision behavior, which is operationally correct for human-in-the-loop AI workflows.
+**Decisões batch pré-aprovadas:** quando uma story anterior concedeu aprovação durável que cobre a atual (ex.: "Admin merge vale para todo o batch epic-setup"), marque `pre_approved_batch: true` na entrada do halt. PULSE registra mas não subtrai — isso premia o comportamento de batch-decision, operacionalmente correto para workflows human-in-the-loop com IA.
 
 ```yaml
 process_health:
@@ -200,133 +192,125 @@ process_health:
       pre_approved_batch: false
 ```
 
-Why it matters: AI dev rate >> human review rate. Without this, every "AI does 5min of work, human takes 5min to approve" cycle gets logged as 0.5x leverage instead of the real number.
+Por que importa: taxa de dev de IA >> taxa de review humano. Sem isso, cada ciclo "IA faz 5min de trabalho, humano leva 5min para aprovar" é logado como 0.5x de alavancagem em vez do número real.
 
 ---
 
-## Configuration
+## Configuração
 
-PULSE offers 25 configurable variables with opinionated defaults. During setup (`/bmad-pulse-setup`), you can customize:
+PULSE oferece 25 variáveis configuráveis com defaults opinionated. Durante o setup (`/bmad-pulse-setup`), você customiza:
 
-- **Estimation methodology** — hours, story points, or t-shirt sizes
-- **Field mapping** — adapts field names from your project
-- **Work categories** — backend/web/mobile/fullstack or custom
-- **Leverage thresholds** — when to consider exceptional, solid, or warning
-- **Dashboard** — format, sections, and forecasts
-- **Process Health** — level of checks and alerts
-
----
-
-## Customizing PULSE skills
-
-Every PULSE skill ships a `customize.toml` exposing the same override surface as bmm-shipped skills. Overrides live in `_bmad/custom/{skill-name}.toml` (team-shared, committed) and `_bmad/custom/{skill-name}.user.toml` (gitignored). Empty defaults preserve current behavior — nothing to do until you want to extend.
-
-**Merge rules (by value shape):**
-
-- Scalars: override wins (`icon = "🔥"` replaces the default).
-- Arrays: append (base → team → user concatenate).
-- Arrays of tables with `code` or `id`: replace matching entries, append new ones.
-
-### Example 1 — give Levi a persistent fact
-
-`_bmad/custom/bmad-agent-pulse.toml`:
-
-```toml
-[agent]
-persistent_facts = [
-  "Always celebrate leverage above 4x with an exclamation; below 1.2x, request a halt review.",
-]
-```
-
-### Example 2 — push metrics to a webhook on every track-done
-
-`_bmad/custom/bmad-pulse-track-done.toml`:
-
-```toml
-[workflow]
-metric_post_hooks = [
-  "curl -X POST -H 'Content-Type: application/json' -d @{pulse_data_folder}/last-pulse.json https://hooks.slack.com/services/AAA/BBB/CCC",
-]
-```
-
-### Example 3 — register a custom halt category
-
-`_bmad/custom/bmad-pulse-track-done.toml`:
-
-```toml
-[workflow]
-halt_categories_extra = [
-  "security_review_wait",
-  "ux_review_wait",
-]
-```
-
-These values become valid selections in the halt prompt and are persisted alongside the built-in kinds.
-
-### Example 4 — append a team-glossary to every dashboard
-
-`_bmad/custom/bmad-pulse-dashboard.toml`:
-
-```toml
-[workflow]
-extra_sections = [
-  "file:{project-root}/docs/team-glossary.md",
-]
-```
-
-### Example 5 — override Levi's "new record" cutoff
-
-`_bmad/custom/bmad-agent-pulse.toml`:
-
-```toml
-[agent]
-celebration_threshold_override = "4.5"
-```
-
-The full surface for each skill is documented in the skill's `customize.toml` shipped under `.claude/skills/<skill>/`. The header line `# DO NOT EDIT -- overwritten on every update.` marks defaults; your overrides go in `_bmad/custom/` instead.
+- **Metodologia de estimativa** — horas, story points ou t-shirt sizes
+- **Mapeamento de campos** — adapta nomes de campos do seu projeto
+- **Categorias de trabalho** — backend/web/mobile/fullstack ou customizado
+- **Limiares de alavancagem** — quando considerar excepcional, sólido ou alerta
+- **Dashboard** — formato, seções e previsões
+- **Process Health** — nível de checagens e alertas
 
 ---
 
-## Proven leverage
+## Auto-dashboard
 
-Sustained leverage of **6.9x** measured on a production BMAD project (SIP — local-first survey platform, monorepo with mobile, web, backend, and worker apps). The number reflects shipped stories with estimated and real hours captured by PULSE itself across multiple sprints.
+O PULSE pode regenerar o dashboard cumulativo automaticamente após cada `track-done` — fechando o loop "story concluída → estado consistente" sem invocação manual de `/bmad-pulse-dashboard`. O trigger é **opt-in** via flag de configuração:
 
-PULSE eats its own dog food.
+```yaml
+# _bmad/config.yaml — seção pulse
+pulse:
+  # ... outras configurações PULSE ...
+  pulse_auto_dashboard: yes   # default: 'no' (regen manual, preserva comportamento pré-flag)
+```
 
-That number isn't the ceiling. It's a data point. PULSE exists so your team can find theirs.
+Quando `yes`, o hook `on_complete` padrão de `bmad-pulse-track-done` invoca `/bmad-pulse-dashboard` logo depois do card Efficiency Pulse aparecer. Quando `no`, ausente ou qualquer outro valor, o hook é um no-op silencioso.
+
+### Trade-off: conflitos de merge em PRs paralelas
+
+Auto-regenerar `dashboard.md` em cada track-done **garante conflitos de merge** em workflows com pull requests paralelas — cada track-done reescreve o arquivo inteiro. Três estratégias documentadas de mitigação:
+
+**1. `dashboard.md` em `.gitignore`** (recomendado para repos com paralelismo)
+
+Fonte de verdade fica em `sprint-status.yaml` sob `pulse_metrics:`. Cada dev regenera localmente sob demanda. Zero conflitos, zero perda de histórico.
+
+```gitignore
+# .gitignore
+implementation-artifacts/pulse-dashboards/dashboard.md
+```
+
+**2. Workflow CI pós-merge em `main`**
+
+Dashboard é regenerado por uma GitHub Action serializada e commitado direto em `main` com `[skip ci]`. Devs locais deixam `pulse_auto_dashboard: no` — a CI central é dona do arquivo.
+
+```yaml
+# .github/workflows/pulse-dashboard.yml
+on:
+  push:
+    branches: [main]
+    paths: ['**/sprint-status.yaml']
+jobs:
+  regen:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pulse-dashboard
+      cancel-in-progress: false
+    # ... invocar /bmad-pulse-dashboard via seu runner ...
+```
+
+**3. Aceitar conflito como resolução trivial**
+
+Para times pequenos (1–2 devs trabalhando serial), `git checkout --theirs dashboard.md && /bmad-pulse-dashboard` resolve em ~5 segundos. Aceitável quando paralelismo é raro.
+
+### Desabilitando o hook default
+
+Para manter `pulse_auto_dashboard: yes` mas substituir o regen do dashboard por outro comportamento (push pra Grafana, notificação Slack, etc.), sobrescreva `on_complete` em `_bmad/custom/bmad-pulse-track-done.toml`. Para desabilitar completamente, defina `on_complete = ""` no mesmo arquivo de override.
+
+---
+
+## Alavancagem comprovada — vs referência frozen (estável)
+
+Alavancagem sustentada de **6.9x** medida em um projeto BMAD em produção (SIP — plataforma de pesquisa local-first, monorepo com apps mobile, web, backend e worker), capturada pelo próprio PULSE ao longo de múltiplas sprints.
+
+Esse **6.9x** é honesto porque é lido **vs uma referência frozen** (`estimated_hours_reference`, denominador congelado e governado pelo `bmad-module-bcp`) — um benchmark fixo que **não colapsa** conforme o time calibra. É diferente da alavancagem-vs-plano, que colapsa para ~1.0x por construção (e vira a previsibilidade). Veja a [integração com BCP](docs/integration/bcp.md).
+
+PULSE usa o próprio remédio.
+
+Esse número não é o teto, nem uma meta. É um ponto de dado vs um benchmark fixo. PULSE existe para que seu time encontre o dele — e a métrica-herói continua sendo **previsibilidade**, não o multiplicador.
 
 ---
 
 ## Roadmap
 
-- **v0.5** — Period-navigable dashboard (week / sprint / quarter views, side-by-side comparison)
-- **v0.6** — Per-developer and per-agent leverage breakdowns, with privacy guards on by default
-- **v0.7** — Slack and Linear digests so signals reach leadership without a meeting
-- **v1.0** — Pitch to BMAD core for native adoption.
+> O PULSE está mudando sua métrica-norte de um multiplicador de alavancagem para **previsibilidade**. Cada marco abaixo operacionaliza essa mudança.
+
+- **v0.5 — Engine de medição honesto.** Estimador de `h/BCP` por média geométrica (não aritmética), segmentação micro vs story-size, faixa de confiança em vez de ponto, e contract test anti-Goodhart.
+- **v0.6 — Inverter o velocímetro.** A métrica-herói passa a ser convergência/acurácia (um ~1.0x estável é saudável; um multiplicador alto sinaliza estimativa inflada, não velocidade) mais o drift auto-referente de `h/BCP`. Detecção de regime via `estimated_hours_basis`. **Três enquadramentos de multiplicador:** "vs PLANO" (colapsa → previsibilidade) e "vs REFERÊNCIA frozen" (denominador congelado, ROI estável que não colapsa, lendo `estimated_hours_reference` do `bmad-module-bcp`) — nunca "vs humano".
+- **v0.7 — A ação que importa.** Um alerta de drift no momento da estimativa — _"stories como X erraram +N% nas últimas K — reestimar?"_ — interrompendo a estimativa ruim antes de virar compromisso.
+- **v0.8 — Previsibilidade para precificar.** Forecast de projeto `BCP × h/BCP ± IC(90%)` para times que faturam por hora; quebras por desenvolvedor/agente e digests Slack/Linear entram aqui.
+- **v1.0 — Proposta à equipe principal do BMAD** para adoção nativa.
+
+> **Por que a mudança?** Os próprios dados do PULSE mostraram que a alavancagem mede o *basis da estimativa*, não o trabalho — calibrar empurra qualquer multiplicador para 1.0x por construção, então uma meta de alavancagem literalmente premia nunca calibrar. O sinal durável é previsibilidade: _você entregou o que prometeu, e consegue provar?_ O gráfico 10x→1x não é o problema — é o moat. (Telemetria de uso de tokens fica parqueada como possível módulo separado.)
 
 ---
 
-## Requirements
+## Requisitos
 
-- **BMAD Method** >= 6.4.0 (see [MIGRATION.md](docs/MIGRATION.md) if upgrading from v0.3.x)
-- **Python** >= 3.9 (for setup scripts)
-- **AI assistant** tool-agnostic — Claude Code, Cursor, Copilot, or anything else. PULSE measures the squad, not the IDE.
-
----
-
-## Community
-
-- [Discord](https://discord.gg/gk8jAdXWmj) — BMad Method community
-- [Issues](https://github.com/nidelson/bmad-module-pulse/issues) — Bug reports and feature requests
-
-## Star history
-
-[View star history on star-history.com](https://star-history.com/#nidelson/bmad-module-pulse)
-
-## License
-
-MIT — see [LICENSE](LICENSE).
+- **BMAD Method** >= 6.4.0 (veja [MIGRATION.md](docs/MIGRATION.md) se atualizando da v0.3.x)
+- **Python** >= 3.9 (para scripts de setup)
+- **Assistente de IA** agnóstico — Claude Code, Cursor, Copilot ou qualquer outro. PULSE mede o squad, não a IDE.
 
 ---
 
-_PULSE — Against facts, there are no arguments._
+## Comunidade
+
+- [Discord](https://discord.gg/gk8jAdXWmj) — Comunidade BMad Method
+- [Issues](https://github.com/nidelson/bmad-module-pulse/issues) — Reports de bugs e pedidos de features
+
+## Histórico de stars
+
+[Ver histórico em star-history.com](https://star-history.com/#nidelson/bmad-module-pulse)
+
+## Licença
+
+MIT — veja [LICENSE](LICENSE).
+
+---
+
+_PULSE — Contra fatos, não há argumentos._

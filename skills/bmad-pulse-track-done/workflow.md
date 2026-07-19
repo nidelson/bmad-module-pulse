@@ -53,16 +53,24 @@ Load the PULSE configuration as described in INITIALIZATION below, then execute 
 
 ### Configuration Loading
 
-Load the config from the `pulse` section of `{main_config}` and resolve all module variables from that section:
+Resolve the PULSE configuration **toml-first** (issue #73):
+
+1. Run `python3 {project-root}/_bmad/scripts/resolve_config.py --project-root {project-root} --key modules.pulse --key core` and read `pulse_*` from the `modules.pulse` table and core keys (`output_folder`, `user_name`, `communication_language`) from `core`.
+2. **Per-key fallback** — for any key absent from the resolved toml, read it from the legacy `pulse:` section (module keys) or root (core keys) of `{main_config}`; the yaml is the lowest-priority layer, never authoritative over the toml.
+3. **Default last** — if neither has the key, use the `module.yaml` default.
+
+If `resolve_config.py` is unavailable (pre-#2285 install), read `{main_config}` directly as before.
+
+The keys this workflow uses:
 
 - `output_folder`, `user_name`, `communication_language`
 - `pulse_data_folder`, `pulse_dashboard_folder`
 - `pulse_sprint_status_filename`
 - `pulse_estimation_method` (story_points / hours / t-shirt / bcp)
 - `pulse_story_point_hours_factor` (story points → hours conversion factor)
-- `pulse_leverage_threshold_exceptional` (e.g. 4)
-- `pulse_leverage_threshold_solid` (e.g. 2)
-- `pulse_leverage_warning_threshold` (e.g. 1)
+- `pulse_leverage_threshold_exceptional` (e.g. 4) — _legacy since v0.6: no longer drives celebration (kept for back-compat)_
+- `pulse_leverage_threshold_solid` (e.g. 2) — _legacy since v0.6: no longer drives celebration_
+- `pulse_leverage_warning_threshold` (e.g. 1) — _legacy since v0.6: no longer drives celebration_
 - `pulse_alert_on_halt` (yes / warn / no)
 - `pulse_alert_unused_skills` (yes / no)
 - `pulse_process_health_checks` (standard / strict / minimal)
@@ -163,6 +171,7 @@ halt_minutes = sum(
 
 actual_hours = effective_hours ?? max(0.01, (elapsed_minutes - halt_minutes) / 60)
 leverage_ratio = estimated_hours / actual_hours
+estimate_error_pct = round(abs(actual_hours - estimated_hours) / max(0.01, estimated_hours) * 100, 1)  # how far the estimate was from reality; equals |drift_pct| for BCP stories
 first_pass = review_cycles == 1
 ```
 
@@ -182,6 +191,30 @@ first_pass = review_cycles == 1
 2. Add the `actual_hours` field with the calculated value (with traceability comment when halts were subtracted)
 3. Add the `leverage_ratio` field with the calculated value (1 decimal)
 4. Add the `first_pass` field as a boolean
+5. Add the `estimate_error_pct` field with the calculated value — the per-story **predictability** signal (accuracy of plan vs reality, **lower is better**; `0%` = perfectly on-plan). Persist it next to `leverage_ratio`: the leverage ratio is a 1.0-centered multiplier that *mis-signals* predictability (a calibrated `0.9` reads like "weak leverage" when it is in fact good predictability), so the explicit accuracy field is the one that reads as previsibilidade per-story. The dashboard's `predictability_score` is the median of this across stories.
+
+**Stable leverage vs frozen reference (issue #65 — only when available):**
+
+Resolve `estimated_hours_reference` as `pulse_metrics[story].estimated_hours_reference`
+(snapshotted by track-start). If that snapshot is absent, re-read the story frontmatter
+`estimated_hours_reference` (read-only) as a fallback. If neither yields a positive
+number, **omit** this block entirely — behave exactly as today (vs-PLAN leverage only).
+
+When a positive `estimated_hours_reference` is available, add a `leverage_vs_reference`
+field to the story entry in `pulse_metrics`:
+
+```text
+leverage_vs_reference = round(estimated_hours_reference / actual_hours, 1)
+```
+
+This is the **stable ROI** number: its denominator is **frozen** (the reference rate is
+governed upstream by `bmad-module-bcp`, never recalibrated), so unlike `leverage_ratio`
+(vs PLAN, which collapses to ~1.0x by construction as the estimate basis calibrates) it
+**does not collapse**. It is an honest multiplier **vs a fixed external benchmark**, not
+"vs human" and not a target — predictability stays the hero metric. PULSE only **reads**
+the field (file convention) and divides; it never computes the reference, never reads the
+BCP baseline, and never writes the story frontmatter (read-only input owned by
+`bmad-module-bcp`).
 
 **BCP productivity (only when a BCP total is available for this story):**
 
@@ -225,12 +258,15 @@ Display in the terminal:
    📊 Efficiency
    Human estimate: {estimated_hours}h ({dev_count} devs)
    Actual AI time: {actual_hours}h ({elapsed_minutes}min wall-clock)
-   AI Leverage: {leverage_ratio}x
+   AI Leverage: {leverage_ratio}x (vs PLAN, not vs human)
+   {if leverage_vs_reference}AI Leverage: {leverage_vs_reference}x (vs REFERENCE, frozen — stable ROI, does not collapse){end}
+   Estimate accuracy: {estimate_error_pct}% off plan
    {if bcp_recorded}BCP: {bcp_recorded.total} pts | {bcp_recorded.h_per_bcp_actual}h/BCP actual vs {bcp_recorded.h_per_bcp_estimated}h/BCP est ({bcp_recorded.drift_pct:+}% drift){end}
    Quality: {first_pass ? "✅ first-pass" : "🔄 " + review_cycles + " cycles"}
    Tasks: {task_count}
    Category: {category}
-   {leverage_ratio >= pulse_leverage_threshold_exceptional ? "🔥 Exceptional!" : leverage_ratio >= pulse_leverage_threshold_solid ? "💪 Solid!" : leverage_ratio < pulse_leverage_warning_threshold ? "⚠ Below expectations — review estimates or process." : "📊 Data recorded."}
+   {estimate_error_pct <= 15 ? (first_pass ? "🎯 On-plan! (estimate within 15%, first-pass)" : "🎯 On-plan (estimate within 15%)") : estimate_error_pct >= 50 ? "⚠ Off-plan — review the estimate basis, not the speed." : "📊 Data recorded."}
+   <!-- v0.6: celebration triggers on estimate ACCURACY (on-plan), not on leverage magnitude. A high multiplier is an uncalibrated estimate, not a win (anti-Goodhart). pulse_leverage_threshold_exceptional/solid are retired as celebration triggers — leverage is reported "vs PLAN" as context only. -->
 
    📋 Process Health
    Flow: {flow_check}
@@ -376,3 +412,7 @@ After Step 6 has produced the final metrics card but BEFORE displaying it to the
 ## On Completion
 
 After the Efficiency Pulse has been displayed AND all `{workflow.metric_post_hooks}` have run, execute the `{workflow.on_complete}` scalar if non-empty. Override wins; an empty value means no custom post-completion behavior.
+
+The shipped default for `on_complete` is an opt-in auto-dashboard trigger gated by `pulse_auto_dashboard` in the `pulse` config section. When that flag is `yes`, the default invokes `/bmad-pulse-dashboard` to regenerate the cumulative dashboard right after the Efficiency Pulse card is shown. When the flag is `no`, missing, or any other value, the default behaves as a silent no-op — preserving the pre-flag behavior. To disable the auto-dashboard while keeping the flag enabled (or to swap in a different post-completion hook), override `on_complete` in `_bmad/custom/bmad-pulse-track-done.toml`.
+
+In parallel-PR workflows, auto-regenerating `dashboard.md` on every track-done **will produce merge conflicts** — the file is rewritten in full each run. See the README "Auto-dashboard" section for the three documented mitigation strategies before enabling.

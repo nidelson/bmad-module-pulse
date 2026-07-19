@@ -8,7 +8,7 @@ description: >-
   Metrics module that calculates AI Leverage Ratio, first-pass rate, and process
   health per story. Generates cumulative dashboards with trends and capacity
   forecasts.
-module_version: 0.4.10
+module_version: 0.8.5
 default_selected: false
 module_greeting: >
   PULSE installed successfully! Against facts, there are no arguments.
@@ -168,6 +168,22 @@ pulse_min_stories_for_trend:
   prompt: Minimum number of stories to activate trend analysis?
   default: '3'
   result: '{value}'
+pulse_auto_dashboard:
+  prompt: >-
+    Auto-regenerate the dashboard after every track-done? (CAUTION: in
+    parallel-PR workflows this guarantees merge conflicts on dashboard.md — see
+    the README "Auto-dashboard" section for mitigation strategies.)
+  default: 'no'
+  result: '{value}'
+  single-select:
+    - value: 'no'
+      label: >-
+        No — regenerate manually with /bmad-pulse-dashboard (Recommended for
+        teams with parallel PRs)
+    - value: 'yes'
+      label: >-
+        Yes — auto-regenerate after every track-done (best for solo / serial
+        workflows)
 pulse_levi_verbosity:
   prompt: Level of detail in Levi's responses?
   default: standard

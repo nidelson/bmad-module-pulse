@@ -53,7 +53,15 @@ Load the PULSE configuration as described in INITIALIZATION below, then execute 
 
 ### Configuration Loading
 
-Load the `pulse` section from `{main_config}` and resolve module variables:
+Resolve the PULSE configuration **toml-first** (issue #73):
+
+1. Run `python3 {project-root}/_bmad/scripts/resolve_config.py --project-root {project-root} --key modules.pulse --key core` and read `pulse_*` from the `modules.pulse` table and core keys (`output_folder`, `user_name`, `communication_language`) from `core`.
+2. **Per-key fallback** — for any key absent from the resolved toml, read it from the legacy `pulse:` section (module keys) or root (core keys) of `{main_config}`; the yaml is the lowest-priority layer, never authoritative over the toml.
+3. **Default last** — if neither has the key, use the `module.yaml` default.
+
+If `resolve_config.py` is unavailable (pre-#2285 install), read `{main_config}` directly as before.
+
+The keys this workflow uses:
 
 - `output_folder`, `user_name`, `communication_language`
 - `pulse_estimation_method` — `hours` / `story_points` / `tshirt` / `bcp`
@@ -111,6 +119,7 @@ Load the `pulse` section from `{main_config}` and resolve module variables:
      - Read `bcp.schema_version`. If it is a value this skill does not recognize (anything other than `"1.0"`), emit a one-line warning (`⚠ Unknown bcp.schema_version <v> — ignoring bcp.* for this story`) and treat the block as absent for the rest of the workflow.
      - Otherwise capture `bcp.total`, `bcp.rule_version`, and `bcp.scored_by` for the snapshot in Step 3. PULSE does not interpret `bcp.breakdown` or `bcp.history`.
      - This extraction is **read-only** — PULSE never writes back to the story frontmatter.
+   - The `estimated_hours_reference` field, **only if present** (frozen leverage anchor written by `bmad-module-bcp`, issue #65). It is `bcp.total × reference_h_per_bcp` — a **frozen** denominator for stable leverage that does not collapse as the team calibrates. Capture it read-only for the snapshot in Step 3. PULSE never computes it, never reads the BCP baseline, and never writes it back to the story frontmatter. When absent (BCP not installed, or older BCP), omit it — behave exactly as today.
 
 ### Step 3: Record in the file configured in `pulse_sprint_status_filename`
 
@@ -131,6 +140,7 @@ Load the `pulse` section from `{main_config}` and resolve module variables:
        start_ts: "..."
        estimated_hours: 86.7
        estimation_basis: bcp
+       estimated_hours_reference: 105.0   # frozen leverage anchor (issue #65) — only when present
        bcp_at_start:
          total: 21
          rule_version: "1.0"
@@ -141,8 +151,33 @@ Load the `pulse` section from `{main_config}` and resolve module variables:
    snapshot is still recorded as opt-in telemetry (`estimation_basis` reflects the
    configured method, `bcp_at_start` is added alongside). When no valid `bcp:` block is
    present, omit both fields entirely — behave exactly as today.
+4. **Frozen reference snapshot (only when `estimated_hours_reference` was captured in Step 2):** add `estimated_hours_reference` to the same story entry, copied verbatim from the story frontmatter. This is the frozen denominator track-done uses for the stable `leverage_vs_reference` (issue #65). Omit the field entirely when it is absent — it is opt-in telemetry, never fabricated.
 
-### Step 4: Confirm
+### Step 4: Estimation drift check (advisory — non-blocking)
+
+This is the v0.7 "action that matters": surface drift at the commitment gate so a
+bad estimate can be caught *before* it becomes a promise. Compute
+`cohort_drift(category, segment)` from the existing `pulse_metrics:` history (see
+the `bmad-pulse-dashboard` aggregation for the canonical definition):
+
+- **Segment** (only when a `bcp.total` was captured this run): `micro` if
+  `bcp.total < median(bcp.total over recorded stories)`, else `story`. Without
+  BCP, the cohort is `category` alone (documented fallback).
+- **Cohort drift**: the **median `|estimate error|%`** over the **last `K = 5`**
+  completed stories in the cohort (a completed story has both `estimated_hours`
+  and a recorded `actual_hours`/drift). For BCP stories this equals
+  `|bcp_recorded.drift_pct|`.
+- **Emit the advisory only when `n >= 3` and the median exceeds `T = 25%`.**
+  Otherwise stay **silent** — no false alarm on a healthy or thin cohort.
+
+The advisory is **non-blocking**: a one-line heads-up in the Confirm card. The
+start is recorded regardless and PULSE **never changes `estimated_hours`** — the
+re-estimate decision is the human's/agent's. Defaults `K=5` / `T=25%` are inline
+(may become config later).
+
+> **Advisory invariant (do not regress).** Estimation is owned **upstream** (BMAD/Amelia, or BCP/Bruno) — PULSE stays passive. This alert **informs, it never drives**: it reads `pulse_metrics` history, it never writes the story frontmatter, never writes or adjusts `estimated_hours`, never halts the start, and never re-scores anything. If a future edit makes it mutate an estimate or block the flow, that breaks the contract (locked by `tests/test_action_alert.py`).
+
+### Step 5: Confirm
 
 Display:
 
@@ -154,6 +189,7 @@ Display:
    {if bcp_at_start}BCP: {bcp_at_start.total} pts (rule {bcp_at_start.rule_version}, scored by {bcp_at_start.scored_by}){end}
    Tasks: {task_count}
    Category: {category}
+   {if cohort_drift alert (n >= 3 and median > 25%)}⚠ Heads up: stories like {category}{if segment}/{segment}{end} were off +{median_abs_drift}% (median) over the last {K} — re-estimate before committing? (advisory; PULSE will not change your estimate){end}
    ⏱️ The clock is running...
 ```
 
@@ -163,6 +199,7 @@ Display:
 
 - DO NOT modify anything outside the `pulse_metrics:` section of the sprint-status file
 - DO NOT write to the story file frontmatter or to any BCP baseline file — `bcp.*` is read-only input owned by `bmad-module-bcp`
+- The v0.7 drift advisory (Step 4) is **advisory-only and non-blocking**: it NEVER writes or changes `estimated_hours`, never auto-adjusts the estimate, and never halts the start. It only surfaces a heads-up; the re-estimate decision belongs to the human/agent.
 - If an entry already exists for this story ID in `pulse_metrics:`, ask whether to overwrite
 - Create the `pulse_metrics:` section if it does not exist
 - Communicate in the language configured in `communication_language`
