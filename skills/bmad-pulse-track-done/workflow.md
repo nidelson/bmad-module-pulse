@@ -218,10 +218,23 @@ BCP baseline, and never writes the story frontmatter (read-only input owned by
 
 **BCP productivity (only when a BCP total is available for this story):**
 
-Resolve `bcp_total` as `pulse_metrics[story].bcp_at_start.total` (snapshotted by
-track-start). If that snapshot is absent, re-read the story frontmatter `bcp.total`
-(read-only) as a fallback. If neither yields a number, skip this block entirely —
-behave exactly as today.
+Resolve `bcp_total` from the story frontmatter `bcp.total` (read-only) — the
+story's **final** BCP. If the frontmatter yields no total, fall back to
+`pulse_metrics[story].bcp_at_start.total` (snapshotted by track-start). If neither
+yields a number, skip this block entirely — behave exactly as today.
+
+**Why the final total, not the start snapshot.** `estimated_hours` is derived
+upstream from the final BCP, so `h_per_bcp_estimated = estimated_hours / bcp_total`
+only holds when the same total sits on both sides. A story rescored mid-flight
+(start 15, final 13) measured against the snapshot pairs a numerator from one
+scoring with a denominator from another, describing no state the story was ever
+in. The error does not stay local: `h_per_bcp_actual` feeds the observed
+per-category baseline and `drift_pct` feeds the convergence signal, so a stale
+denominator biases the very numbers the team calibrates estimates against.
+
+When the two totals differ, keep `bcp_at_start.total` as evidence of the rescore
+(the dashboard labels such a story **rescored**) — the divergence is worth
+recording, it just must not be the denominator.
 
 When `bcp_total` is a positive number, add a `bcp_recorded` field to the story
 entry in `pulse_metrics`:
