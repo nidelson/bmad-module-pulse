@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.7](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.6...v0.8.7) (2026-07-29)
+
+
+### Bug Fixes
+
+* **setup:** stop register-party-agent from flattening local edits on re-run ([#81](https://github.com/nidelson/bmad-module-pulse/issues/81)) ([8abe71f](https://github.com/nidelson/bmad-module-pulse/commit/8abe71fb9bb4508060b420788568cf8529372357))
+
 ## [0.8.6](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.5...v0.8.6) (2026-07-25)
 
 
