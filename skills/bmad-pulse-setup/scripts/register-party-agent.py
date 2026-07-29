@@ -11,8 +11,15 @@ _bmad/custom/config.toml (team). Os modulos OFICIAIS tem suas entradas
 [agents.*] escritas no config.toml base pelo installer do BMAD core; um modulo
 CUSTOM (como o PULSE) nao e escrito ali, entao seu agente nunca aparece no
 party-mode. Este script grava a entrada no layer custom (team, committed), que
-sobrevive a re-install. Idempotente / anti-zombie: reescreve a propria entrada
-a cada run e preserva comentarios e demais secoes (tomlkit round-trip).
+sobrevive a re-install. Idempotente: preserva comentarios e demais secoes
+(tomlkit round-trip).
+
+O custom/config.toml e um arquivo human-authored — o time comenta e edita as
+entradas ali. Por isso um re-run NAO reescreve o bloco inteiro: a entrada e
+atualizada in-place (mantendo sua posicao e os comentarios que a precedem) e so
+os campos estruturais (STRUCTURAL_FIELDS) sao regravados. Campos editoriais ja
+presentes (name/title/icon/description) sao preservados — use `--force` para
+restaura-los a partir do fragment.
 """
 import argparse
 import csv
@@ -27,6 +34,11 @@ except ModuleNotFoundError:
     sys.exit(2)
 
 DEFAULT_TEAM = "software-development"
+
+# Campos que o fragment e dono: identificam o registro e podem ser regravados a
+# cada run sem perda. Os demais (name/title/icon/description) sao editoriais —
+# o time os ajusta direto no config.toml, e um re-run nao deve achata-los.
+STRUCTURAL_FIELDS = ("module", "team")
 
 
 def load_fragment(fragment_path: Path) -> dict | None:
@@ -61,6 +73,12 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Register the PULSE agent in _bmad/custom/config.toml [agents].")
     ap.add_argument("--project-root", required=True, help="Consumer project root")
     ap.add_argument("--fragment", required=True, help="Path to agent-manifest-fragment.csv")
+    ap.add_argument(
+        "--force",
+        action="store_true",
+        help="Tambem sobrescreve os campos editoriais (name/title/icon/description) "
+             "com os valores do fragment. Sem a flag, campos ja presentes sao preservados.",
+    )
     args = ap.parse_args()
 
     root = Path(args.project_root)
@@ -89,17 +107,34 @@ def main() -> None:
     if agents is None:
         agents = tomlkit.table(is_super_table=True)
         doc["agents"] = agents
-    if key in agents:
-        del agents[key]
 
-    tbl = tomlkit.table()
-    for k, v in entry.items():
-        tbl[k] = v
-    agents[key] = tbl
+    existing = agents.get(key)
+    if existing is None:
+        tbl = tomlkit.table()
+        for k, v in entry.items():
+            tbl[k] = v
+        agents[key] = tbl
+        action = "created"
+        written = dict(entry)
+    else:
+        # Atualiza in-place. Recriar a entrada (del + reatribuicao) a moveria
+        # para o fim de [agents], desgarrando os comentarios que a precedem no
+        # arquivo do time.
+        for k, v in entry.items():
+            if args.force or k in STRUCTURAL_FIELDS or k not in existing:
+                existing[k] = v
+        action = "forced" if args.force else "updated"
+        written = {k: existing[k] for k in entry}
 
     custom.write_text(tomlkit.dumps(doc), encoding="utf-8")
     print(json.dumps(
-        {"status": "success", "agent_key": key, "custom_config_path": str(custom), "entry": entry},
+        {
+            "status": "success",
+            "action": action,
+            "agent_key": key,
+            "custom_config_path": str(custom),
+            "entry": written,
+        },
         ensure_ascii=False,
     ))
 
