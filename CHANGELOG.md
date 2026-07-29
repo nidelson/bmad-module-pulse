@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.6](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.5...v0.8.6) (2026-07-25)
+
+
+### Bug Fixes
+
+* **dashboard,track-done:** divide h/BCP and the implied reference rate by the story's final BCP ([#79](https://github.com/nidelson/bmad-module-pulse/issues/79)) ([d2da6bf](https://github.com/nidelson/bmad-module-pulse/commit/d2da6bf35fc88b3685b923d732aa97d585692c3f))
+
 ## [0.8.5](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.4...v0.8.5) (2026-07-18)
 
 
