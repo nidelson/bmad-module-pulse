@@ -11,7 +11,10 @@ test = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+# `skills` is here because the BCP scoring scripts keep their tests next to the
+# code they exercise (`skills/bmad-bcp-score/scripts/tests/`). Without it those
+# 794 lines are collected by nothing and CI stays green having run none of them.
+testpaths = ["skills", "tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 addopts = "-ra --strict-markers"
