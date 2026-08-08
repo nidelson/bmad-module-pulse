@@ -1,0 +1,108 @@
+# JSON Schema (Draft 2020-12) for the BCP frontmatter contract.
+# BCP writes these keys; PULSE and other readers consume them
+# writer-agnostically. BCP NEVER writes `pulse_metrics`; PULSE NEVER
+# writes `bcp.*`. Keys are EN (interoperability — ADR 0001).
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://github.com/nidelson/bmad-module-bcp/schemas/bcp-frontmatter-1.0"
+title: BCP story frontmatter contract
+type: object
+properties:
+  estimated_hours:
+    type: number
+    minimum: 0
+    description: Horas estimadas; BCP sobrescreve (consentimento via install).
+  estimated_hours_pre_bcp:
+    type: number
+    minimum: 0
+    description: The original value before BCP (audit; written exactly once).
+  estimated_hours_basis:
+    type: string
+    enum: [bcp, agent]
+    description: Origem da estimativa corrente.
+  estimated_hours_reference:
+    type: number
+    minimum: 0
+    description: >-
+      Âncora frozen de horas = total × reference_h_per_bcp (issue #32).
+      The STABLE denominator for leverage — it does not collapse when the
+      calibra (diferente de estimated_hours, que segue o fator vivo do plano).
+      Defaults to the seed when the reference rate is not configured; changes
+      only through governance of the reference rate, NEVER through
+      recalibration. Optional and additive: older readers tolerate its absence
+      (graceful degradation).
+  hours_per_bcp:
+    type: number
+    exclusiveMinimum: 0
+    description: >-
+      Fator aplicado: estimated_hours = bcp.total × hours_per_bcp. Gravado para
+      so the derivation stays auditable without consulting the baseline — which
+      is mutable and will already have changed by the time anyone checks an old
+      story.
+  hours_per_bcp_source:
+    type: string
+    pattern: "^(seed|baseline:[a-z0-9_-]+(:provisional)?)$"
+    description: >-
+      Where the factor came from: `seed` (cold start, a category with no
+      `baseline:<cat>` (rate calibrado) ou `baseline:<cat>:provisional` (medido,
+      ainda abaixo de min_samples).
+
+      It exists because the consumer cannot infer it from the arithmetic.
+      Dividing estimated_hours by bcp.total and comparing against known rates
+      fails
+      sempre que dois deles ficam próximos — e o seed PODE ficar próximo de um
+      rate medido, já que ambos estimam a mesma grandeza. Inferência por
+      numeric proximity is fragile by construction; the producer knows the
+      answer and
+      agora a grava.
+  bcp:
+    type: object
+    required: [schema_version, rule_version, total, scored_at, scored_by, breakdown]
+    additionalProperties: false
+    properties:
+      schema_version: { type: string }
+      rule_version: { type: string }
+      total:
+        type: integer
+        minimum: 0
+        description: Sum of the Fibonacci points in the breakdown.
+      scored_at:
+        type: string
+        description: Timestamp ISO 8601 do scoring.
+      scored_by:
+        type: string
+        enum: [bruno, manual, rescore, retroactive]
+      breakdown:
+        type: object
+        description: >-
+          Map of element slug → list of scored items. Slugs as defined in
+          bcp-rule.yaml (business_rules, interface_elements, …).
+        additionalProperties:
+          type: array
+          items:
+            type: object
+            required: [size, points]
+            additionalProperties: false
+            properties:
+              size: { type: string, enum: [XS, S, M, L, XL] }
+              points: { type: integer, enum: [1, 2, 3, 5, 8] }
+              note: { type: string }
+      history:
+        type: array
+        maxItems: 50
+        description: >-
+          DEPRECATED (issue #19): trilha de rescores movida para
+          sprint-status.yaml bcp_metrics[story_key].history quando
+          --sprint-status é passado ao apply_score.py. Este campo ainda
+          é escrito para backward compat quando --sprint-status é omitido.
+          Mais antigo primeiro.
+        items:
+          type: object
+          required: [rule_version, total, scored_at, scored_by]
+          properties:
+            rule_version: { type: string }
+            total: { type: integer, minimum: 0 }
+            scored_at: { type: string }
+            scored_by: { type: string, enum: [bruno, manual, rescore, retroactive] }
+            estimated_hours: { type: number, minimum: 0 }
+            delta_reason: { type: string }
+required: [estimated_hours, estimated_hours_basis, bcp]

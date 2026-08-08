@@ -1,0 +1,50 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Workflow customization surface for bmad-bcp-score. Mirrors the
+# BMad workflow customization shape under the [workflow] namespace.
+
+[workflow]
+
+# --- Configurável abaixo. Overrides mesclam pelas regras estruturais BMad: ---
+#   escalares: override vence • arrays (persistent_facts, activation_steps_*): append
+#   arrays-de-tabela com `code`/`id`: substituem itens iguais, anexam novos.
+
+# Steps to run before the standard activation (story resolution, config, rule, baseline).
+# Overrides append. Use for pre-flight loads, compliance checks, etc.
+
+activation_steps_prepend = []
+
+# Steps to run after activation but before auto-score template runs.
+# Overrides append. Use for context-heavy setup such as loading domain
+# glossaries or category hints before the LLM judges complexity.
+
+activation_steps_append = []
+
+# Persistent facts the workflow keeps in mind for the whole run
+# (team-specific scoring guidance, category conventions).
+# Overrides append.
+#
+# Each entry is either:
+#   - a literal sentence, e.g. "Stories touching billing are always `domain-rules-heavy`."
+#   - a file reference prefixed with `file:`, e.g. "file:{project-root}/docs/bcp-scoring-policy.md"
+#     (glob patterns are supported; the file's contents are loaded and treated as facts).
+
+persistent_facts = []
+
+# Scalar: executed AFTER the score workflow has fully persisted the story's
+# `bcp.*` frontmatter block (and NEVER before). Default empty = no-op. Override wins.
+#
+# Invariants:
+# - Hook runs AFTER persistence — story frontmatter already contains the
+#   new `bcp.*` block (`total`, `breakdown`, `estimated_hours`, …).
+# - Hook MUST NOT mutate the story frontmatter (single-writer principle —
+#   only `apply_score.py` writes the `bcp.*` block).
+# - Error in hook is warn, not rollback — score already committed.
+# - In `--dry-run` (no persistence) the hook is SKIPPED.
+#
+# Override in `{project-root}/_bmad/custom/bmad-bcp-score.toml`:
+#
+#   [workflow]
+#   on_complete = "post a one-line note to the team Slack channel summarizing the new bcp.total and the story title."
+
+on_complete = ""

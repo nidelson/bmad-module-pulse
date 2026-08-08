@@ -4,11 +4,26 @@
 estimate in **Business Complexity Points** (BCP, a CI&T-shaped methodology —
 <https://ciandt.com/us/en-us/complexitypoints>) instead of raw hours.
 
-PULSE stays **passive and zero-coupled**: it never computes hours from BCP,
-never owns the BCP baseline, and never writes to story frontmatter. The scoring
-side — the Bruno agent, scoring rules, baseline calibration, and the
-`estimated_hours` derivation — lives entirely in the companion module
-[`bmad-module-bcp`](https://github.com/nidelson/bmad-module-bcp).
+> **Port in progress ([#84](https://github.com/nidelson/bmad-module-pulse/issues/84)).** BCP is being absorbed into PULSE as an optional feature. The ruler
+> (`bmad-bcp-rule-card`) and scoring (`bmad-bcp-score`) now ship here; calibration
+> (`recalibrate`, `backfill-baseline`, `rescore`, `score-batch`) is still in the
+> companion module until Phase 3. This page describes the boundary as it stands
+> today — a boundary that is half internal, so read "companion module" below as
+> "the part that has not moved yet".
+>
+> What does **not** change with the port: `bcp` stays opt-in with `hours` as the
+> default, the frontmatter contract keeps its schema, and PULSE still never
+> writes `bcp.*` itself.
+
+PULSE stays **passive** toward BCP data: it never computes hours from BCP, never
+owns the BCP baseline, and never writes to story frontmatter. The single-writer
+principle survives the port unchanged — `apply_score.py` is the only thing that
+writes `bcp.*`, and PULSE only reads those fields.
+
+The scoring side — the scoring agent, scoring rules, baseline calibration, and
+the `estimated_hours` derivation — originated in the companion module
+[`bmad-module-bcp`](https://github.com/nidelson/bmad-module-bcp), which is being
+deprecated in favour of this one.
 
 ## Ownership Boundary
 
