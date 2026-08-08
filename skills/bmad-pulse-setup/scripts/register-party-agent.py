@@ -3,7 +3,7 @@
 # requires-python = ">=3.11"
 # dependencies = ["tomlkit"]
 # ///
-"""Registra o agente PULSE (Levi) na tabela [agents] de _bmad/custom/config.toml.
+"""Registra o agente PULSE (Maxine) na tabela [agents] de _bmad/custom/config.toml.
 
 Party-mode (bmad-party-mode) monta o roster lendo a tabela [agents] via
 resolve_config.py, que faz deep-merge de _bmad/config.toml (base) com
@@ -20,6 +20,11 @@ atualizada in-place (mantendo sua posicao e os comentarios que a precedem) e so
 os campos estruturais (STRUCTURAL_FIELDS) sao regravados. Campos editoriais ja
 presentes (name/title/icon/description) sao preservados — use `--force` para
 restaura-los a partir do fragment.
+
+Excecao: um valor editorial identico ao que uma versao ANTERIOR deste script
+gravou nao e uma edicao do time — e a nossa propria escrita antiga. Preserva-lo
+seria carregar para sempre um nome que a skill nao usa mais. Ver
+LEGACY_FRAGMENT_VALUES.
 """
 import argparse
 import csv
@@ -39,6 +44,31 @@ DEFAULT_TEAM = "software-development"
 # cada run sem perda. Os demais (name/title/icon/description) sao editoriais —
 # o time os ajusta direto no config.toml, e um re-run nao deve achata-los.
 STRUCTURAL_FIELDS = ("module", "team")
+
+# Valores editoriais que versoes anteriores deste script gravaram. Se o campo no
+# config do time ainda casa EXATAMENTE com um destes, ninguem o editou: e a
+# nossa escrita antiga, e sobrescrever restaura a verdade em vez de destruir uma
+# customizacao. Qualquer outro valor e do time e continua preservado.
+#
+# Sem isso a troca Levi -> Maxine (v0.9) nao chegaria a projetos ja instalados:
+# `name` e editorial, logo o re-run o preservaria, e o party-mode listaria Levi
+# para sempre enquanto a skill se apresenta como Maxine.
+LEGACY_FRAGMENT_VALUES = {
+    "name": ("Levi",),
+    "title": ("Hyper-Efficiency Analyst & SDLC Optimizer",),
+    "icon": ("⚡",),
+    "description": (
+        "Performance analyst obsessed with efficiency data. Background in "
+        "production engineering and analytics. Transforms numbers into "
+        "improvement narratives. Specialist in AI-assisted development metrics "
+        "and continuous SDLC optimization.",
+    ),
+}
+
+
+def is_stale_default(field: str, value) -> bool:
+    """True quando o valor presente foi escrito por uma versao antiga daqui."""
+    return str(value).strip() in LEGACY_FRAGMENT_VALUES.get(field, ())
 
 
 def load_fragment(fragment_path: Path) -> dict | None:
@@ -62,7 +92,7 @@ def build_entry(row: dict) -> dict:
     return {
         "module": (row.get("module") or "pulse").strip(),
         "team": DEFAULT_TEAM,
-        "name": (row.get("displayName") or "Levi").strip(),
+        "name": (row.get("displayName") or "Maxine").strip(),
         "title": (row.get("title") or "").strip(),
         "icon": (row.get("icon") or "").strip(),
         "description": (row.get("identity") or row.get("role") or "").strip(),
@@ -116,14 +146,19 @@ def main() -> None:
         agents[key] = tbl
         action = "created"
         written = dict(entry)
+        migrated = []
     else:
         # Atualiza in-place. Recriar a entrada (del + reatribuicao) a moveria
         # para o fim de [agents], desgarrando os comentarios que a precedem no
         # arquivo do time.
+        migrated = []
         for k, v in entry.items():
-            if args.force or k in STRUCTURAL_FIELDS or k not in existing:
+            stale = k in existing and is_stale_default(k, existing[k])
+            if args.force or k in STRUCTURAL_FIELDS or k not in existing or stale:
                 existing[k] = v
-        action = "forced" if args.force else "updated"
+                if stale and not args.force:
+                    migrated.append(k)
+        action = "forced" if args.force else ("migrated" if migrated else "updated")
         written = {k: existing[k] for k in entry}
 
     custom.write_text(tomlkit.dumps(doc), encoding="utf-8")
@@ -133,6 +168,10 @@ def main() -> None:
             "action": action,
             "agent_key": key,
             "custom_config_path": str(custom),
+            # Campos que estavam com o valor default antigo e foram atualizados
+            # sem --force. Sai no payload para que o setup consiga dizer ao
+            # usuario o que mudou no arquivo do time dele.
+            "migrated_fields": migrated,
             "entry": written,
         },
         ensure_ascii=False,

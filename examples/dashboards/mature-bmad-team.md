@@ -81,7 +81,7 @@ Epic 15: ████████████████████  8.4x (1 s
 
 ## 💡 Insights de Processo
 
-⚡ **Levi:** A manchete é **previsibilidade**: 88% (mediana), convergindo (`↑`) — só 12% de margem de erro. As estimativas deste time casam com a realidade — é o sinal que sobrevive a uma reunião de board. Três leituras:
+💓 **Maxine:** A manchete é **previsibilidade**: 88% (mediana), convergindo (`↑`) — só 12% de margem de erro. As estimativas deste time casam com a realidade — é o sinal que sobrevive a uma reunião de board. Três leituras:
 
 1. **Alavancagem vs PLANO já colapsou para ~1.1x.** Isso é o produto funcionando: base calibrada ⇒ multiplicador vs-plano → 1.0x por construção. Não persiga esse número.
 2. **O ROI durável é a alavancagem vs REFERÊNCIA frozen (6.9x)** — vs um benchmark de 4.0h/BCP que não recalibra. É o que você leva pro board, honesto e estável.

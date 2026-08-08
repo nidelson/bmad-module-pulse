@@ -10,7 +10,7 @@ config_section: 'pulse'
 
 **Goal:** Record the completion timestamp, calculate AI Leverage Ratio, and display the Efficiency Pulse for the story.
 
-**Your Role:** You are Levi, closing the measurement cycle and celebrating (or diagnosing) the result.
+**Your Role:** You are Maxine, closing the measurement cycle and reporting the result with its band.
 
 You will continue to operate with your given name, identity, and communication_style, merged with the details of this role description.
 
@@ -74,9 +74,16 @@ The keys this workflow uses:
 - `pulse_alert_on_halt` (yes / warn / no)
 - `pulse_alert_unused_skills` (yes / no)
 - `pulse_process_health_checks` (standard / strict / minimal)
-- `pulse_levi_verbosity` (concise / standard / verbose)
-- `pulse_levi_coaching_mode` (yes / metrics-only)
+- `pulse_verbosity` (concise / standard / verbose)
+- `pulse_coaching_mode` (yes / metrics-only)
 - `date` as current system-generated datetime (ISO 8601)
+
+> **Renamed in v0.9.** `pulse_verbosity` and `pulse_coaching_mode` were
+> `pulse_levi_verbosity` and `pulse_levi_coaching_mode`. Read the new key
+> first and **fall back to the legacy name** when it is absent: an upgrading
+> project still has the old key in its config, and a rename without a
+> fallback reverts it to the default silently — the setting is still in the
+> file, just no longer read, so nothing looks broken.
 
 ### Paths
 
@@ -266,7 +273,7 @@ only records read-derived telemetry inside the `pulse_metrics:` section.
 Display in the terminal:
 
 ```text
-⚡ Levi: Story {story_id} — DONE!
+💓 Maxine: Story {story_id} — DONE!
 
    📊 Efficiency
    Human estimate: {estimated_hours}h ({dev_count} devs)
@@ -323,11 +330,11 @@ The verification level is determined by `pulse_process_health_checks`:
    - If no underused skills: display "none"
    - If `pulse_alert_unused_skills` is `no`: omit this check
 
-4. **Insight** (respect `pulse_levi_coaching_mode`):
-   - If `pulse_levi_coaching_mode` is `yes`: generate 1 actionable suggestion based on findings
+4. **Insight** (respect `pulse_coaching_mode`):
+   - If `pulse_coaching_mode` is `yes`: generate 1 actionable suggestion based on findings
      - Examples: "Consider tea:automate for fullstack stories"
      - If everything is OK: "Process executed with excellence — no action needed"
-   - If `pulse_levi_coaching_mode` is `metrics-only`: display data only, no suggestions
+   - If `pulse_coaching_mode` is `metrics-only`: display data only, no suggestions
 
 5. **Persistence:**
    - Add the `process_health` field to the story entry in `pulse_metrics`.
@@ -390,7 +397,7 @@ If 5+ stories with complete PULSE data exist, generate analysis:
 - Analyze the trend of `process_health.flow_complete` — if <80% complete, raise an alert
 - Check whether `process_health.unused_skills` repeats patterns (same skill appears 3+ times)
 
-Display as an additional section in the card (respecting `pulse_levi_verbosity`):
+Display as an additional section in the card (respecting `pulse_verbosity`):
 
 - **concise**: average and first-pass rate only
 - **standard**: full display as below
@@ -412,8 +419,8 @@ Display as an additional section in the card (respecting `pulse_levi_verbosity`)
 - DO NOT write to the story frontmatter or to any BCP baseline file (`bcp-baseline.yaml`) — `bcp.*` is read-only input owned by `bmad-module-bcp`; baseline recalibration lives in that module
 - Data is isolated in the `pulse_metrics:` section — zero risk of conflict
 - Communicate in the language configured in `communication_language`
-- Respect `pulse_levi_verbosity` for level of detail (concise / standard / verbose)
-- Respect `pulse_levi_coaching_mode` (yes = suggest improvements, metrics-only = data only)
+- Respect `pulse_verbosity` for level of detail (concise / standard / verbose)
+- Respect `pulse_coaching_mode` (yes = suggest improvements, metrics-only = data only)
 - If no entry exists for the story ID in `pulse_metrics:`, warn and suggest running track-start first
 
 ---

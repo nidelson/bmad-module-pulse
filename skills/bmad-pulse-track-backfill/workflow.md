@@ -13,7 +13,7 @@ same leverage/process math `track-done` produces — for a story whose
 `track-start`/`track-done` were never invoked, marking it `retroactive: true`
 for traceability.
 
-**Your Role:** You are Levi, recovering lost measurements with rigor and
+**Your Role:** You are Maxine, recovering lost measurements with rigor and
 honest provenance. You never disguise reconstructed data as real-time data.
 
 You will continue to operate with your given name, identity, and communication_style, merged with the details of this role description.
@@ -75,8 +75,15 @@ The keys this workflow uses:
 - `pulse_field_estimated_hours`, `pulse_field_dev_count`, `pulse_field_category`
 - `pulse_dev_categories` — list of valid configured categories
 - `pulse_leverage_threshold_exceptional`, `pulse_leverage_threshold_solid`, `pulse_leverage_warning_threshold`
-- `pulse_levi_verbosity`, `pulse_levi_coaching_mode`
+- `pulse_verbosity`, `pulse_coaching_mode`
 - `date` as current system-generated datetime (ISO 8601)
+
+> **Renamed in v0.9.** `pulse_verbosity` and `pulse_coaching_mode` were
+> `pulse_levi_verbosity` and `pulse_levi_coaching_mode`. Read the new key
+> first and **fall back to the legacy name** when it is absent: an upgrading
+> project still has the old key in its config, and a rename without a
+> fallback reverts it to the default silently — the setting is still in the
+> file, just no longer read, so nothing looks broken.
 
 > **Note on `pulse_estimation_method`:** estimate conversion is identical to
 > `track-done` (see Step 4). For `story_points` the estimate field holds
@@ -106,7 +113,7 @@ Expected invocation:
 1. `story_id` — first positional argument (e.g. `1.2`).
 2. `--hi` (HI, hora início) — implementation start, parsed as a local datetime.
 3. `--hf` (HF, hora fim) — implementation end.
-4. Optional `--review-cycles N` — defaults to `1` (first-pass) if omitted; prompt only if not supplied and `pulse_levi_verbosity` is not `concise`.
+4. Optional `--review-cycles N` — defaults to `1` (first-pass) if omitted; prompt only if not supplied and `pulse_verbosity` is not `concise`.
 5. Optional `--effective-hours H` — overrides the wall-clock derivation when the user already knows the effective AI working time (mirrors `track-done`'s `effective_hours`).
 6. Optional `--note "..."` — free text appended to `retroactive_note`.
 
@@ -239,10 +246,10 @@ Rules:
 
 ### Step 6: Confirm
 
-Display (respect `pulse_levi_verbosity`):
+Display (respect `pulse_verbosity`):
 
 ```text
-⚡ Levi: Backfill recorded — RETROACTIVE entry for story {story_id}
+💓 Maxine: Backfill recorded — RETROACTIVE entry for story {story_id}
    ⚠ Reconstructed data — TS/TD were not run in the original cycle.
 
    HI: {start_ts}  →  HF: {end_ts}
@@ -256,12 +263,12 @@ Display (respect `pulse_levi_verbosity`):
    Category: {category}
    {estimate_error_pct <= 15 ? (first_pass ? "🎯 On-plan! (estimate within 15%, first-pass)" : "🎯 On-plan (estimate within 15%)") : estimate_error_pct >= 50 ? "⚠ Off-plan — review the estimate basis, not the speed." : "📊 Data recorded."}
 
-   💡 {if pulse_levi_coaching_mode == yes}Run /bmad-pulse-track-start and /bmad-pulse-track-done on future stories to capture process health and halts, which backfill cannot reconstruct.{end}
+   💡 {if pulse_coaching_mode == yes}Run /bmad-pulse-track-start and /bmad-pulse-track-done on future stories to capture process health and halts, which backfill cannot reconstruct.{end}
 ```
 
 ### Step 7: Offer Dashboard Refresh
 
-Ask the user (default yes unless `pulse_levi_verbosity` is `concise`, in which
+Ask the user (default yes unless `pulse_verbosity` is `concise`, in which
 case proceed without prompting): "Regenerate the PULSE dashboard now to include
 this story?" If yes, invoke the `bmad-pulse-dashboard` skill. Consumers who
 want this unconditional can set it in `{workflow.on_complete}` instead.

@@ -97,9 +97,9 @@ Run `uv run ./scripts/merge-config.py --help` or `./scripts/merge-help-csv.py --
 
 ## Register Agent in Party Mode Roster
 
-After writing config and help CSV, register the Levi agent so it joins the Party Mode roster and other agent-aware features.
+After writing config and help CSV, register the PULSE agent (Maxine) so it joins the Party Mode roster and other agent-aware features.
 
-Party Mode builds its roster from the `[agents]` table resolved by `resolve_config.py` — a deep-merge of `{project-root}/_bmad/config.toml` (base) and `{project-root}/_bmad/custom/config.toml` (team). Official modules get their `[agents.*]` entries written into the base `config.toml` by the BMAD core installer, but a **custom module** like PULSE is never written there — so without this step Levi is installed as a skill yet stays invisible to Party Mode (`/bmad-party-mode` never lists him). Register him in the team-owned `custom/config.toml` layer, which survives re-install:
+Party Mode builds its roster from the `[agents]` table resolved by `resolve_config.py` — a deep-merge of `{project-root}/_bmad/config.toml` (base) and `{project-root}/_bmad/custom/config.toml` (team). Official modules get their `[agents.*]` entries written into the base `config.toml` by the BMAD core installer, but a **custom module** like PULSE is never written there — so without this step the agent is installed as a skill yet stays invisible to Party Mode (`/bmad-party-mode` never lists her). Register her in the team-owned `custom/config.toml` layer, which survives re-install:
 
 ```bash
 uv run ./scripts/register-party-agent.py --project-root "{project-root}" --fragment ./assets/agent-manifest-fragment.csv
@@ -107,7 +107,9 @@ uv run ./scripts/register-party-agent.py --project-root "{project-root}" --fragm
 
 The script upserts `[agents.bmad-agent-pulse]` (anti-zombie, idempotent) from the `agent-manifest-fragment.csv` values, preserving existing comments and sections (tomlkit round-trip). It runs via `uv run` for its PEP 723 `tomlkit` dependency. Check `agent_key` and `custom_config_path` in the JSON output.
 
-If successful, inform the user: "Agent Levi registered in the Party Mode roster (`_bmad/custom/config.toml` -> `[agents.bmad-agent-pulse]`) — run `/bmad-party-mode` to see him. To spotlight him, add a curated party group (e.g. a delivery/retro room) to `_bmad/custom/bmad-party-mode.toml`."
+If successful, inform the user: "Agent Maxine registered in the Party Mode roster (`_bmad/custom/config.toml` -> `[agents.bmad-agent-pulse]`) — run `/bmad-party-mode` to see her. To spotlight her, add a curated party group (e.g. a delivery/retro room) to `_bmad/custom/bmad-party-mode.toml`."
+
+When the script reports `"action": "migrated"`, also tell the user which fields it corrected and why: `migrated_fields` lists entries that still held a value a previous release of PULSE wrote (e.g. the retired name `Levi`), so refreshing them restores the truth rather than overwriting a choice they made.
 
 ### Legacy `agent-manifest.csv` (optional, compat)
 
@@ -192,7 +194,7 @@ the file is absent — this is the common case on fresh BMAD 6.4.0 installs and 
 a failure). A non-zero exit indicates `--project-root` is missing or the file system
 is broken; surface the error and stop.
 
-### Cleanup Legacy Levi Agent Folder
+### Cleanup Legacy `bmad-pulse-agent-levi/` Folder
 
 Pre-v0.4.5 PULSE distributed its own `bmad-pulse-agent-levi/` skill folder
 in parallel with the canonical `bmad-agent-pulse/` folder auto-provisioned

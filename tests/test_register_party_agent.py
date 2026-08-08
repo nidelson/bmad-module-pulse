@@ -8,6 +8,11 @@ with the fragment's values, dropping local wording.
 
 These tests pin the fixed contract: in-place update, structural fields
 refreshed, editorial fields preserved unless `--force`.
+
+With one carve-out added in v0.9 (#84): an editorial value that still matches
+what an *older version of this script* wrote is not a team edit — it is our own
+stale default. Preserving it would pin the retired persona into the roster
+forever, since `name` is editorial and a re-run would never touch it.
 """
 from __future__ import annotations
 
@@ -92,7 +97,7 @@ def test_creates_entry_on_fresh_install(tmp_path: Path):
 
     assert payload["action"] == "created"
     entry = _entry(tmp_path)
-    assert entry["name"] == "Levi"
+    assert entry["name"] == "Maxine"
     assert entry["module"] == "pulse"
     assert entry["team"] == "software-development"
     assert entry["description"]
@@ -102,7 +107,9 @@ def test_rerun_preserves_editorial_fields(consumer_with_custom_entry: Path):
     """The regression: re-running must not overwrite hand-tuned wording."""
     payload = _run(consumer_with_custom_entry)
 
-    assert payload["action"] == "updated"
+    # "migrated" rather than "updated": the fixture's `name`/`icon` still hold
+    # the retired defaults, so this run also carries the v0.9 persona swap.
+    assert payload["action"] == "migrated"
     entry = _entry(consumer_with_custom_entry)
     assert entry["description"] == CUSTOM_DESCRIPTION
     assert entry["title"] == CUSTOM_TITLE
@@ -158,3 +165,40 @@ def test_rerun_leaves_other_sections_untouched(consumer_with_custom_entry: Path)
 
     assert doc["agents"]["bmad-agent-other"]["name"] == "Someone"
     assert doc["modules"]["bcp"]["bcp_reference_h_per_bcp"] == "5.0"
+
+
+def test_stale_default_name_is_migrated_not_preserved(consumer_with_custom_entry: Path):
+    """The fixture carries `name = "Levi"` and `icon = "⚡"` — the exact values
+    an older release of this script wrote. Nobody typed those, so refreshing
+    them restores the truth rather than flattening a customization."""
+    payload = _run(consumer_with_custom_entry)
+
+    assert set(payload["migrated_fields"]) == {"name", "icon"}
+    entry = _entry(consumer_with_custom_entry)
+    assert entry["name"] == "Maxine"
+    assert entry["icon"] == "💓"
+
+
+def test_a_hand_written_name_is_still_preserved(consumer_with_custom_entry: Path):
+    """The counterweight: migration must key on the *exact* retired value. A
+    team that renamed the agent themselves keeps their name — otherwise the
+    carve-out is just --force by another route."""
+    path = _custom_path(consumer_with_custom_entry)
+    path.write_text(
+        path.read_text(encoding="utf-8").replace('name = "Levi"', 'name = "Analista"'),
+        encoding="utf-8",
+    )
+
+    payload = _run(consumer_with_custom_entry)
+
+    assert "name" not in payload["migrated_fields"]
+    assert _entry(consumer_with_custom_entry)["name"] == "Analista"
+
+
+def test_team_comments_are_never_rewritten(consumer_with_custom_entry: Path):
+    """A comment mentioning the retired persona is the team's prose, not our
+    data. tomlkit round-trips it untouched, and it must stay that way — the
+    migration reaches values, never the file's commentary."""
+    _run(consumer_with_custom_entry)
+
+    assert LEADING_COMMENT in _custom_path(consumer_with_custom_entry).read_text(encoding="utf-8")
