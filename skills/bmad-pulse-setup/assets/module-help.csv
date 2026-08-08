@@ -5,3 +5,7 @@ PULSE,bmad-pulse-track-backfill,Track Backfill,TB,"Retroactively record HI/HF an
 PULSE,bmad-pulse-dashboard,Dashboard,PD,"Generate cumulative efficiency dashboard",dashboard,"",anytime,bmad-pulse-track-done:track-done,,false,pulse_dashboard_folder,"dashboard markdown"
 PULSE,bmad-bcp-rule-card,Rule Card,RC,"Display the canonical BCP complexity ruler (10 elements × 5 sizes)",rule-card,"[element]",anytime,,,false,,"rendered ruler + MIT attribution"
 PULSE,bmad-bcp-score,BCP Score,BS,"Score a story with BCP and derive estimated_hours",bcp-score,"[story-path]",anytime,,bmad-pulse-track-start:track-start,false,,"bcp.* frontmatter block + derived estimated_hours"
+PULSE,bmad-bcp-score-batch,BCP Score Batch,SB,"Score several existing stories in batch (retroactive)",bcp-score-batch,"[glob]",anytime,,bmad-bcp-recalibrate:bcp-recalibrate,false,,"bcp.* on each scored story"
+PULSE,bmad-bcp-rescore,BCP Rescore,RS,"Re-score a story after a scope change (review mandatory)",bcp-rescore,"[story-path]",anytime,bmad-bcp-score:bcp-score,,false,,"updated bcp.* + archived bcp.history entry"
+PULSE,bmad-bcp-recalibrate,BCP Recalibrate,RE,"Recalibrate the baseline per category from real hours",bcp-recalibrate,"[story-path]",anytime,bmad-pulse-track-done:track-done,,false,,"updated bcp-baseline.yaml"
+PULSE,bmad-bcp-backfill-baseline,BCP Backfill Baseline,BB,"Leave the cold start using the squad's delivered history",bcp-backfill-baseline,"[glob]",anytime,,,false,,"calibrated bcp-baseline.yaml"

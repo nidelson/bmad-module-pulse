@@ -1,0 +1,52 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Workflow customization surface for bmad-bcp-backfill-baseline. Mirrors the
+# BMad workflow customization shape under the [workflow] namespace.
+
+[workflow]
+
+# --- Configurable below. Overrides merge by the BMad structural rules: ---
+#   scalars: override wins • arrays (persistent_facts, activation_steps_*): append
+#   arrays-of-tables with `code`/`id`: replace matching items, append new ones.
+
+# Steps to run before the standard activation (glob resolution, deps).
+# Overrides append. Use for pre-flight loads, compliance checks, etc.
+
+activation_steps_prepend = []
+
+# Steps to run after activation but before the score-batch step runs.
+# Overrides append. Use for context-heavy setup such as fetching the
+# actual-hours map from an external system before backfill.
+
+activation_steps_append = []
+
+# Persistent facts the workflow keeps in mind for the whole run
+# (team conventions on backfill scope, history filtering).
+# Overrides append.
+#
+# Each entry is either:
+#   - a literal sentence, e.g. "Backfill ignora stories anteriores a 2024-01."
+#   - a file reference prefixed with `file:`, e.g. "file:{project-root}/docs/backfill-policy.md"
+#     (glob patterns are supported; the file's contents are loaded and treated as facts).
+
+persistent_facts = []
+
+# Scalar: executed AFTER the backfill workflow has fully persisted both the
+# scored stories (via score-batch) and the updated `bcp-baseline.yaml`
+# (via recalibrate) — and NEVER before. Default empty = no-op. Override wins.
+#
+# Invariants:
+# - Hook runs AFTER persistence — every scored story has its `bcp.*`
+#   block on disk AND `bcp-baseline.yaml` reflects the recalibration.
+# - Hook MUST NOT mutate any story frontmatter (single-writer principle).
+# - Hook MUST NOT mutate `bcp-baseline.yaml` (single-writer principle —
+#   only `recalibrate.py` writes the baseline).
+# - Error in hook is warn, not rollback — backfill already committed.
+# - If recalibrate ran `--dry-run` (no baseline persistence) the hook is SKIPPED.
+#
+# Override in `{project-root}/_bmad/custom/bmad-bcp-backfill-baseline.toml`:
+#
+#   [workflow]
+#   on_complete = "invoke the /bmad-pulse-dashboard skill (no arguments) to regenerate the cumulative dashboard reflecting the calibrated baseline."
+
+on_complete = ""
