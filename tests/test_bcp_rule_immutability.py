@@ -39,6 +39,16 @@ FIBONACCI_SCALE = {"XS": 1, "S": 2, "M": 3, "L": 5, "XL": 8}
 CANONICAL_ELEMENT_COUNT = 10
 ALWAYS_THERE_COUNT = 4
 
+# The ten element slugs, frozen. `test_golden_scoring` generates its 50-case
+# matrix from this set, so a slug renamed in the rule without being renamed here
+# fails as a missing element rather than silently dropping the case.
+FROZEN_SLUGS = {
+    "business_rules", "interface_elements", "roles_permissions",
+    "solution_variabilities", "boundaries", "domain_entities",
+    "new_domain_entities", "background_processes", "notifications",
+    "audits",
+}
+
 
 @pytest.fixture(scope="module")
 def rule() -> dict:
