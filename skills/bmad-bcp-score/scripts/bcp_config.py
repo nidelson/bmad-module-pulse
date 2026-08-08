@@ -71,10 +71,10 @@ _BCP_DEFAULTS = {
     "bcp_non_interactive_default": "yes",
     "bcp_confidence_threshold": "0.75",
     "bcp_estimation_basis": "bcp",
-    "bcp_baseline_seed": "4.13",
+    "bcp_baseline_seed": "5.0",
     "bcp_baseline_min_samples": "5",
     "bcp_baseline_rolling_window": "10",
-    "bcp_reference_h_per_bcp": "4.13",
+    "bcp_reference_h_per_bcp": "5.0",
     "bcp_data_folder": "{output_folder}/implementation-artifacts",
     "bcp_baseline_path": "{output_folder}/implementation-artifacts/bcp-baseline.yaml",
 }

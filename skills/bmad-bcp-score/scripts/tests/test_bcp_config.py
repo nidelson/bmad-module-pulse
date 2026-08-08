@@ -67,8 +67,8 @@ def _write_yaml(project_root: Path, body: str) -> None:
 def test_none_yields_module_defaults(tmp_path: Path):
     cfg = bcp_config.resolve_bcp_config(tmp_path)
     assert cfg["bcp_confidence_threshold"] == "0.75"
-    assert cfg["bcp_reference_h_per_bcp"] == "4.13"
-    assert cfg["bcp_baseline_seed"] == "4.13"
+    assert cfg["bcp_reference_h_per_bcp"] == "5.0"
+    assert cfg["bcp_baseline_seed"] == "5.0"
     assert cfg["bcp_baseline_path"] == "{output_folder}/implementation-artifacts/bcp-baseline.yaml"
 
 
@@ -85,7 +85,7 @@ def test_yaml_only_falls_back_per_key(tmp_path: Path):
     cfg = bcp_config.resolve_bcp_config(tmp_path)
     assert cfg["bcp_confidence_threshold"] == "0.9"   # from yaml
     assert cfg["bcp_reference_h_per_bcp"] == "5.5"    # from yaml
-    assert cfg["bcp_baseline_seed"] == "4.13"         # default (absent in yaml)
+    assert cfg["bcp_baseline_seed"] == "5.0"          # default (absent in yaml)
 
 
 def test_yaml_bool_footgun_coerced(tmp_path: Path):
@@ -111,7 +111,7 @@ def test_toml_only_reads_modules_bcp(tmp_path: Path):
     cfg = bcp_config.resolve_bcp_config(tmp_path)
     assert cfg["bcp_confidence_threshold"] == "0.9"
     assert cfg["bcp_reference_h_per_bcp"] == "6.0"
-    assert cfg["bcp_baseline_seed"] == "4.13"  # default (absent in toml)
+    assert cfg["bcp_baseline_seed"] == "5.0"  # default (absent in toml)
 
 
 @needs_py311
@@ -158,7 +158,7 @@ def test_custom_layer_overrides_base(tmp_path: Path):
         tmp_path,
         "[core]\noutput_folder = \"x\"\n\n"
         "[modules.bcp]\n"
-        'bcp_reference_h_per_bcp = "4.13"\n',  # installer base default
+        'bcp_reference_h_per_bcp = "5.0"\n',  # installer base default
     )
     # team override lands in the higher-priority custom layer
     (tmp_path / "_bmad" / "custom" / "config.toml").write_text(
@@ -249,7 +249,7 @@ def test_modules_pulse_wins_over_legacy_modules_bcp(tmp_path: Path):
         "[modules.pulse]\n"
         'bcp_baseline_seed = "0.06"\n\n'
         "[modules.bcp]\n"
-        'bcp_baseline_seed = "4.13"\n'
+        'bcp_baseline_seed = "5.0"\n'
         'bcp_confidence_threshold = "0.9"\n',
     )
     cfg = bcp_config.resolve_bcp_config(tmp_path)
@@ -289,7 +289,7 @@ def test_custom_layer_reaches_the_new_home(tmp_path: Path):
         "[core]\n"
         'output_folder = "{project-root}/_bmad-output"\n\n'
         "[modules.pulse]\n"
-        'bcp_baseline_seed = "4.13"\n',
+        'bcp_baseline_seed = "5.0"\n',
     )
     # `_write_toml` routes any non-"config.toml" name into custom/, so the
     # custom layer's real filename has to be written directly.
@@ -305,7 +305,7 @@ def test_custom_layer_reaches_the_new_home(tmp_path: Path):
 
 def test_sources_mark_defaults_as_default(tmp_path: Path):
     """A default is not a setting. Consumers (and the setup skill) need to tell
-    "the team chose 4.13" from "nothing was found, so 4.13"."""
+    "the team chose 5.0" from "nothing was found, so 5.0"."""
     sources = bcp_config.resolve_bcp_sources(tmp_path)
     assert set(sources.values()) == {"default"}
 

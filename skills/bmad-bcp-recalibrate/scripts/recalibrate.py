@@ -77,7 +77,7 @@ def load_samples(args) -> list[dict]:
 def recalibrate(baseline: dict, samples: list[dict], allow_dup: bool,
                  now: str) -> dict:
     snap = baseline.setdefault("config_snapshot", {})
-    seed = float(snap.get("seed", 4.13))
+    seed = float(snap.get("seed", 5.0))
     min_samples = int(snap.get("min_samples", 5))
     window = int(snap.get("rolling_window", 10))
     cats = baseline.setdefault("categories", {})

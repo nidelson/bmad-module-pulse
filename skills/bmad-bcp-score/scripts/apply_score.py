@@ -103,7 +103,7 @@ def h_per_bcp(baseline: dict, category: str | None) -> tuple[float, str]:
     proxy, and the seed remains the only available answer.
     """
     snap = baseline.get("config_snapshot", {}) or {}
-    seed = float(snap.get("seed", 4.13))
+    seed = float(snap.get("seed", 5.0))
     cats = baseline.get("categories", {}) or {}
     if category and category in cats:
         c = cats[category]
@@ -269,7 +269,7 @@ def main() -> int:
     # seed so the anchor is computable from day one; a governance-set reference
     # rate (via --reference-h-per-bcp) overrides it. NEVER the recalibrated factor.
     snap = baseline.get("config_snapshot", {}) or {}
-    seed = float(snap.get("seed", 4.13))
+    seed = float(snap.get("seed", 5.0))
     if args.reference_h_per_bcp is not None:
         reference_rate, reference_source = float(args.reference_h_per_bcp), "config"
     else:
