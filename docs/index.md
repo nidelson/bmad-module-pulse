@@ -40,11 +40,14 @@ Composite score based on:
 - HALT count
 - Available skills that were not used
 
-## Integrations
+## Optional Features
 
-- [BCP — Business Complexity Points](integration/bcp.md) — opt-in
-  `pulse_estimation_method=bcp` for teams estimating in BCP via the companion
-  [`bmad-module-bcp`](https://github.com/nidelson/bmad-module-bcp) module.
+- [BCP — Business Complexity Points](bcp.md) — opt-in complexity estimation.
+  Set `pulse_estimation_method=bcp` and `estimated_hours` is derived from a
+  score against a canonical ruler instead of guessed, which is what makes
+  predictability measurable. Scoring ships in this module as the six
+  `bmad-bcp-*` skills; `hours` remains the default and nothing extra needs
+  installing.
 
 ## Advanced Configuration
 

@@ -76,11 +76,11 @@ The keys this workflow uses:
 > `pulse_field_estimated_hours` contains story points, not hours. The record should reflect this
 > (e.g. display as "estimated points" instead of "estimated hours").
 >
-> **Note on `bcp` (Business Complexity Points):** PULSE stays **passive and zero-coupled** —
-> it does NOT compute hours from BCP. The `bcp` value only signals that the upstream
-> `estimated_hours` was already derived by the [`bmad-module-bcp`](https://github.com/nidelson/bmad-module-bcp)
-> module (install = consent to overwrite). PULSE reads `estimated_hours` exactly as for
-> `hours`, and additionally snapshots the `bcp.*` block for audit (see Step 2/3). PULSE
+> **Note on `bcp` (Business Complexity Points):** the tracking skills stay **passive** toward
+> BCP data — they do NOT compute hours from BCP. The `bcp` value only signals that
+> `estimated_hours` was already derived by the sibling `bmad-bcp-score` skill
+> (scoring the story = consent to overwrite). This skill reads `estimated_hours` exactly as
+> for `hours`, and additionally snapshots the `bcp.*` block for audit (see Step 2/3). It
 > never writes to the story frontmatter and never touches the BCP baseline file.
 
 ### Paths
@@ -115,11 +115,11 @@ The keys this workflow uses:
    - The field configured in `pulse_field_dev_count` (estimated number of developers)
    - `task_count` (number of tasks/subtasks — internal PULSE field, always present)
    - The field configured in `pulse_field_category` (story category — infer from name; if ambiguous, ask the user using the valid categories defined in `pulse_dev_categories`)
-   - The `bcp:` frontmatter block, **only if present** (written exclusively by `bmad-module-bcp`):
+   - The `bcp:` frontmatter block, **only if present** (written exclusively by `bmad-bcp-score`):
      - Read `bcp.schema_version`. If it is a value this skill does not recognize (anything other than `"1.0"`), emit a one-line warning (`⚠ Unknown bcp.schema_version <v> — ignoring bcp.* for this story`) and treat the block as absent for the rest of the workflow.
-     - Otherwise capture `bcp.total`, `bcp.rule_version`, and `bcp.scored_by` for the snapshot in Step 3. PULSE does not interpret `bcp.breakdown` or `bcp.history`.
-     - This extraction is **read-only** — PULSE never writes back to the story frontmatter.
-   - The `estimated_hours_reference` field, **only if present** (frozen leverage anchor written by `bmad-module-bcp`, issue #65). It is `bcp.total × reference_h_per_bcp` — a **frozen** denominator for stable leverage that does not collapse as the team calibrates. Capture it read-only for the snapshot in Step 3. PULSE never computes it, never reads the BCP baseline, and never writes it back to the story frontmatter. When absent (BCP not installed, or older BCP), omit it — behave exactly as today.
+     - Otherwise capture `bcp.total`, `bcp.rule_version`, and `bcp.scored_by` for the snapshot in Step 3. This skill does not interpret `bcp.breakdown` or `bcp.history`.
+     - This extraction is **read-only** — this skill never writes back to the story frontmatter.
+   - The `estimated_hours_reference` field, **only if present** (frozen leverage anchor written by `bmad-bcp-score`, issue #65). It is `bcp.total × reference_h_per_bcp` — a **frozen** denominator for stable leverage that does not collapse as the team calibrates. Capture it read-only for the snapshot in Step 3. This skill never computes it, never reads the BCP baseline, and never writes it back to the story frontmatter. When absent (scoring not enabled, or a story scored before the anchor existed), omit it — behave exactly as today.
 
 ### Step 3: Record in the file configured in `pulse_sprint_status_filename`
 
@@ -175,7 +175,7 @@ start is recorded regardless and PULSE **never changes `estimated_hours`** — t
 re-estimate decision is the human's/agent's. Defaults `K=5` / `T=25%` are inline
 (may become config later).
 
-> **Advisory invariant (do not regress).** Estimation is owned **upstream** (BMAD/Amelia, or BCP/Bruno) — PULSE stays passive. This alert **informs, it never drives**: it reads `pulse_metrics` history, it never writes the story frontmatter, never writes or adjusts `estimated_hours`, never halts the start, and never re-scores anything. If a future edit makes it mutate an estimate or block the flow, that breaks the contract (locked by `tests/test_action_alert.py`).
+> **Advisory invariant (do not regress).** Estimation is owned **upstream** (BMAD/Amelia, or the `bmad-bcp-score` skill when scoring is enabled) — this skill stays passive. This alert **informs, it never drives**: it reads `pulse_metrics` history, it never writes the story frontmatter, never writes or adjusts `estimated_hours`, never halts the start, and never re-scores anything. If a future edit makes it mutate an estimate or block the flow, that breaks the contract (locked by `tests/test_action_alert.py`).
 
 ### Step 5: Confirm
 
@@ -198,7 +198,7 @@ Display:
 ## BEHAVIOR RESTRICTIONS
 
 - DO NOT modify anything outside the `pulse_metrics:` section of the sprint-status file
-- DO NOT write to the story file frontmatter or to any BCP baseline file — `bcp.*` is read-only input owned by `bmad-module-bcp`
+- DO NOT write to the story file frontmatter or to any BCP baseline file — `bcp.*` is read-only input owned by `bmad-bcp-score`, a sibling skill in this module
 - The v0.7 drift advisory (Step 4) is **advisory-only and non-blocking**: it NEVER writes or changes `estimated_hours`, never auto-adjusts the estimate, and never halts the start. It only surfaces a heads-up; the re-estimate decision belongs to the human/agent.
 - If an entry already exists for this story ID in `pulse_metrics:`, ask whether to overwrite
 - Create the `pulse_metrics:` section if it does not exist
