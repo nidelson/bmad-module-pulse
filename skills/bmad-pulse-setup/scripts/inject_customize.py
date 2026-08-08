@@ -19,17 +19,27 @@ TEMPLATES_DIR = Path(__file__).parent.parent / "assets/customize-templates"
 # split architecture's pair. Which set applies comes from `detect_bmad_capability.py`
 # (`inject_targets` in its payload) — never assume, the deprecated `bmad-dev-story`
 # shim survives on disk next to `bmad-build`.
-SUPPORTED_SKILLS = {"bmad-build", "bmad-dev-story", "bmad-code-review"}
+SUPPORTED_SKILLS = {
+    "bmad-build", "bmad-dev-story", "bmad-code-review", "bmad-create-story",
+}
 
-# Skills whose template has a BCP variant carrying the recalibrate step. Only
-# the ones that own `on_complete`: `bmad-dev-story` carries track-start, which
-# recalibration does not extend.
+# Skills whose template has a BCP variant. Two different reasons:
 #
-# The variant REPLACES the plain template at the same destination — the two are
-# alternatives, never both. A project with scoring disabled therefore never
+# `bmad-build` and `bmad-code-review` own `on_complete`, which recalibration
+# extends. Their variant REPLACES the plain template at the same destination —
+# the two are alternatives, never both, so a project with scoring disabled never
 # receives the recalibrate instruction at all, not even as text that checks and
-# skips. That is the opt-in expressed in the filesystem rather than in prose.
-BCP_VARIANT_SKILLS = {"bmad-build", "bmad-code-review"}
+# skips. `bmad-dev-story` carries track-start, which recalibration does not
+# extend, so it has no variant.
+#
+# `bmad-create-story` is the scoring trigger and has NO plain template: PULSE has
+# nothing to say to story authoring unless scoring is on. See BCP_ONLY_SKILLS.
+BCP_VARIANT_SKILLS = {"bmad-build", "bmad-code-review", "bmad-create-story"}
+
+# Skills that exist ONLY as a BCP variant. Emitting one without `--with-bcp` is
+# an error rather than a fallback, because the fallback would be a missing-file
+# traceback for a file that is absent on purpose.
+BCP_ONLY_SKILLS = {"bmad-create-story"}
 
 EXIT_OK = 0
 EXIT_BAD_ARGS = 2
@@ -40,8 +50,14 @@ def emit(project_root: Path, skill: str, force: bool, with_bcp: bool = False) ->
     if with_bcp and skill not in BCP_VARIANT_SKILLS:
         sys.stderr.write(
             f"error: --with-bcp is not valid for skill '{skill}'. "
-            f"Only {sorted(BCP_VARIANT_SKILLS)} own the on_complete hook that "
-            f"BCP recalibration extends.\n"
+            f"Only {sorted(BCP_VARIANT_SKILLS)} have a BCP variant.\n"
+        )
+        return EXIT_BAD_ARGS
+    if skill in BCP_ONLY_SKILLS and not with_bcp:
+        sys.stderr.write(
+            f"error: '{skill}' has no plain template — it exists only to trigger "
+            f"BCP scoring. Re-run with --with-bcp, or skip it entirely when "
+            f"pulse_estimation_method is not 'bcp'.\n"
         )
         return EXIT_BAD_ARGS
     suffix = ".bcp.toml" if with_bcp else ".toml"

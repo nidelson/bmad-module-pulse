@@ -270,6 +270,29 @@ authored sequence: track-done first, then BCP recalibrate, which reads the
 `--with-bcp` is rejected for `bmad-dev-story` (exit 2): that file carries
 track-start, which recalibration does not extend.
 
+Then emit the scoring trigger, which is **not** tier-dependent — the same file
+on both architectures, and not listed in `inject_targets`:
+
+```bash
+python3 ./scripts/inject_customize.py \
+    --project-root "{project-root}" \
+    --skill bmad-create-story --with-bcp
+```
+
+This one closes the loop. The templates above run *after* implementation —
+track-done, then recalibrate — and recalibrate checks for `bcp.total` before
+doing anything. Without a hook that produces `bcp.total` in the first place, it
+finds nothing and skips, silently and by design, forever.
+
+`bmad-create-story` is a core BMAD skill under both architectures. `bmad-build`
+does not replace it: `bmad-build` writes a *spec*, whose frontmatter carries
+`title`, `type` and `status` but no `estimated_hours` to derive; it consumes a
+story only by `story_key`. So story authoring is where scoring belongs, and it
+is the same place either way.
+
+`bmad-create-story` has no plain template — emitting it without `--with-bcp`
+exits 2. PULSE has nothing to say to story authoring unless scoring is on.
+
 ### Give the `bcp_*` settings a home that survives
 
 Still only when `pulse_estimation_method` is `bcp`. The scoring skills read

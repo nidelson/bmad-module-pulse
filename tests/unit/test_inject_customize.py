@@ -155,3 +155,84 @@ def test_force_is_idempotent_sha256_stable(bmad_64_consumer: Path):
     run(bmad_64_consumer, "--skill", "bmad-dev-story", "--force")
     second_hash = sha256(out)
     assert first_hash == second_hash
+
+
+# --- the scoring trigger: architecture-independent, BCP-only ----------------
+
+
+def test_create_story_variant_carries_the_scoring_call(bmad_build_consumer: Path):
+    """The gap this closes.
+
+    The scoring hook lived in the standalone module's `bmad-create-story.toml`
+    and had no counterpart here, so after that module was deprecated nothing
+    invoked `bmad-bcp-score`. Recalibration then skipped forever — silently, and
+    correctly, because it checks for `bcp.total` before running.
+    """
+    result = run(bmad_build_consumer, "--skill", "bmad-create-story", "--with-bcp")
+    assert result.returncode == 0, result.stderr
+    body = (bmad_build_consumer / "_bmad/custom/bmad-create-story.toml").read_text(
+        encoding="utf-8"
+    )
+    assert "bmad-bcp-score" in body
+    assert "persistent_facts" in body
+
+
+def test_create_story_hook_appends_rather_than_replaces(bmad_build_consumer: Path):
+    """`persistent_facts` is a list. Using `on_complete` here would silently
+    clobber whatever the workflow or another module already put there.
+
+    Asserted on the assigned keys, not on the text: the header explains at
+    length why `on_complete` is the wrong instrument, and a substring check
+    would read that explanation as the mistake it warns about.
+    """
+    run(bmad_build_consumer, "--skill", "bmad-create-story", "--with-bcp")
+    body = (bmad_build_consumer / "_bmad/custom/bmad-create-story.toml").read_text(
+        encoding="utf-8"
+    )
+    keys = {
+        line.split("=", 1)[0].strip()
+        for line in body.splitlines()
+        if "=" in line and not line.lstrip().startswith("#")
+    }
+    assert "persistent_facts" in keys
+    assert "on_complete" not in keys
+
+
+def test_create_story_is_not_tier_dependent(bmad_build_consumer: Path):
+    """Story authoring did not move when implementation did.
+
+    `bmad-build` does not replace `bmad-create-story` — it writes a spec, whose
+    frontmatter carries no `estimated_hours` to derive. So this hook is the same
+    file on both architectures, and it must NOT appear in the probe's per-tier
+    `inject_targets`: putting it there would encode a difference that does not
+    exist, and would drop the hook on whichever tier the list forgot.
+    """
+    import importlib.util
+
+    probe_path = (Path(__file__).parents[2]
+                  / "skills/bmad-pulse-setup/scripts/detect_bmad_capability.py")
+    spec = importlib.util.spec_from_file_location("detect_probe", probe_path)
+    probe = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(probe)
+
+    for targets in probe.INJECT_TARGETS.values():
+        assert "bmad-create-story" not in targets
+
+    result = run(bmad_build_consumer, "--skill", "bmad-create-story", "--with-bcp")
+    assert result.returncode == 0, result.stderr
+    emitted = bmad_build_consumer / "_bmad/custom/bmad-create-story.toml"
+    packaged = (Path(__file__).parents[2]
+                / "skills/bmad-pulse-setup/assets/customize-templates"
+                / "bmad-create-story.bcp.toml")
+    assert sha256(emitted) == sha256(packaged)
+
+
+def test_create_story_without_with_bcp_is_rejected(bmad_build_consumer: Path):
+    """This template exists only in a BCP variant: PULSE has nothing to say to
+    story authoring unless scoring is on. Falling back to a plain template that
+    does not exist must be an explicit error, not a missing-file traceback."""
+    result = run(bmad_build_consumer, "--skill", "bmad-create-story")
+    assert result.returncode != 0
+    assert "bmad-create-story" in result.stderr
+    assert "--with-bcp" in result.stderr
+    assert not (bmad_build_consumer / "_bmad/custom/bmad-create-story.toml").exists()
