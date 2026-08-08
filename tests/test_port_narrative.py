@@ -57,19 +57,47 @@ READMES = [REPO_ROOT / "README.md", REPO_ROOT / "README.en.md"]
 BCP_DOC = REPO_ROOT / "docs/bcp.md"
 
 
+# Directories that are not this repository's shipped surface. `.claude` matters
+# most: it holds git worktrees of OTHER branches, so without it the guard reads
+# unrelated work-in-progress and fails locally while passing in CI — a test that
+# is red on a developer's machine for a reason they did not cause is a test
+# people learn to ignore.
+NOT_OUR_PROSE = {".git", ".venv", ".pytest_cache", ".claude", "node_modules"}
+
+
 def _live_files() -> list[Path]:
-    """Every file that instructs, documents or renders — excluding .git."""
+    """Every file in this checkout that instructs, documents or renders.
+
+    The exclusion is matched against the path RELATIVE to the repo root. An
+    absolute match would be self-defeating: a git worktree of this repo lives
+    under `.claude/worktrees/<name>/`, so every file in it carries `.claude` in
+    its absolute parts and the whole sweep would filter itself down to nothing —
+    passing while reading no prose at all.
+    """
     patterns = ("*.md", "*.toml", "*.yaml", "*.csv", "*.py")
     out: list[Path] = []
     for pattern in patterns:
         out.extend(
             path
             for path in REPO_ROOT.rglob(pattern)
-            if ".git" not in path.parts
-            and ".venv" not in path.parts
-            and ".pytest_cache" not in path.parts
+            if not NOT_OUR_PROSE.intersection(path.relative_to(REPO_ROOT).parts)
         )
     return sorted(out)
+
+
+def test_the_sweep_actually_reads_files():
+    """A guard that scans nothing passes forever.
+
+    This exists because an earlier version of the exclusion above matched
+    absolute path components and silently emptied the sweep. The floor is well
+    below the real count (~90) and only asserts that the scan is not vacuous.
+    """
+    found = _live_files()
+    assert len(found) > 40, f"the prose sweep only found {len(found)} files"
+    names = {path.name for path in found}
+    assert "README.md" in names and "workflow.md" in names, (
+        "the sweep must reach both the front door and the instruction files"
+    )
 
 
 def test_no_live_file_sends_readers_to_the_archived_module():
