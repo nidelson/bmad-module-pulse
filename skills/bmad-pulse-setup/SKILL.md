@@ -250,6 +250,34 @@ Do not emit both sets. On a `bmad-build` project the split pair is inert, and
 `bmad-code-review` would fire track-done a second time if the user ever invoked
 that skill directly.
 
+### BCP variant — only when scoring is enabled
+
+If, and only if, the resolved `pulse_estimation_method` is `bcp`, append
+`--with-bcp` to the invocation for `bmad-build` (unified) or
+`bmad-code-review` (split):
+
+```bash
+python3 ./scripts/inject_customize.py \
+    --project-root "{project-root}" \
+    --skill bmad-build --with-bcp
+```
+
+The variant writes to the **same destination** — it replaces the plain template
+rather than adding a second file. Its `on_complete` carries both steps in one
+authored sequence: track-done first, then BCP recalibrate, which reads the
+`actual_hours` that only exists once track-done has finished.
+
+`--with-bcp` is rejected for `bmad-dev-story` (exit 2): that file carries
+track-start, which recalibration does not extend.
+
+> **Why the recalibrate step is not simply always present.** It could be written
+> to check for `bcp.total` and skip when absent — it does exactly that when
+> present. But an instruction the agent reads on every single run, in a project
+> that will never satisfy it, is not free: it is context spent, and it is one
+> more thing implying the project is missing something. With scoring off, PULSE
+> is the baseline product, not a degraded one. The opt-in lives in which file
+> gets written, not in a runtime check.
+
 If either invocation exits 3, surface the message to the user verbatim
 (it includes the destination path and instructs how to re-run with
 `--force`). Do NOT auto-retry with `--force` — the choice is the user's.

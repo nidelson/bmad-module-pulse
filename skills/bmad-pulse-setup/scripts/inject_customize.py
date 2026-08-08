@@ -21,13 +21,31 @@ TEMPLATES_DIR = Path(__file__).parent.parent / "assets/customize-templates"
 # shim survives on disk next to `bmad-build`.
 SUPPORTED_SKILLS = {"bmad-build", "bmad-dev-story", "bmad-code-review"}
 
+# Skills whose template has a BCP variant carrying the recalibrate step. Only
+# the ones that own `on_complete`: `bmad-dev-story` carries track-start, which
+# recalibration does not extend.
+#
+# The variant REPLACES the plain template at the same destination — the two are
+# alternatives, never both. A project with scoring disabled therefore never
+# receives the recalibrate instruction at all, not even as text that checks and
+# skips. That is the opt-in expressed in the filesystem rather than in prose.
+BCP_VARIANT_SKILLS = {"bmad-build", "bmad-code-review"}
+
 EXIT_OK = 0
 EXIT_BAD_ARGS = 2
 EXIT_CONFLICT = 3
 
 
-def emit(project_root: Path, skill: str, force: bool) -> int:
-    template = TEMPLATES_DIR / f"{skill}.toml"
+def emit(project_root: Path, skill: str, force: bool, with_bcp: bool = False) -> int:
+    if with_bcp and skill not in BCP_VARIANT_SKILLS:
+        sys.stderr.write(
+            f"error: --with-bcp is not valid for skill '{skill}'. "
+            f"Only {sorted(BCP_VARIANT_SKILLS)} own the on_complete hook that "
+            f"BCP recalibration extends.\n"
+        )
+        return EXIT_BAD_ARGS
+    suffix = ".bcp.toml" if with_bcp else ".toml"
+    template = TEMPLATES_DIR / f"{skill}{suffix}"
     if not template.exists():
         sys.stderr.write(f"error: template missing for skill '{skill}': {template}\n")
         return EXIT_BAD_ARGS
@@ -51,8 +69,11 @@ def main() -> int:
     parser.add_argument("--skill", choices=sorted(SUPPORTED_SKILLS), required=True)
     parser.add_argument("--force", action="store_true",
                         help="overwrite an existing destination file")
+    parser.add_argument("--with-bcp", action="store_true",
+                        help="emit the variant that chains BCP recalibrate after "
+                             "track-done; only when pulse_estimation_method is 'bcp'")
     args = parser.parse_args()
-    return emit(args.project_root, args.skill, args.force)
+    return emit(args.project_root, args.skill, args.force, args.with_bcp)
 
 
 if __name__ == "__main__":
