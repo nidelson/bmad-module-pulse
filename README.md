@@ -44,7 +44,7 @@ Epic 14: ██████████████░░░░░░  6.9x (3 s
 Epic 15: ████████████████████  8.4x (1 story)
 ```
 
-📊 **[Ver dashboard completo →](examples/dashboards/mature-bmad-team.md)** *(quebra por categoria, previsão de capacidade, insights do Levi, breakdown story-a-story)*
+📊 **[Ver dashboard completo →](examples/dashboards/mature-bmad-team.md)** *(quebra por categoria, previsão de capacidade, insights da Maxine, breakdown story-a-story)*
 
 Veja [mais cenários de dashboard](examples/dashboards/) para diferentes tamanhos de time e estágios de adoção.
 
@@ -70,7 +70,7 @@ PULSE mede isso!
 
 - **Um número defensável de previsibilidade do seu SDLC** — quão perto suas estimativas caem da realidade, sprint a sprint, pronto para o seu deck de stakeholders. (Alavancagem também — mas como sinal do primeiro mês, não a manchete.)
 - **Aviso antecipado de trabalho travado** — previsões de capacidade e alertas de halt antes da sprint escorregar.
-- **Um coach, não só um dashboard** — Levi (o agente do PULSE) lê seus sinais e te diz *onde* a alavancagem está vazando.
+- **Um coach, não só um dashboard** — Maxine (a agente do PULSE) lê seus sinais e te diz *onde* a alavancagem está vazando.
 
 ---
 
@@ -134,11 +134,11 @@ PULSE se conecta aos seus arquivos de story BMAD existentes — sem migrations, 
 
 ---
 
-## Levi — seu agente coach
+## Maxine — sua agente coach
 
-**Levi** é o Analista de Hyper-Efficiency do PULSE. Ele lê suas métricas e te diz, em linguagem clara, onde o squad está perdendo tempo: drift de estimativa, etapas BMAD sendo puladas, agentes mal utilizados. Comemora vitórias reais, aponta desvios e sugere correções no processo.
+**Maxine** é a Analista de Previsibilidade de Entrega do PULSE. Ela lê suas métricas e te diz, em linguagem clara, onde o squad está perdendo tempo: drift de estimativa, etapas BMAD sendo puladas, agentes mal utilizados. Lidera com o número que a configuração atual consegue defender — alavancagem enquanto a estimativa for em horas, previsibilidade quando uma régua canônica a torna comparável entre times.
 
-Ele não moraliza. Ele aponta.
+Ela mede o sistema, nunca a pessoa. E nunca dá um número sem a faixa em volta dele.
 
 ---
 
@@ -157,7 +157,7 @@ PULSE instrumenta três pontos no ciclo de vida da story BMAD:
 | **≥ 3.0x** | Excepcional | IA está comprimindo materialmente seu SDLC. Documente o padrão, replique. |
 | **1.8x – 2.9x** | Sólido | Alavancagem saudável. A norma para times BMAD maduros. |
 | **1.2x – 1.7x** | Atenção | Ganho marginal. Investigue onde a IA está desacelerando. |
-| **< 1.2x** | Alerta | IA não está puxando o peso dela. Levi vai apontar a causa provável. |
+| **< 1.2x** | Alerta | IA não está puxando o peso dela. Maxine vai apontar a causa provável. |
 
 ### Capacidades
 
@@ -166,7 +166,7 @@ PULSE instrumenta três pontos no ciclo de vida da story BMAD:
 - **Forecast** — projeção de capacidade baseada em alavancagem rolante e velocidade do time.
 - **Audit** — checagens de saúde de processo: stories sem estimativa, trabalho parado, artefatos faltando.
 - **Alert** — detecção de halt quando uma story trava além da estimativa.
-- **Coach** — Levi lê as métricas e aponta gargalos em linguagem clara.
+- **Coach** — Maxine lê as métricas e aponta gargalos em linguagem clara.
 
 ### Categorias de halt — separando trabalho de IA de tempo de espera
 

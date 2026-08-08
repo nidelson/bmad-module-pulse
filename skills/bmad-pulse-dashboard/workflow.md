@@ -10,7 +10,7 @@ config_section: 'pulse'
 
 **Goal:** Generate a cumulative dashboard with all PULSE efficiency metrics, cross-sprint trends, and process insights.
 
-**Your Role:** You are Levi, compiling the complete efficiency view of the project.
+**Your Role:** You are Maxine, compiling the complete delivery view of the project.
 
 You will continue to operate with your given name, identity, and communication_style, merged with the details of this role description.
 
@@ -67,10 +67,17 @@ The keys this workflow uses:
 - `pulse_data_folder`, `pulse_sprint_status_filename`
 - `pulse_dashboard_folder`, `pulse_dashboard_format`
 - `pulse_include_trend_chart`, `pulse_include_capacity_forecast`
-- `pulse_dev_categories`, `pulse_levi_verbosity`
+- `pulse_dev_categories`, `pulse_verbosity`
 - `pulse_estimation_method` — **which leverage metric leads** (see below)
 - `pulse_leverage_threshold_exceptional`, `pulse_leverage_threshold_solid` — bands for the **hours path only**
 - `date` as current system-generated datetime
+
+> **Renamed in v0.9.** `pulse_verbosity` and `pulse_coaching_mode` were
+> `pulse_levi_verbosity` and `pulse_levi_coaching_mode`. Read the new key
+> first and **fall back to the legacy name** when it is absent: an upgrading
+> project still has the old key in its config, and a rename without a
+> fallback reverts it to the default silently — the setting is still in the
+> file, just no longer read, so nothing looks broken.
 
 ### The two paths (issue #66)
 
@@ -401,12 +408,12 @@ Omit the forecast line when the backlog is empty. The digest is opt-in companion
 ### Step 3: Display Summary
 
 Display in the terminal the General Statistics block + (if `pulse_include_trend_chart == yes`) Trend + a Process Insight.
-The detail level of the summary must respect `pulse_levi_verbosity`.
+The detail level of the summary must respect `pulse_verbosity`.
 
 ### Step 4: Report Location
 
 ```text
-⚡ Levi: Dashboard salvo em {dashboard_file}
+💓 Maxine: Dashboard salvo em {dashboard_file}
    {total} stories medidas | Previsibilidade: {predictability_score}% | Alavancagem: {avg_leverage_vs_reference if method == "bcp" else avg_leverage_ratio}x (vs {"REFERÊNCIA" if method == "bcp" else "PLANO"})
 ```
 
@@ -419,7 +426,7 @@ The detail level of the summary must respect `pulse_levi_verbosity`.
 - Always overwrite dashboard.md (it is the most recent version)
 - The rendered dashboard template above is **PT-BR by default** (section titles, table headers, labels, messages, notes). Keep all technical jargon in English (`h/BCP`, `BCP`, `leverage`, `drift`, `micro`/`story`, field names) and every `{placeholder}` verbatim. If `communication_language` is set to another language, localize the rendered labels/messages accordingly (jargon and placeholders still unchanged); the internal aggregation logic in Step 1 stays English regardless.
 - Communicate in the language configured in `communication_language`
-- Respect `pulse_levi_verbosity` for level of detail in responses
+- Respect `pulse_verbosity` for level of detail in responses
 - The "Tendência de Previsibilidade por Epic" trend section must only be included if `pulse_include_trend_chart == yes`
 - The project forecast section (`🔮 Previsão de Projeto`) must only be included if `pulse_include_capacity_forecast == yes` AND the scored backlog has remaining BCP (an empty backlog → no section). Since v0.8 it forecasts `BCP × h/BCP ± CI(90%)`, replacing the pre-0.8 leverage-extrapolation capacity forecast.
 - The categories table must use the categories defined in `pulse_dev_categories` (not hardcoded categories)

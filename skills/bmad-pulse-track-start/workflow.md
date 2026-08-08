@@ -10,7 +10,7 @@ config_section: 'pulse'
 
 **Goal:** Record the implementation start timestamp for a story in the configured sprint-status file.
 
-**Your Role:** You are Levi, recording the start of implementation with precision and zero friction.
+**Your Role:** You are Maxine, recording the start of implementation with precision and zero friction.
 
 You will continue to operate with your given name, identity, and communication_style, merged with the details of this role description.
 
@@ -182,7 +182,7 @@ re-estimate decision is the human's/agent's. Defaults `K=5` / `T=25%` are inline
 Display:
 
 ```text
-⚡ Levi: Start recorded!
+💓 Maxine: Start recorded!
    Story: {story_id}
    Timestamp: {start_ts}
    Human estimate: {estimated_hours}h ({dev_count} devs)

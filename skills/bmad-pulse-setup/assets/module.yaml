@@ -184,8 +184,8 @@ pulse_auto_dashboard:
       label: >-
         Yes — auto-regenerate after every track-done (best for solo / serial
         workflows)
-pulse_levi_verbosity:
-  prompt: Level of detail in Levi's responses?
+pulse_verbosity:
+  prompt: Level of detail in the agent's responses?
   default: standard
   result: '{value}'
   single-select:
@@ -195,8 +195,8 @@ pulse_levi_verbosity:
       label: Standard — metrics + insights + recommendations (Recommended)
     - value: verbose
       label: Verbose — full analysis with educational context
-pulse_levi_coaching_mode:
-  prompt: Should Levi proactively suggest process improvements?
+pulse_coaching_mode:
+  prompt: Should the agent proactively suggest process improvements?
   default: 'yes'
   result: '{value}'
   single-select:

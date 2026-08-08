@@ -5,6 +5,59 @@ skip to the version you are migrating from.
 
 ---
 
+## v0.9 — the agent is Maxine, and two config keys lost the old name (issue #84)
+
+**Who this affects:** every install. The change is cosmetic at the surface and
+has exactly two mechanical edges — a config key rename and a roster entry.
+
+**What changed:**
+
+- **Levi is retired; Maxine is the agent.** Name, title, icon (`⚡` → `💓`),
+  role, identity and principles are new. The name came from _leverage_, which
+  the module stopped headlining unconditionally in #66 — an agent named after a
+  metric that is now one of two, chosen by configuration, was the wrong front
+  door.
+- **`pulse_levi_verbosity` → `pulse_verbosity`** and **`pulse_levi_coaching_mode`
+  → `pulse_coaching_mode`.** A consumer-facing key naming the persona is what
+  made a cosmetic swap into a breaking change; the keys are now persona-free so
+  the next one costs nothing.
+- **The party-mode roster entry is corrected in place.** `register-party-agent.py`
+  normally preserves editorial fields (`name`/`title`/`icon`/`description`)
+  because the team edits them by hand. It now makes one exception: a value that
+  still matches _exactly_ what an older release of the script wrote is not a
+  team edit, so it is refreshed. A name you chose yourself is still preserved.
+
+**What you have to do: nothing.**
+
+- **The keys keep working.** Every workflow reads the new name first and falls
+  back to the legacy one. Your existing `pulse_levi_verbosity` is still
+  honoured — rename it at your leisure. Without that fallback the setting would
+  stay in your config file, unread, and silently revert to the default: nothing
+  would look broken, the behaviour would just change.
+- **Nothing moves on disk.** The skill folder is still
+  `.claude/skills/bmad-agent-pulse/` and the party-mode key is still
+  `[agents.bmad-agent-pulse]` — a rename in v0.4.5 already decoupled the path
+  from the persona, so this swap does not touch either.
+- **`/bmad-party-mode` will list Maxine** after the next setup run. If it still
+  says Levi, the entry in `_bmad/custom/config.toml` was hand-edited at some
+  point and is being preserved on purpose; re-run setup with `--force` to
+  overwrite it.
+
+**⚠ One case to watch: re-running setup.** The fallback covers the upgrade
+path, where you update the module and change nothing else. If you *also* re-run
+`bmad-pulse-setup`, it prompts for `pulse_verbosity` as a new key and writes
+whatever you answer — including the default, if you accept it — and the new key
+then wins over your old `pulse_levi_verbosity`. The old key is never deleted
+(the writer upserts), so nothing is lost, but the effective value is the one you
+just answered. If you had it on `verbose`, say so at the prompt, or copy the
+value across afterwards.
+
+**One thing that deliberately did not change.** `canonicalId` in the agent
+manifest fragment stays `bmad-pulse-efficiency-analyst`. It is an identifier,
+not a label — churning it on a persona swap is how stable references break.
+
+---
+
 ## toml-first config — `config.toml` with per-key `config.yaml` fallback (issue #73)
 
 **Who this affects:** installs on post-#2285 BMAD, where the canonical config is

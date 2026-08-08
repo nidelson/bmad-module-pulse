@@ -160,7 +160,7 @@ def test_setup_customize_does_not_ship_on_complete():
 
 
 def test_agent_pulse_celebration_threshold_override_present():
-    """PULSE-specific scalar on the Levi agent: celebration_threshold_override.
+    """PULSE-specific scalar on the PULSE agent: celebration_threshold_override.
     Empty string is the default — non-empty overrides
     pulse_leverage_threshold_exceptional at runtime."""
     data = _load("bmad-agent-pulse")
