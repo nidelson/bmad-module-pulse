@@ -149,15 +149,29 @@ Run the capability detector first:
 python3 ./scripts/detect_bmad_capability.py --project-root "{project-root}"
 ```
 
-The script exits 0 (BMAD ≥6.4.0), 1 (BMAD ≤6.3.x), or 2 (BMAD not installed)
-and prints a JSON payload to stdout describing the detection.
+The script exits 0 (BMAD supports TOML customization), 1 (BMAD ≤6.3.x), or 2
+(BMAD not installed) and prints a JSON payload to stdout describing the
+detection.
 
-- **Exit 0** — proceed with override emission below.
+- **Exit 0** — proceed with override emission below. **Read `capability` and
+  `inject_targets` from the payload — do not assume the targets.** Exit 0
+  covers two different architectures:
+  - `"capability": "bmad-build"` — unified architecture, `inject_targets` is
+    `["bmad-build"]`
+  - `"capability": "bmad-6.4.0+"` — split architecture, `inject_targets` is
+    `["bmad-dev-story", "bmad-code-review"]`
 - **Exit 1** — abort with this message: "PULSE v0.4.0 requires BMAD ≥6.4.0.
   Detected BMAD ≤6.3.x. Either upgrade BMAD (`npx bmad-method install`) or
   pin to PULSE v0.3.x via `--version`."
 - **Exit 2** — abort: "BMAD is not installed in this project root. Run
   `npx bmad-method install` first, then re-run `/bmad-pulse-setup`."
+
+> **Why the payload and not the exit code.** BMAD keeps `bmad-dev-story` on
+> disk as a deprecated shim after the unified architecture lands, so both
+> layouts look alike from the exit code alone. Injecting the split pair on a
+> `bmad-build` project writes the hooks into workflows the user never invokes:
+> the gate passes, this skill reports success, and auto-tracking never fires.
+> The absence of `pulse_metrics` weeks later is the only symptom.
 
 ### Cleanup Legacy Markers
 
@@ -204,10 +218,24 @@ surface the error and stop.
 
 ### Emit Override Files
 
-Emit the two override files. The conflict policy is **abort + `--force`**:
-if either destination already exists, the script exits 3 and the file is
-left untouched (sha256-stable). The user can re-run with `--force` after
-inspecting the conflict.
+Emit one override file per entry in `inject_targets` from the capability gate
+above — one file on the unified architecture, two on the split one. The
+conflict policy is **abort + `--force`**: if a destination already exists, the
+script exits 3 and the file is left untouched (sha256-stable). The user can
+re-run with `--force` after inspecting the conflict.
+
+**Unified architecture** (`"capability": "bmad-build"`) — a single file carries
+both hooks, because implementation and review run in one workflow:
+
+```bash
+python3 ./scripts/inject_customize.py \
+    --project-root "{project-root}" \
+    --skill bmad-build
+```
+
+**Split architecture** (`"capability": "bmad-6.4.0+"`) — two files, because
+`bmad-dev-story` ends at status "review" and only `bmad-code-review` reaches
+"done":
 
 ```bash
 python3 ./scripts/inject_customize.py \
@@ -217,6 +245,10 @@ python3 ./scripts/inject_customize.py \
     --project-root "{project-root}" \
     --skill bmad-code-review
 ```
+
+Do not emit both sets. On a `bmad-build` project the split pair is inert, and
+`bmad-code-review` would fire track-done a second time if the user ever invoked
+that skill directly.
 
 If either invocation exits 3, surface the message to the user verbatim
 (it includes the destination path and instructs how to re-run with
@@ -238,11 +270,18 @@ Surface the script's stdout to the user.
 
 Inform the user:
 
-- "PULSE auto-tracking integrated via `_bmad/custom/bmad-dev-story.toml` and
-  `_bmad/custom/bmad-code-review.toml`. Every story will now automatically
-  track start (during `/bmad-dev-story`) and completion (after
-  `/bmad-code-review`)."
-- "To disable: delete the two `.toml` files from `_bmad/custom/`."
+Name the files you actually wrote and the workflow the user actually runs —
+a message naming `/bmad-dev-story` on a `bmad-build` project is how a broken
+integration passes for a working one.
+
+- Unified architecture: "PULSE auto-tracking integrated via
+  `_bmad/custom/bmad-build.toml`. Every story will now automatically track
+  start and completion during `/bmad-build`."
+- Split architecture: "PULSE auto-tracking integrated via
+  `_bmad/custom/bmad-dev-story.toml` and `_bmad/custom/bmad-code-review.toml`.
+  Every story will now automatically track start (during `/bmad-dev-story`)
+  and completion (after `/bmad-code-review`)."
+- "To disable: delete the emitted `.toml` file(s) from `_bmad/custom/`."
 - "To customize: edit the files manually. Re-running `/bmad-pulse-setup` will
   abort if you changed them — pass `--force` only if you want PULSE's
   defaults restored."

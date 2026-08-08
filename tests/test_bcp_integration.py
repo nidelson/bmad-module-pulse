@@ -115,3 +115,44 @@ def test_bcp_integration_doc_exists_and_states_zero_coupling():
     text = BCP_DOC.read_text()
     assert "zero-coupled" in text or "zero coupling" in text
     assert "bmad-module-bcp" in text
+
+
+# --- Opt-in lock -----------------------------------------------------------
+# BCP is opt-in permanently: `hours` is the default and turning BCP on is always
+# an explicit user action, never a consequence of install, upgrade, or a prompt
+# whose comfortable answer is "yes". Without BCP, PULSE is the baseline product
+# rather than a degraded mode. These tests keep that a guarantee instead of a
+# convention — the port is exactly where it would be broken by accident.
+
+
+def test_default_estimation_method_is_hours():
+    data = yaml.safe_load(MODULE_YAML.read_text())
+    assert data["pulse_estimation_method"]["default"] == "hours", (
+        "BCP must never become the default — turning it on is the user's call"
+    )
+
+
+def test_bcp_is_offered_as_a_choice_never_preselected():
+    """Discoverability is allowed; pressure is not.
+
+    `bcp` must be present in the option list (a user cannot choose what they
+    cannot see) yet never be the value a user gets by pressing enter.
+    """
+    data = yaml.safe_load(MODULE_YAML.read_text())
+    field = data["pulse_estimation_method"]
+    values = [opt["value"] for opt in field["single-select"]]
+    assert "bcp" in values
+    assert field["default"] != "bcp"
+
+
+def test_dashboard_treats_missing_bcp_as_normal_not_as_a_warning():
+    """A project with no BCP data must render a complete dashboard.
+
+    No BCP section, and no notice about its absence — nothing should imply the
+    project is incorrectly configured.
+    """
+    text = DASHBOARD.read_text()
+    assert "all optional — a story without them is normal" in text, (
+        "dashboard must state that absent BCP telemetry is the normal case"
+    )
+    assert "contributes nothing" in text

@@ -1,0 +1,4 @@
+# Fixture: deprecated shim that survives alongside bmad-build. Its presence is
+# why the probe must check bmad-build FIRST — otherwise it reports the old tier
+# and the setup injects into a skill the user no longer invokes.
+[workflow]

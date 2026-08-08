@@ -1,0 +1,3 @@
+# Fixture: standalone review skill. Under bmad-build the review runs internally
+# via workflow.review_layers, so this is NOT an injection target there.
+[workflow]

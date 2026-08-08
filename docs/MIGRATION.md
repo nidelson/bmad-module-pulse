@@ -99,6 +99,61 @@ python3 .claude/skills/bmad-pulse-setup/scripts/reconcile-skills.py \
 
 ---
 
+## Unified BMAD architecture — auto-tracking moves to `bmad-build` (issue #83)
+
+**Symptom:** setup reported success, but no story ever gets `pulse_metrics`.
+Nothing errors — the dashboard is simply empty, and the gap is usually noticed
+weeks later.
+
+**Cause.** Recent BMAD merges story creation, implementation and review into a
+single `bmad-build` workflow, and keeps `bmad-dev-story` on disk as a
+deprecated shim. PULSE's capability probe checked that shim first, reported the
+old architecture, and the setup wrote its hooks into `_bmad/custom/bmad-dev-story.toml`
+and `_bmad/custom/bmad-code-review.toml` — workflows you no longer invoke. The
+gate passed, the summary claimed success, and auto-tracking never fired.
+
+**What changes.** The probe now checks `bmad-build/customize.toml` **first** and
+reports which skills to target in its payload:
+
+```bash
+python3 .claude/skills/bmad-pulse-setup/scripts/detect_bmad_capability.py --project-root .
+# {"capability": "bmad-build", "inject_targets": ["bmad-build"], ...}
+```
+
+| Architecture | `capability` | Override file(s) |
+|---|---|---|
+| Unified (`bmad-build` present) | `bmad-build` | `_bmad/custom/bmad-build.toml` — both hooks in one file |
+| Split (`bmad-dev-story` only) | `bmad-6.4.0+` | `_bmad/custom/bmad-dev-story.toml` + `_bmad/custom/bmad-code-review.toml` |
+
+One file suffices on the unified architecture because review runs in-process
+through `workflow.review_layers`, so `on_complete` is a genuine completion
+point rather than a premature one.
+
+### How to migrate
+
+Only needed if you are on the unified architecture and PULSE was set up before
+this fix. Check with the probe command above — if it prints `"bmad-build"` and
+`_bmad/custom/bmad-build.toml` does not exist, you were affected.
+
+```bash
+# 1. Pull the new PULSE version
+npx bmad-method install --custom-source https://github.com/nidelson/bmad-module-pulse
+
+# 2. Remove the inert overrides (back them up first if you customized the text)
+rm _bmad/custom/bmad-dev-story.toml _bmad/custom/bmad-code-review.toml
+
+# 3. Re-run setup — it now emits bmad-build.toml
+/bmad-pulse-setup
+```
+
+Stories completed while the hooks were inert have no `start_ts`. Recover them
+with `/bmad-pulse-track-backfill`; there is nothing to repair in the sprint
+status itself.
+
+> Keep `_bmad/custom/bmad-code-review.toml` **only** if you deliberately run
+> `/bmad-code-review` as a separate step. Having it alongside `bmad-build.toml`
+> records track-done twice for the same story.
+
 ## v0.7.x → v0.8.0 — Previsibilidade para precificar (forecast de projeto)
 
 **Quem isto afeta:** quem usa a seção de previsão do dashboard com BCP. **Breaking** numa seção: a antiga `Previsão de Capacidade` (extrapolação por leverage) foi **substituída** por `Previsão de Projeto` (`BCP × h/BCP ± IC 90%`).
