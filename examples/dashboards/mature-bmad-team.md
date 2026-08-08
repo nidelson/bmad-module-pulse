@@ -16,7 +16,7 @@
 | **Alavancagem (vs REFERÊNCIA)**           | **6.9x — o número que vende (vs cotação de mercado, não colapsa)** |
 | Horas vs benchmark de referência (152h)   | **128h economizadas**                |
 
-> **Previsibilidade é o número-herói** — acurácia, **maior = melhor, meta 100%** (`↑` = subindo). **Três conceitos fixos:** *Previsibilidade* (88%, meta 100%) e *Margem de erro* (12%, meta 0% quando calibrado) são duas faces da acurácia; *Alavancagem* (6.9x vs REFERÊNCIA) é o multiplicador ortogonal que vende. A razão `estimated_hours / actual_hours` (vs PLANO) colapsou pra ~1.0x ao calibrar — **é a previsibilidade, não é mostrada como alavancagem**. A Alavancagem usa um denominador **frozen** (cotação de mercado, governado pelo `bmad-module-bcp`), que **não colapsa**.
+> **Previsibilidade é o número-herói** — acurácia, **maior = melhor, meta 100%** (`↑` = subindo). **Três conceitos fixos:** *Previsibilidade* (88%, meta 100%) e *Margem de erro* (12%, meta 0% quando calibrado) são duas faces da acurácia; *Alavancagem* (6.9x vs REFERÊNCIA) é o multiplicador ortogonal que vende. A razão `estimated_hours / actual_hours` (vs PLANO) colapsou pra ~1.0x ao calibrar — **é a previsibilidade, não é mostrada como alavancagem**. A Alavancagem usa um denominador **frozen** (cotação de mercado, governada por configuração), que **não colapsa**.
 
 > **Invariante anti-Goodhart — leverage não é meta.** `leverage = estimated_hours / actual_hours`. Quando a base de estimativa calibra, a razão vs-PLANO colapsa para **~1.0x por construção** — então um multiplicador vs-plano *alto* sinaliza base inflada, **não** velocidade. O sinal durável é a **previsibilidade** (drift de h/BCP convergindo a zero). A alavancagem vs REFERÊNCIA frozen é reportada como **ROI honesto vs um benchmark fixo** (cadência de board), nunca "vs humano" e nunca como meta.
 
@@ -45,9 +45,9 @@ Epic 15: ████████████████████  8.4x (1 s
 
 ## 📊 Produtividade BCP
 
-> Telemetria de Business Complexity Points. As horas foram derivadas upstream pelo
-> [`bmad-module-bcp`](https://github.com/nidelson/bmad-module-bcp); PULSE só
-> reporta produtividade observada e nunca é dono do baseline BCP.
+> Telemetria de Business Complexity Points. As horas foram derivadas pela skill
+> `bmad-bcp-score`; este dashboard só reporta a produtividade observada e nunca
+> é dono do baseline BCP.
 
 | Métrica            | Valor |
 | ------------------ | ----- |

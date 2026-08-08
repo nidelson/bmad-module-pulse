@@ -87,11 +87,11 @@ The keys this workflow uses:
 
 > **Note on `pulse_estimation_method`:** estimate conversion is identical to
 > `track-done` (see Step 4). For `story_points` the estimate field holds
-> points; for `bcp` PULSE stays **passive and zero-coupled** — it does NOT
-> compute hours from BCP. `bcp` only signals the upstream `estimated_hours`
-> was already derived by [`bmad-module-bcp`](https://github.com/nidelson/bmad-module-bcp);
-> PULSE reads `estimated_hours` exactly as for `hours` and additionally
-> snapshots the read-only `bcp.*` block for audit. PULSE never writes the
+> points; for `bcp` this skill stays **passive** toward BCP data — it does NOT
+> compute hours from BCP. `bcp` only signals that `estimated_hours`
+> was already derived by the sibling `bmad-bcp-score` skill;
+> this skill reads `estimated_hours` exactly as for `hours` and additionally
+> snapshots the read-only `bcp.*` block for audit. It never writes the
 > story frontmatter and never touches the BCP baseline file.
 
 ### Paths
@@ -135,10 +135,10 @@ Any of `story_id`, `--hi`, `--hf` missing → prompt the user for the missing va
    - the field configured in `pulse_field_dev_count`
    - `task_count` (number of tasks/subtasks)
    - the field configured in `pulse_field_category` (infer from name; if ambiguous, ask using `pulse_dev_categories`)
-   - the `bcp:` frontmatter block **only if present** (written exclusively by `bmad-module-bcp`):
+   - the `bcp:` frontmatter block **only if present** (written exclusively by `bmad-bcp-score`):
      - Read `bcp.schema_version`. If it is anything other than `"1.0"`, emit `⚠ Unknown bcp.schema_version <v> — ignoring bcp.* for this story` and treat the block as absent.
-     - Otherwise capture `bcp.total`, `bcp.rule_version`, `bcp.scored_by`. PULSE does not interpret `bcp.breakdown` or `bcp.history`.
-   - This extraction is **read-only** — PULSE never writes back to the story frontmatter.
+     - Otherwise capture `bcp.total`, `bcp.rule_version`, `bcp.scored_by`. This skill does not interpret `bcp.breakdown` or `bcp.history`.
+   - This extraction is **read-only** — this skill never writes back to the story frontmatter.
 3. If the story file or the estimate field cannot be found, ask the user to supply `estimated_hours` (and `category`) directly rather than aborting — the backfill's purpose is to recover otherwise-lost data.
 
 ### Step 4: Calculate Metrics
@@ -148,7 +148,7 @@ Estimate conversion is identical to `track-done`:
 - `story_points` → `estimated_hours = points * pulse_story_point_hours_factor`
 - `tshirt` → S=2h, M=4h, L=8h, XL=16h
 - `hours` → value used directly
-- `bcp` → value used directly (already derived upstream by `bmad-module-bcp`; PULSE does NOT compute hours from BCP — it consumes the field as-is, identical to the `hours` branch)
+- `bcp` → value used directly (already derived by `bmad-bcp-score`; this skill does NOT compute hours from BCP — it consumes the field as-is, identical to the `hours` branch)
 
 Leverage:
 
@@ -177,14 +177,14 @@ drift_pct           = round((h_per_bcp_actual - h_per_bcp_estimated)
                             / h_per_bcp_estimated * 100, 1)   # 0.0 if estimated == 0
 ```
 
-PULSE does **not** update any BCP baseline — baseline maturation is the
-`bmad-module-bcp` module's responsibility (via `/bmad-bcp-recalibrate`).
+This skill does **not** update any BCP baseline — baseline maturation belongs to the
+sibling `bmad-bcp-recalibrate` skill.
 
 **Stable leverage vs frozen reference (issue #65 — only when available):**
 read `estimated_hours_reference` from the story frontmatter (read-only — the
-frozen leverage anchor written by `bmad-module-bcp`). When it is a positive
+frozen leverage anchor written by `bmad-bcp-score`). When it is a positive
 number, record `leverage_vs_reference = round(estimated_hours_reference /
-actual_hours, 1)`. This denominator is **frozen** (governed upstream, never
+actual_hours, 1)`. This denominator is **frozen** (governed configuration, never
 recalibrated), so unlike `leverage_ratio` (vs PLAN, which collapses to ~1.0x as
 the basis calibrates) it **does not collapse** — an honest ROI multiplier vs a
 fixed external benchmark, not vs human and not a target. Absent → omit the
@@ -278,7 +278,7 @@ want this unconditional can set it in `{workflow.on_complete}` instead.
 ## BEHAVIOR RESTRICTIONS
 
 - DO NOT modify anything outside the `pulse_metrics:` section of `{sprint_status_file}`
-- DO NOT write to the story file frontmatter or to any BCP baseline file (`bcp-baseline.yaml`) — `bcp.*` is read-only input owned by `bmad-module-bcp`; baseline recalibration lives in that module
+- DO NOT write to the story file frontmatter or to any BCP baseline file (`bcp-baseline.yaml`) — `bcp.*` is read-only input owned by `bmad-bcp-score`; baseline recalibration belongs to `bmad-bcp-recalibrate`
 - Every entry this skill writes MUST carry `retroactive: true` — backfilled data is never presented as real-time data
 - Never reconstruct `process_health` or halts — those require live observation; leave them absent
 - If a real-time-tracked entry (has `start_ts`+`end_ts`, no `retroactive` flag) already exists for the story, require explicit confirmation before overwriting

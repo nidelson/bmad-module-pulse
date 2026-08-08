@@ -158,9 +158,9 @@ If `pulse_estimation_method` is `bcp`:
 
 ```text
 estimated_hours = value recorded directly in hours
-                  (already derived upstream by bmad-module-bcp — PULSE does NOT
-                   compute hours from BCP points; it consumes the field as-is,
-                   identical to the `hours` branch)
+                  (already derived by the sibling bmad-bcp-score skill — this
+                   skill does NOT compute hours from BCP points; it consumes the
+                   field as-is, identical to the `hours` branch)
 ```
 
 **Leverage calculation:**
@@ -215,13 +215,13 @@ leverage_vs_reference = round(estimated_hours_reference / actual_hours, 1)
 ```
 
 This is the **stable ROI** number: its denominator is **frozen** (the reference rate is
-governed upstream by `bmad-module-bcp`, never recalibrated), so unlike `leverage_ratio`
+governed configuration, never recalibrated), so unlike `leverage_ratio`
 (vs PLAN, which collapses to ~1.0x by construction as the estimate basis calibrates) it
 **does not collapse**. It is an honest multiplier **vs a fixed external benchmark**, not
-"vs human" and not a target — predictability stays the hero metric. PULSE only **reads**
+"vs human" and not a target — predictability stays the hero metric. This skill only **reads**
 the field (file convention) and divides; it never computes the reference, never reads the
 BCP baseline, and never writes the story frontmatter (read-only input owned by
-`bmad-module-bcp`).
+`bmad-bcp-score`).
 
 **BCP productivity (only when a BCP total is available for this story):**
 
@@ -264,9 +264,11 @@ pulse_metrics:
       drift_pct: 0.0
 ```
 
-PULSE does **not** update any BCP baseline. Baseline maturation is the
-`bmad-module-bcp` module's responsibility (via `/bmad-bcp-recalibrate`). This step
-only records read-derived telemetry inside the `pulse_metrics:` section.
+This skill does **not** update any BCP baseline. Baseline maturation belongs to the
+sibling `bmad-bcp-recalibrate` skill, which runs **after** this one — when scoring is
+enabled, setup installs an `on_complete` sequence whose STEP 2 invokes it with the
+`actual_hours` STEP 1 just recorded. This step only records read-derived telemetry
+inside the `pulse_metrics:` section.
 
 ### Step 4: Generate Efficiency Pulse + Process Health
 
@@ -416,7 +418,7 @@ Display as an additional section in the card (respecting `pulse_verbosity`):
 ## BEHAVIOR RESTRICTIONS
 
 - DO NOT modify anything outside the `pulse_metrics:` section of file `{sprint_status_file}`
-- DO NOT write to the story frontmatter or to any BCP baseline file (`bcp-baseline.yaml`) — `bcp.*` is read-only input owned by `bmad-module-bcp`; baseline recalibration lives in that module
+- DO NOT write to the story frontmatter or to any BCP baseline file (`bcp-baseline.yaml`) — `bcp.*` is read-only input owned by `bmad-bcp-score`; baseline recalibration belongs to `bmad-bcp-recalibrate`, which runs after this skill, never inside it
 - Data is isolated in the `pulse_metrics:` section — zero risk of conflict
 - Communicate in the language configured in `communication_language`
 - Respect `pulse_verbosity` for level of detail (concise / standard / verbose)

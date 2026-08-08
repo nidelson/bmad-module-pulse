@@ -17,7 +17,7 @@ REPO_ROOT = Path(__file__).parents[1]
 DASHBOARD = REPO_ROOT / "skills/bmad-pulse-dashboard/workflow.md"
 TRACK_DONE = REPO_ROOT / "skills/bmad-pulse-track-done/workflow.md"
 TRACK_BACKFILL = REPO_ROOT / "skills/bmad-pulse-track-backfill/workflow.md"
-BCP_DOC = REPO_ROOT / "docs/integration/bcp.md"
+BCP_DOC = REPO_ROOT / "docs/bcp.md"
 
 
 def test_predictability_score_is_defined_as_hero():
@@ -168,19 +168,34 @@ def test_regime_read_is_zero_write_coupled():
     assert "never derives hours from it" in DASHBOARD.read_text()
 
 
-def test_integration_doc_flips_basis_to_read_only():
-    """docs/integration/bcp.md must reflect the reversal: estimated_hours_basis
-    is now read read-only (not 'ignores'), while estimated_hours_pre_bcp stays
-    ignored and zero-coupling language remains."""
+def test_bcp_doc_flips_basis_to_read_only():
+    """docs/bcp.md must reflect the reversal: estimated_hours_basis is now read
+    read-only (not 'ignores'), while estimated_hours_pre_bcp stays ignored and
+    the zero-coupling language remains.
+
+    The row wording changed with the port (the owner is a sibling skill, not a
+    module), so these assert the two halves separately rather than pinning a
+    table row verbatim: the fields must appear, and only `_pre_bcp` may be
+    described as ignored.
+    """
     text = BCP_DOC.read_text()
     assert "reads it read-only" in text
-    assert "| `estimated_hours_basis`     | BCP (audit — PULSE ignores)" not in text, (
-        "the old 'PULSE ignores' row for estimated_hours_basis must be gone"
+    basis_row = next(
+        line for line in text.splitlines() if line.startswith("| `estimated_hours_basis`")
     )
-    assert "estimated_hours_pre_bcp`   | BCP (audit — PULSE ignores)" in text, (
-        "estimated_hours_pre_bcp must remain ignored"
+    assert "ignore" not in basis_row.lower(), (
+        f"estimated_hours_basis is read read-only, not ignored: {basis_row}"
     )
-    assert "zero-coupled" in text or "zero coupling" in text
+    pre_bcp_row = next(
+        line for line in text.splitlines() if line.startswith("| `estimated_hours_pre_bcp`")
+    )
+    assert "ignore" in pre_bcp_row.lower(), (
+        f"estimated_hours_pre_bcp must remain ignored: {pre_bcp_row}"
+    )
+    collapsed = " ".join(text.split())
+    assert "coupling stays **zero**" in collapsed or "zero-coupled" in collapsed, (
+        "the doc must still state the coupling invariant, whatever its two sides are called"
+    )
 
 
 # --- Phase 4: vs-PLAN labels + inverted celebration -------------------------

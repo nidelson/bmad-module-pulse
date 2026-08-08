@@ -5,7 +5,7 @@ worth keeping — it is the only in-band evidence that a rescore happened. But i
 is the wrong DENOMINATOR for anything, because every numerator it gets paired
 with comes from the story's *final* scoring:
 
-  - `estimated_hours` is derived upstream by bmad-module-bcp from the final BCP,
+  - `estimated_hours` is derived upstream by bmad-bcp-score from the final BCP,
     so `estimated_hours / bcp_at_start.total` mixes two scorings and describes
     no state the story was ever in.
   - `estimated_hours_reference` is likewise `final_bcp x reference_rate`, so

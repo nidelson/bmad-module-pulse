@@ -35,7 +35,7 @@ Division of responsibility: the **LLM makes the judgement** (picking a size per 
 
 Load `references/auto-score.md` and follow the template: read the story plus the resolved ruler, decide presence and size per element, and produce the strict JSON (`breakdown`, `confidence`, `divergence_with_agent_estimate`, `rationale_summary`). Write that JSON to a temporary file.
 
-`scored_by`: `retroactive` when the story is already delivered or historical; `rescore` when a `bcp.*` block exists and the user asks to score again; `bruno` when invoked through the scoring agent; otherwise `manual`.
+`scored_by`: `retroactive` when the story is already delivered or historical; `rescore` when a `bcp.*` block exists and the user asks to score again; `bruno` when invoked through the module's agent; otherwise `manual`. The `bruno` token is a **frozen schema value**, not a persona — it names the agent-driven path in stories scored since v0.1 and stays spelled that way so already-scored frontmatter keeps validating.
 
 > `bruno` is kept as a recorded value because stories already carry it. It names how a score was produced, not who is on the roster today.
 

@@ -30,7 +30,7 @@
 > **Leia com honestidade — três enquadramentos, papéis distintos:**
 > - **Previsibilidade (herói):** suas estimativas estão convergindo para a realidade? Menor = melhor; `↓` = convergindo. É o sinal durável.
 > - **Alavancagem vs PLANO:** o número *andaime* — só é grande enquanto a base de estimativa não está calibrada. Este time já calibrou: ela **colapsou para ~1.1x** (e esse colapso é o produto funcionando — virou a previsibilidade). Contexto, nunca meta.
-> - **Alavancagem vs REFERÊNCIA frozen** (quando o `bmad-module-bcp` grava `estimated_hours_reference`): denominador **congelado** e governado, então **não colapsa** — o multiplicador de ROI honesto vs um benchmark fixo (4.0h/BCP), para a cadência de board. Continua não sendo meta nem "vs humano".
+> - **Alavancagem vs REFERÊNCIA frozen** (quando a estimativa por BCP está ligada e grava `estimated_hours_reference`): denominador **congelado** e governado, então **não colapsa** — o multiplicador de ROI honesto vs um benchmark fixo (4.0h/BCP), para a cadência de board. Continua não sendo meta nem "vs humano".
 
 Sem `estimated_hours_reference`, só aparecem previsibilidade + alavancagem-vs-plano. (Veja o [Roadmap](#roadmap).)
 
@@ -131,6 +131,38 @@ PULSE se conecta aos seus arquivos de story BMAD existentes — sem migrations, 
 | `bmad-pulse-track-done` | `/bmad-pulse-track-done [story_id]` | Registra conclusão + calcula métricas |
 | `bmad-pulse-track-backfill` | `/bmad-pulse-track-backfill [story_id] --hi <ts> --hf <ts>` | Registra HI/HF + métricas retroativamente para story medida tarde demais |
 | `bmad-pulse-dashboard` | `/bmad-pulse-dashboard` | Gera dashboard cumulativo |
+
+**Estimativa por BCP — opt-in** (só entram em cena com `pulse_estimation_method = "bcp"`):
+
+| Skill | Comando | Função |
+|---|---|---|
+| `bmad-bcp-rule-card` | `/bmad-bcp-rule-card [elemento]` | Mostra a régua canônica (10 elementos × 5 tamanhos) |
+| `bmad-bcp-score` | `/bmad-bcp-score [story]` | Pontua a story e deriva `estimated_hours` do score |
+| `bmad-bcp-score-batch` | `/bmad-bcp-score-batch [glob]` | Pontua stories existentes em lote (retroativo) |
+| `bmad-bcp-rescore` | `/bmad-bcp-rescore [story]` | Repontua após mudança de escopo, preservando o histórico |
+| `bmad-bcp-recalibrate` | `/bmad-bcp-recalibrate [story]` | Recalibra o baseline por categoria com horas reais |
+| `bmad-bcp-backfill-baseline` | `/bmad-bcp-backfill-baseline [glob]` | Sai do cold start usando o histórico já entregue |
+
+---
+
+## Estimativa por BCP — opcional, e opcional de verdade
+
+PULSE nasceu medindo **alavancagem**: você estimou 10h, entregou em 1h, são 10x. O número é real, mas o denominador é um palpite — e recalibrar um palpite não converge para nada, porque não existe unidade comparável embaixo dele.
+
+Ligar a estimativa por **BCP** (Business Complexity Points, framework da CI&T) troca o palpite por uma régua canônica: `10 BCP × 5h/BCP = 50h`. Aí a estimativa vira comparável entre times e ao longo do tempo, e recalibrar passa a significar alguma coisa — o que ela revela é a **previsibilidade** do squad. É esse o pulso que o PULSE quer medir.
+
+```toml
+# _bmad/config.toml — [modules.pulse]
+pulse_estimation_method = "bcp"     # default: "hours"
+```
+
+| Sem BCP | Com BCP |
+|---|---|
+| Estimativa em horas, subjetiva | Estimativa derivada de um score contra uma régua |
+| Métrica-herói: **alavancagem** (não colapsa, porque nada recalibra) | Métrica-herói: **previsibilidade** (a alavancagem migra para o denominador frozen) |
+| Nenhuma seção BCP no dashboard | Produtividade BCP, forecast `BCP × h/BCP ± IC 90%`, convergência de baseline |
+
+**`hours` continua sendo o default, e nada empurra você para o BCP.** Um projeto sem BCP renderiza um dashboard completo, sem seção vazia e sem aviso de que "falta" algo — não é modo degradado, é o produto. Detalhes, contrato de frontmatter e a fronteira interna entre pontuar e medir: **[docs/bcp.md](docs/bcp.md)**.
 
 ---
 
@@ -268,7 +300,7 @@ Para manter `pulse_auto_dashboard: yes` mas substituir o regen do dashboard por 
 
 Alavancagem sustentada de **6.9x** medida em um projeto BMAD em produção (SIP — plataforma de pesquisa local-first, monorepo com apps mobile, web, backend e worker), capturada pelo próprio PULSE ao longo de múltiplas sprints.
 
-Esse **6.9x** é honesto porque é lido **vs uma referência frozen** (`estimated_hours_reference`, denominador congelado e governado pelo `bmad-module-bcp`) — um benchmark fixo que **não colapsa** conforme o time calibra. É diferente da alavancagem-vs-plano, que colapsa para ~1.0x por construção (e vira a previsibilidade). Veja a [integração com BCP](docs/integration/bcp.md).
+Esse **6.9x** é honesto porque é lido **vs uma referência frozen** (`estimated_hours_reference`, denominador congelado e governado por configuração) — um benchmark fixo que **não colapsa** conforme o time calibra. É diferente da alavancagem-vs-plano, que colapsa para ~1.0x por construção (e vira a previsibilidade). Veja a [estimativa por BCP](docs/bcp.md).
 
 PULSE usa o próprio remédio.
 
@@ -284,7 +316,13 @@ Esse número não é o teto, nem uma meta. É um ponto de dado vs um benchmark f
 - **v0.6 — Inverter o velocímetro.** A métrica-herói passa a ser convergência/acurácia (um ~1.0x estável é saudável; um multiplicador alto sinaliza estimativa inflada, não velocidade) mais o drift auto-referente de `h/BCP`. Detecção de regime via `estimated_hours_basis`. **Três enquadramentos de multiplicador:** "vs PLANO" (colapsa → previsibilidade) e "vs REFERÊNCIA frozen" (denominador congelado, ROI estável que não colapsa, lendo `estimated_hours_reference` do `bmad-module-bcp`) — nunca "vs humano".
 - **v0.7 — A ação que importa.** Um alerta de drift no momento da estimativa — _"stories como X erraram +N% nas últimas K — reestimar?"_ — interrompendo a estimativa ruim antes de virar compromisso.
 - **v0.8 — Previsibilidade para precificar.** Forecast de projeto `BCP × h/BCP ± IC(90%)` para times que faturam por hora; quebras por desenvolvedor/agente e digests Slack/Linear entram aqui.
+- **v0.9 — A régua entra em casa.** A pontuação BCP passa a ser uma feature opt-in do próprio PULSE (as seis skills `bmad-bcp-*`), em vez de um módulo separado que precisava ser instalado ao lado. Levi se aposenta e **Maxine** assume como Analista de Previsibilidade de Entrega.
 - **v1.0 — Proposta à equipe principal do BMAD** para adoção nativa.
+
+> **Nota de leitura.** Os marcos até a v0.8 foram entregues quando a pontuação
+> BCP ainda vivia num módulo separado, e os textos acima preservam isso — é o
+> registro do que foi entregue quando. Da v0.9 em diante, tudo o que eles
+> chamam de "módulo BCP" mora aqui.
 
 > **Por que a mudança?** Os próprios dados do PULSE mostraram que a alavancagem mede o *basis da estimativa*, não o trabalho — calibrar empurra qualquer multiplicador para 1.0x por construção, então uma meta de alavancagem literalmente premia nunca calibrar. O sinal durável é previsibilidade: _você entregou o que prometeu, e consegue provar?_ O gráfico 10x→1x não é o problema — é o moat. (Telemetria de uso de tokens fica parqueada como possível módulo separado.)
 

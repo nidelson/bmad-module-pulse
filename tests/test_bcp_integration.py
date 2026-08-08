@@ -1,7 +1,9 @@
 """Invariant tests for the BCP (Business Complexity Points) integration.
 
 Issue #30: PULSE accepts `pulse_estimation_method=bcp` and surfaces BCP
-telemetry while staying passive and zero-coupled to `bmad-module-bcp`.
+telemetry while staying passive toward the scoring side. Since #84 that side is
+the sibling `bmad-bcp-*` skills in this same module rather than a separate one —
+the boundary is now internal, and these tests are what keep it a boundary.
 
 These are meta/invariant tests in the same spirit as
 ``test_cross_file_invariants.py`` — they pin the loose-coupling contract in
@@ -20,7 +22,7 @@ TRACK_START = REPO_ROOT / "skills/bmad-pulse-track-start/workflow.md"
 TRACK_DONE = REPO_ROOT / "skills/bmad-pulse-track-done/workflow.md"
 DASHBOARD = REPO_ROOT / "skills/bmad-pulse-dashboard/workflow.md"
 SETUP_SKILL = REPO_ROOT / "skills/bmad-pulse-setup/SKILL.md"
-BCP_DOC = REPO_ROOT / "docs/integration/bcp.md"
+BCP_DOC = REPO_ROOT / "docs/bcp.md"
 
 EXPECTED_METHODS = {"hours", "story_points", "tshirt", "bcp"}
 
@@ -120,11 +122,18 @@ def test_setup_skill_waives_factor_for_bcp():
     assert "not** require `pulse_story_point_hours_factor`" in text
 
 
-def test_bcp_integration_doc_exists_and_states_zero_coupling():
-    assert BCP_DOC.exists(), "docs/integration/bcp.md must exist"
-    text = BCP_DOC.read_text()
-    assert "zero-coupled" in text or "zero coupling" in text
-    assert "bmad-module-bcp" in text
+def test_bcp_doc_exists_and_states_the_internal_boundary():
+    """The boundary survived the port; only its two sides changed name. It is
+    now between sibling skills in one module, so the doc must still spell out
+    what tracking may not do — and must no longer send the reader to a module."""
+    assert BCP_DOC.exists(), "docs/bcp.md must exist"
+    text = " ".join(BCP_DOC.read_text().split())  # prose wraps; assert on content
+    assert "never convert BCP to hours" in text or "never converts BCP→hours" in text
+    assert "never read or write the baseline" in text
+    assert "apply_score.py" in text, "the single-writer rule must name its writer"
+    assert "companion module" not in text, (
+        "the companion-module framing is dead — scoring ships in this module"
+    )
 
 
 # --- Opt-in lock -----------------------------------------------------------

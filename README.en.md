@@ -142,6 +142,38 @@ PULSE attaches to your existing BMAD story files — no schema migrations, no se
 | `bmad-pulse-track-backfill` | `/bmad-pulse-track-backfill [story_id] --hi <ts> --hf <ts>` | Retroactively record HI/HF + metrics for a story tracked too late |
 | `bmad-pulse-dashboard` | `/bmad-pulse-dashboard` | Generate cumulative dashboard |
 
+**BCP estimation — opt-in** (these only come into play with `pulse_estimation_method = "bcp"`):
+
+| Skill | Command | Function |
+|---|---|---|
+| `bmad-bcp-rule-card` | `/bmad-bcp-rule-card [element]` | Display the canonical ruler (10 elements × 5 sizes) |
+| `bmad-bcp-score` | `/bmad-bcp-score [story]` | Score a story and derive `estimated_hours` from the score |
+| `bmad-bcp-score-batch` | `/bmad-bcp-score-batch [glob]` | Score existing stories in batch (retroactive) |
+| `bmad-bcp-rescore` | `/bmad-bcp-rescore [story]` | Re-score after a scope change, preserving history |
+| `bmad-bcp-recalibrate` | `/bmad-bcp-recalibrate [story]` | Recalibrate the per-category baseline from real hours |
+| `bmad-bcp-backfill-baseline` | `/bmad-bcp-backfill-baseline [glob]` | Leave the cold start using already-delivered history |
+
+---
+
+## BCP estimation — optional, and optional for real
+
+PULSE was born measuring **leverage**: you estimated 10h, shipped in 1h, that's 10x. The number is real, but the denominator is a guess — and recalibrating a guess converges on nothing, because there is no comparable unit underneath it.
+
+Turning on **BCP** estimation (Business Complexity Points, a CI&T framework) swaps the guess for a canonical ruler: `10 BCP × 5h/BCP = 50h`. Now the estimate is comparable across teams and across time, and recalibration starts to mean something — what it reveals is the squad's **predictability**. That is the pulse PULSE is after.
+
+```toml
+# _bmad/config.toml — [modules.pulse]
+pulse_estimation_method = "bcp"     # default: "hours"
+```
+
+| Without BCP | With BCP |
+|---|---|
+| Estimate in hours, subjective | Estimate derived from a score against a ruler |
+| Hero metric: **leverage** (does not collapse — nothing recalibrates it) | Hero metric: **predictability** (leverage moves to the frozen denominator) |
+| No BCP sections in the dashboard | BCP productivity, `BCP × h/BCP ± CI 90%` forecast, baseline convergence |
+
+**`hours` stays the default, and nothing nudges you toward BCP.** A project without it renders a complete dashboard — no empty section, no warning that something is "missing". That is the product, not a degraded mode. Details, the frontmatter contract, and the internal boundary between scoring and measuring: **[docs/bcp.md](docs/bcp.md)**.
+
 ---
 
 ## Maxine — your coach agent
@@ -362,7 +394,13 @@ That number isn't the ceiling. It's a data point. PULSE exists so your team can 
 - **v0.6 — Invert the speedometer.** The hero metric becomes convergence/accuracy (a stable ~1.0x is healthy; a high multiplier flags inflated estimates, not speed) plus self-referential `h/BCP` drift. Regime detection via `estimated_hours_basis`. Multipliers always read "vs PLAN", never "vs human".
 - **v0.7 — The action that matters.** A drift alert at estimation time — _"stories like X have missed by +N% over the last K — re-estimate?"_ — interrupting a bad estimate before it becomes a commitment.
 - **v0.8 — Predictability for pricing.** Project forecast `BCP × h/BCP ± CI(90%)` for teams that bill by the hour; per-developer/agent breakdowns and Slack/Linear digests fold in here.
+- **v0.9 — The ruler moves in.** BCP scoring becomes an opt-in feature of PULSE itself (the six `bmad-bcp-*` skills) instead of a separate module installed alongside it. Levi retires and **Maxine** takes over as Delivery Predictability Analyst.
 - **v1.0 — Pitch to BMAD core** for native adoption.
+
+> **Reading note.** The milestones up to v0.8 shipped while BCP scoring still
+> lived in a separate module, and the text above preserves that — it is the
+> record of what shipped when. From v0.9 on, everything they call "the BCP
+> module" lives here.
 
 > **Why the shift?** PULSE's own data showed leverage measures the *estimate's basis*, not the work — calibration drives any multiplier toward 1.0x by construction, so a leverage target literally rewards never calibrating. The durable signal is predictability: _did you ship what you promised, and can you prove it?_ The 10x→1x graph isn't the problem — it's the moat. (Token-usage telemetry is parked as a possible separate module.)
 
