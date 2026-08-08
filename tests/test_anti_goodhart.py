@@ -5,6 +5,26 @@ The whole v0.5 north-star shift rests on one mathematical fact: leverage
 is calibrated. Therefore a *leverage target* would reward inflating estimates
 (never calibrating) — the textbook Goodhart trap.
 
+**The collapse has a precondition, and it is not always met (issue #66).**
+"Once the estimate basis is calibrated" is load-bearing: something has to be
+recalibrating the estimate against a unit comparable across teams. That is the
+`pulse_estimation_method = "bcp"` path. On the default `hours` path the estimate
+is a human judgement call, nothing recalibrates it, and the ratio does not
+collapse — which is why the dashboard keeps `leverage_ratio` as the headline
+there instead of demoting it.
+
+Written down because the omission already cost something: #66 was originally
+filed as "retire `leverage_ratio`", reasoning from the collapse as if it were
+unconditional. Acting on that would have left the default configuration with no
+leverage metric at all, since `leverage_vs_reference` needs an anchor only the
+BCP path writes.
+
+The invariant itself does not weaken. A leverage *target* is a Goodhart trap on
+both paths — on the calibrated one because the number collapses, on the
+uncalibrated one because inflating the estimate raises it directly. The tests
+below stay as they are; what changes is that the reader now knows which half of
+the argument applies where.
+
 This file locks that invariant two ways:
   1. **Premise lock (markdown invariant):** the leverage formula the workflow
      tells the agent to use must stay `estimated_hours / actual_hours`, and the
