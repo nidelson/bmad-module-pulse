@@ -310,6 +310,32 @@ existing `[modules.pulse]` table rather than appending a second one.
 > `module.yaml` has no conditional prompts. Ten questions that do not apply is a
 > worse failure than a setup step that only runs when scoring is on.
 
+### Create the baseline
+
+Still only when `pulse_estimation_method` is `bcp`. Every scoring run reads
+`bcp-baseline.yaml`, and `apply_score.py` fails outright when it is absent — so
+a project that enables scoring without this file has six skills that cannot run.
+Create it with the values resolved in the previous step:
+
+```bash
+python3 ./scripts/seed_baseline.py \
+    --baseline-path "{project-root}/<resolved bcp_baseline_path>" \
+    --seed <bcp_baseline_seed> \
+    --min-samples <bcp_baseline_min_samples> \
+    --rolling-window <bcp_baseline_rolling_window>
+```
+
+Idempotent: an existing baseline is left untouched and the script reports
+`action: skipped_exists`. That matters for a project migrating off the
+standalone module — its baseline already holds real calibration history, and
+overwriting it would discard every sample the team accumulated. Do **not** pass
+`--force` on a migration; only when the user explicitly asks to start over.
+
+The file records a `config_snapshot` of the three values above alongside an
+empty `categories` map. Categories fill in later, from real `actual_hours`, via
+`bmad-bcp-recalibrate` — until a category reaches `min_samples` it stays on the
+seed and is marked `is_seed: true`.
+
 > **Why the recalibrate step is not simply always present.** It could be written
 > to check for `bcp.total` and skip when absent — it does exactly that when
 > present. But an instruction the agent reads on every single run, in a project
