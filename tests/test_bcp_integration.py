@@ -38,17 +38,27 @@ def test_module_yaml_offers_exactly_four_estimation_methods():
     assert entry["default"] == "hours", "bcp must be opt-in, not the default"
 
 
-def test_bcp_label_attributes_hours_to_upstream_module():
-    """The bcp option label must make clear PULSE does not compute the hours
-    (estimated_hours is derived upstream by bmad-module-bcp)."""
+def test_bcp_label_says_where_the_hours_come_from():
+    """The bcp option label must say what produces `estimated_hours`.
+
+    It used to assert the label named `bmad-module-bcp`, because the hours were
+    computed by a separate module PULSE had to be told about. Issue #84 moved
+    the scoring skills into this module, so naming an external one is now a
+    wrong install instruction — a user reading it would go looking for something
+    they do not need. The label must still explain the derivation; what changed
+    is who does it.
+    """
     data = yaml.safe_load(MODULE_YAML.read_text())
     label = next(
         opt["label"]
         for opt in data["pulse_estimation_method"]["single-select"]
         if opt["value"] == "bcp"
     )
-    assert "bmad-module-bcp" in label
     assert "estimated_hours" in label
+    assert "bmad-bcp-" in label, "label must point at the skills that do the scoring"
+    assert "bmad-module-bcp" not in label, (
+        "the standalone module is deprecated; the label must not send users to install it"
+    )
 
 
 def test_track_done_config_doc_lists_bcp():
