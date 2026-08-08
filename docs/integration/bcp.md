@@ -116,8 +116,8 @@ pulse_metrics:
     leverage_vs_reference: 6.9      # estimated_hours_reference / actual_hours (#65) — only when reference present
     bcp_recorded:
       total: 21
-      h_per_bcp_actual: 4.13        # actual_hours / bcp.total
-      h_per_bcp_estimated: 4.13     # estimated_hours / bcp.total
+      h_per_bcp_actual: 5.0        # actual_hours / bcp.total
+      h_per_bcp_estimated: 5.0     # estimated_hours / bcp.total
       drift_pct: 0.0
 ```
 

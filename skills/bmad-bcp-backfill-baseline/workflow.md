@@ -2,7 +2,7 @@
 
 ## Overview
 
-Chains **`score-batch` → sample collection → `recalibrate`** to kill the cold start: a squad adopting BCP with stories already delivered leaves the seed (4.13) on day one, with a per-category `h_per_bcp` faithful to its real history.
+Chains **`score-batch` → sample collection → `recalibrate`** to kill the cold start: a squad adopting BCP with stories already delivered leaves the seed (5.0) on day one, with a per-category `h_per_bcp` faithful to its real history.
 
 An **orchestration** skill. It duplicates no logic: retroactive scoring is delegated to the installed `bmad-bcp-score-batch` and recalibration to the installed `bmad-bcp-recalibrate`; the only deterministic piece of its own is `scripts/collect_samples.py` (the bridge: scored stories → samples JSON, with a stable `id` that guarantees idempotence).
 

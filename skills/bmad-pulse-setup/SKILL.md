@@ -75,7 +75,7 @@ Ask the user for values. Show defaults in brackets. Present all values together 
 
 **Validation rules:**
 - If `pulse_estimation_method` = `story_points` and `pulse_story_point_hours_factor` has not been set, warn before continuing
-- If `pulse_estimation_method` = `bcp`: do **not** require `pulse_story_point_hours_factor` (no factor applies — `estimated_hours` is derived upstream by [`bmad-module-bcp`](https://github.com/nidelson/bmad-module-bcp), not converted by PULSE). The value is semantic-only: it tells PULSE the upstream hours came from BCP so the dashboard surfaces the BCP Productivity section. Inform the user that the companion `bmad-module-bcp` module must be installed for `estimated_hours` to be BCP-derived; PULSE itself stays passive if it is not.
+- If `pulse_estimation_method` = `bcp`: do **not** require `pulse_story_point_hours_factor` (no factor applies — `estimated_hours` comes from a complexity score times the category baseline, not from converting a point value). Scoring lives in this module, in the `bmad-bcp-*` skills, so no companion install is required. Two further setup steps apply and are described below: the `--with-bcp` customize variant, and giving the `bcp_*` settings a home.
 - If `pulse_dev_categories` = `custom`, request a comma-separated list
 
 ## Write Files
@@ -269,6 +269,46 @@ authored sequence: track-done first, then BCP recalibrate, which reads the
 
 `--with-bcp` is rejected for `bmad-dev-story` (exit 2): that file carries
 track-start, which recalibration does not extend.
+
+### Give the `bcp_*` settings a home that survives
+
+Still only when `pulse_estimation_method` is `bcp`. The scoring skills read
+their settings — the baseline seed, the confidence threshold, the frozen
+reference rate — through `bcp_config.py`. Resolve what a project has now:
+
+```bash
+python3 {project-root}/.claude/skills/bmad-bcp-score/scripts/bcp_config.py \
+    --project-root "{project-root}"
+```
+
+The `sources` map in that output names the layer each value came from. Act on
+what it says:
+
+- **Any key reads `modules.bcp`.** The project still has the standalone
+  `bmad-module-bcp` installed, and that table is written by the installer from
+  *that* module's `module.yaml`. Uninstalling it — the end state of issue #84 —
+  deletes the table, and resolution falls through to the built-in defaults
+  without failing. Copy those values into `_bmad/custom/config.toml` under
+  `[modules.pulse]` now, while the source is still readable. Show the user the
+  block before writing it.
+- **Any key reads `default` .** Nothing is configured. The defaults are a floor
+  chosen so the module runs, not an estimate of this team. Tell the user which
+  keys are unset and what each one does; `bcp_baseline_seed` and
+  `bcp_reference_h_per_bcp` are the two worth deciding deliberately, since one
+  seeds every cold-start estimate and the other is the frozen denominator the
+  leverage-vs-reference figure is measured against. Write the agreed values to
+  the same place.
+- **Keys read `modules.pulse`.** Already home. Nothing to do.
+
+Write to `_bmad/custom/config.toml`, not `_bmad/config.toml`: the installer
+regenerates the latter on every run and would drop the block. Merge into an
+existing `[modules.pulse]` table rather than appending a second one.
+
+> **Why these are not install prompts.** They were, in the standalone module —
+> installing it was itself the opt-in, so asking ten questions was reasonable.
+> PULSE installs for everyone, most of whom estimate in hours, and BMAD's
+> `module.yaml` has no conditional prompts. Ten questions that do not apply is a
+> worse failure than a setup step that only runs when scoring is on.
 
 > **Why the recalibrate step is not simply always present.** It could be written
 > to check for `bcp.total` and skip when absent — it does exactly that when

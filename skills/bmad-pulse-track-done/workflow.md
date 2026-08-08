@@ -252,8 +252,8 @@ pulse_metrics:
     # ... existing fields ...
     bcp_recorded:
       total: 21
-      h_per_bcp_actual: 4.13
-      h_per_bcp_estimated: 4.13
+      h_per_bcp_actual: 5.0
+      h_per_bcp_estimated: 5.0
       drift_pct: 0.0
 ```
 

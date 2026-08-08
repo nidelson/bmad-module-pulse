@@ -2,7 +2,7 @@
 
 ## Overview
 
-Updates `bcp-baseline.yaml` per category from **real hours**: each sample `(category, bcp_total, actual_hours)` produces an observed `h_per_bcp` (`actual_hours / bcp_total`); the baseline keeps a FIFO window per category and `h_per_bcp` becomes the window's mean. `bmad-bcp-score` derives hours from that factor **from the first sample onward**; once `min_samples` accumulate, the category **leaves the seed** (`is_seed: false`) and the factor stops being marked provisional. The 4.13 seed applies only to a category with no samples at all.
+Updates `bcp-baseline.yaml` per category from **real hours**: each sample `(category, bcp_total, actual_hours)` produces an observed `h_per_bcp` (`actual_hours / bcp_total`); the baseline keeps a FIFO window per category and `h_per_bcp` becomes the window's mean. `bmad-bcp-score` derives hours from that factor **from the first sample onward**; once `min_samples` accumulate, the category **leaves the seed** (`is_seed: false`) and the factor stops being marked provisional. The 5.0 seed applies only to a category with no samples at all.
 
 This is what makes predictability mean something. A recalibrated factor is the squad's own delivery rate, so estimate error stops measuring whoever made the guess and starts measuring the delivery.
 
