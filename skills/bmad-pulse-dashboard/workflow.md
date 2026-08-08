@@ -68,7 +68,40 @@ The keys this workflow uses:
 - `pulse_dashboard_folder`, `pulse_dashboard_format`
 - `pulse_include_trend_chart`, `pulse_include_capacity_forecast`
 - `pulse_dev_categories`, `pulse_levi_verbosity`
+- `pulse_estimation_method` — **which leverage metric leads** (see below)
+- `pulse_leverage_threshold_exceptional`, `pulse_leverage_threshold_solid` — bands for the **hours path only**
 - `date` as current system-generated datetime
+
+### The two paths (issue #66)
+
+`pulse_estimation_method` selects which of two leverage metrics is the headline.
+Branch on the **configured method**, never on whether a field happens to be
+present: field presence answers "did this story record it", not "what does this
+project measure", and a project can have a handful of stories carrying a field
+it does not use.
+
+| Path                        | Headline leverage                              | Denominator                                    | Under calibration  |
+| --------------------------- | ---------------------------------------------- | ---------------------------------------------- | ------------------ |
+| `hours` (default), `story_points`, `tshirt` | `leverage_ratio` — **vs PLAN** | `estimated_hours`                              | collapses to ~1.0x |
+| `bcp`                       | `leverage_vs_reference` — **vs REFERENCE**     | `bcp_recorded.total × reference rate` (frozen) | stays stable       |
+
+Both paths render a complete dashboard. **Neither warns about what the other
+has** — a project on the hours path is not missing anything, and must not be
+told it is.
+
+Why the split is not cosmetic: `leverage_ratio` collapses toward 1.0x as the
+estimate converges on reality, so on a calibrated basis a `0.9` reads as weak
+leverage when it actually means the plan matched. That is why the BCP path
+demotes it. But convergence is not free — it is what a canonical ruler buys. On
+the hours path nothing recalibrates the estimate, so the ratio does not collapse
+and it is the honest headline: the metric PULSE was born with (10h planned, 1h
+actual, 10x).
+
+The mirror image applies to predictability. On the BCP path it leads, because a
+unit comparable across teams is what makes `estimate_error_pct` a property of
+the delivery. On the hours path it may be shown as context but **must not be
+presented as a property of the team** — without a comparable unit, estimate
+error measures the estimator.
 
 ### Paths
 
@@ -94,10 +127,11 @@ The keys this workflow uses:
    - **`forecast`** (v0.8 — project hours to price the remaining work; requires BCP baselines). For each category in `remaining_bcp_by_category`, the point forecast is `hours_cat = remaining_bcp_cat × geo_mean(h_per_bcp_actual_cat)` (reusing the v0.5 geometric `h_per_bcp_by_category`). The **90% interval** scales the v0.5 confidence band from `k=1` (~68%) to **`k=1.645`** (~90% of a log-normal): `[hours_cat / GSD_cat^1.645, hours_cat × GSD_cat^1.645]`, where `GSD_cat` is the v0.5 sample geometric SD. Compose the **total** conservatively: `forecast_total = Σ hours_cat`, `forecast_low_90 = Σ low_cat`, `forecast_high_90 = Σ high_cat` — summing the bounds assumes the per-category errors are correlated (widest honest interval; **state this assumption** in the rendered note). A category with `n < 3` (no own baseline) uses the **pooled** `all` baseline and flags the forecast **low-confidence**. Manual-total fallback (`pulse_forecast_remaining_bcp`, no categories) uses the **global** geometric baseline + pooled GSD. Empty backlog → `forecast` is empty (no section). This is read-only: it never writes the backlog, the baseline, or any estimate. **Precision flag:** `pooled_bcp` = Σ remaining BCP across categories that fall back to the pooled baseline (n<3); `pooled_pct = round(pooled_bcp / remaining_bcp_total × 100)`; `forecast_precision` = `baixa` when `pooled_pct > 50`, `média` when `> 20`, else `alta`. The render **leads with the band** and the precision flag, not the point estimate — a thin-baseline forecast has a many-x interval, and headlining the point alone is false precision.
    - Average, minimum, and maximum vs-PLANO leverage (`estimated_hours / actual_hours`) — computed for the predictability math and the anti-Goodhart note, but **no longer rendered as a metric** (it collapses to ~1.0x = it IS the predictability; showing it as "leverage" required a legend).
    - **`avg_leverage_vs_reference`** (issue #65 — **the Alavancagem**, the sellable multiplier) — the mean of `leverage_vs_reference` over the stories that carry it (the field track-done records as `estimated_hours_reference / actual_hours`). Also compute **`avg_leverage_vs_reference_by_category`** (mean per `{pulse_dev_categories}`, plus the per-category best) for the "Alavancagem por Categoria" table; a category with no story carrying `leverage_vs_reference` renders `—`. Compute it **only over stories that have `leverage_vs_reference`**; stories without it (no frozen reference recorded) contribute nothing and the metric is simply absent when no story has one (graceful degradation → fall back to the vs-PLAN context line only). Unlike the vs-PLAN average, this denominator is **frozen** (governed upstream by `bmad-module-bcp`, never recalibrated) so it **does not collapse** to ~1.0x as the estimate basis calibrates — it is the honest ROI multiplier vs a fixed external benchmark (board/C-Level cadence), **not vs human and not a target**. Also detect a **reference regime break**: the implied reference rate per story is `estimated_hours_reference / bcp_recorded.total` (a read-only division of two recorded telemetry fields — never a BCP→hours conversion, never a baseline read); when it differs across stories (the governed rate changed, e.g. 5h→4h forward-only), label the affected stories so no one compares pre/post naively. **Divide by `bcp_recorded.total`, NOT `bcp_at_start.total`** — the anchor is derived upstream from the story's **final** BCP, so the start snapshot reports a rate that was never in force. When a story is rescored mid-flight the two differ (e.g. start 15, final 13) and the snapshot invents a phantom regime (`65/15 = 4.33` where the real rate is `65/13 = 5.0`), sending readers to audit a governance breach that never happened. Fall back to `bcp_at_start.total` only when `bcp_recorded` is absent; when the two disagree, label the story **rescored** rather than reporting a changed ruler — the divergence is evidence of a rescore, whose trail lives in the BCP module's own history store, not of a new market quote.
-   - **GLOBAL degenerate-effort guardrail (applies to EVERY Alavancagem-family aggregate — `avg_leverage_vs_reference`, the per-category means/best, `total_reference`/`actual_with_reference`/`savings_vs_reference`):** exclude any story with `actual_hours < 0.1h` (≈6 min — near-zero mechanical work, e.g. a dependency bump). Alavancagem is `reference / actual`; a near-zero denominator makes a trivial 2-minute patch read as 500x–625x, which would inflate the average and produce a fake "best" that is just division-by-almost-zero, not delivery leverage. Excluded stories are **still shown** in the per-story detail with a `⚠` marker (transparent, not deleted) and **still counted** everywhere else (first-pass, BCP productivity, predictability). Report how many were excluded (`{n_degen} esforço-zero excluídas`). This floor is the same denominator-hygiene the v0.5 engine applies elsewhere; it is NOT cherry-picking — it removes a known measurement artifact, consistently, and says so.
+   - **`avg_leverage_ratio`** (issue #66 — **the Alavancagem on the hours path**) — the mean of `leverage_ratio` (`estimated_hours / actual_hours`, recorded by track-done) over all stories with `pulse_metrics`. Also compute **`avg_leverage_ratio_by_category`** (mean per `{pulse_dev_categories}`, plus the per-category best), the same shape as its vs-REFERENCE sibling so the rendering code path is one. Compute it on **every** path — it is persisted on both and stays available in the detail view — but render it as the headline only when `pulse_estimation_method` is not `bcp`. Subject to the same degenerate-effort guardrail below: the denominator is `actual_hours` here too, so a two-minute patch produces the same division-by-almost-zero artifact. Band it with `pulse_leverage_threshold_exceptional` / `pulse_leverage_threshold_solid`, which apply **only here** — a band calibrated for a human-judgement denominator is meaningless against a frozen reference rate, and applying it on the BCP path is how a converged `0.9` gets labelled "weak".
+   - **GLOBAL degenerate-effort guardrail (applies to EVERY Alavancagem-family aggregate — `avg_leverage_ratio` and its per-category means/best, `avg_leverage_vs_reference`, the per-category means/best, `total_reference`/`actual_with_reference`/`savings_vs_reference`):** exclude any story with `actual_hours < 0.1h` (≈6 min — near-zero mechanical work, e.g. a dependency bump). Alavancagem is `reference / actual`; a near-zero denominator makes a trivial 2-minute patch read as 500x–625x, which would inflate the average and produce a fake "best" that is just division-by-almost-zero, not delivery leverage. Excluded stories are **still shown** in the per-story detail with a `⚠` marker (transparent, not deleted) and **still counted** everywhere else (first-pass, BCP productivity, predictability). Report how many were excluded (`{n_degen} esforço-zero excluídas`). This floor is the same denominator-hygiene the v0.5 engine applies elsewhere; it is NOT cherry-picking — it removes a known measurement artifact, consistently, and says so.
    - **Hours block** — `total_estimated` = Σ `estimated_hours` (the **BCP plan**, NOT the human estimate — never label it "humano"; the human gut lives in `estimated_hours_pre_bcp`, which the dashboard does not sum); `total_actual` = Σ `actual_hours`. Do **not** show `total_estimated − total_actual` as "savings": that is the predictability gap (it shrinks to ~0 as the team calibrates), not money saved. The honest savings is **vs the market quote**: `total_reference` = Σ `estimated_hours_reference` over the `n_with_reference` stories that carry it, `actual_with_reference` = Σ `actual_hours` over **those same** `n_with_reference` stories (apples-to-apples — NOT `total_actual`, which spans all stories), and `savings_vs_reference` = `total_reference − actual_with_reference`. Both reference-based figures are **partial** (only `n_with_reference` of `total` stories have a frozen reference) — always render the explicit `({n_with_reference}/{total} stories)` caveat, and render the savings as the **traceable subtraction** `{savings} = {total_reference} − {actual_with_reference}` so no reader subtracts the all-stories `total_actual` from the partial `total_reference` and gets a wrong figure.
    - First-pass rate
-   - Alavancagem (vs REFERÊNCIA) by category (use `{pulse_dev_categories}`)
+   - Alavancagem by category (use `{pulse_dev_categories}`) — vs REFERÊNCIA on the `bcp` path, vs PLANO on the others (#66)
    - **Halt aggregations** (read `process_health.halts` from each story; the field has three valid shapes — handle all without crashing):
      - **Shape A** (integer): treat as opaque count, skip duration math.
      - **Shape B** (list of objects): structured — read `kind`, `context`, `duration_min`, `pre_approved_batch`.
@@ -148,7 +182,10 @@ For `markdown` format (default), write `{dashboard_file}` with the following str
 | Horas planejadas (BCP)  | {total_estimated}h                   |
 | Horas reais (IA)        | {total_actual}h                      |
 | Taxa de first-pass      | {rate}%                              |
-<!-- CONDITIONAL: include the Alavancagem + Cotação + Economia rows only if avg_leverage_vs_reference exists (≥1 story has leverage_vs_reference). The hours rows carry an explicit ({n_with_reference}/{total} stories) caveat — never sum a partial-coverage figure without saying how partial. -->
+<!-- BRANCH ON pulse_estimation_method (issue #66). Exactly ONE Alavancagem row renders; the two are alternatives, never both.
+     - method != "bcp"  → the vs-PLANO row below. No Cotação/Economia rows (there is no frozen reference on this path) and NO warning about their absence — this path is complete, not degraded.
+     - method == "bcp"  → the vs-REFERÊNCIA row plus Cotação + Economia, still gated on avg_leverage_vs_reference existing (a BCP project whose stories predate the anchor has nothing to report yet). Those hours rows carry an explicit ({n_with_reference}/{total} stories) caveat — never sum a partial-coverage figure without saying how partial. -->
+| **Alavancagem (vs PLANO)** | {avg_leverage_ratio}x — entrega vs o que foi planejado{if avg_leverage_ratio >= pulse_leverage_threshold_exceptional → ` (excepcional)`}{else if avg_leverage_ratio >= pulse_leverage_threshold_solid → ` (sólida)`} (n={total}{if n_degen > 0 → `, {n_degen} esforço-zero excluídas`}) |
 | **Alavancagem (vs REFERÊNCIA)** | {avg_leverage_vs_reference}x — o número que vende: entrega vs cotação de mercado (frozen, não colapsa; n={n_with_reference}{if n_degen > 0 → `, {n_degen} esforço-zero excluídas`}) |
 | Cotação de mercado      | {total_reference}h ({n_with_reference}/{total} stories) — o que o mercado orçaria |
 | **Economia vs cotação** | **{savings_vs_reference}h** = {total_reference}h − {actual_with_reference}h reais (das mesmas {n_with_reference} stories) |
@@ -179,7 +216,7 @@ Epic  X: ███░░░░░░░░░░░░░░░░░ 16% (6 sto
 
 ## 📊 Alavancagem por Categoria
 
-> Multiplicador vs a cotação de mercado (`leverage_vs_reference`, frozen) por categoria, **após o guardrail de esforço-zero** (stories com `actual < 0.1h` fora da média e do "melhor"). Categorias sem nenhuma story elegível mostram `—`. Categorias com `< 3` stories elegíveis são marcadas **amostra fina** (ponto solto, não tendência).
+> Multiplicador por categoria, **após o guardrail de esforço-zero** — `leverage_vs_reference` (vs cotação de mercado, frozen) na trilha `bcp`, `leverage_ratio` (vs plano) nas demais (stories com `actual < 0.1h` fora da média e do "melhor"). Categorias sem nenhuma story elegível mostram `—`. Categorias com `< 3` stories elegíveis são marcadas **amostra fina** (ponto solto, não tendência).
 
 | Categoria | Alavancagem média | Stories | Melhor |
 | --------- | ----------------- | ------- | ------ |
@@ -329,7 +366,14 @@ Cada linha acima é renderizada **apenas se o gatilho for verdade**, com os plac
 
 > Ordenado por **previsibilidade (melhor primeiro)** — desça até onde degrada; daí pra baixo precisa melhorar. Os action items já estão nos **Insights** acima, então a lista lê-se como gradiente, não precisa liderar com o pior. **`Plano`** = `estimated_hours` (o plano de registro: BCP-derivado, ou a estimativa da Amelia quando não há BCP), nunca um número humano cru rotulado errado. **↓** = atrasou (real > plano, **risco de prazo**) · **↑** = adiantou (real < plano, **folga**) — a previsibilidade sozinha esconde a direção; um `0% ↓` é perigo, um `12% ↑` é só super-estimativa. **⚠** na Alavancagem = story de esforço-zero (`actual < 0.1h`) — mostrada mas **fora das médias** (distorce por divisão por quase-zero). `—` = story sem `estimated_hours_reference`. ⏪ = track-start retroativo.
 
-> **Previsibilidade** por story = `max(0, 100 − estimate_error_pct)` — acurácia da estimativa, **maior = melhor, meta 100%**. **Alavancagem** = `leverage_vs_reference` (entrega vs cotação de mercado, o número que vende) — mostra `—` quando a story não tem `estimated_hours_reference`. A razão `estimated_hours / actual_hours` (vs PLANO) **não aparece**: ela colapsa pra ~1.0x ao calibrar e é justamente a previsibilidade, não uma alavancagem (mostrá-la como "leverage" exigia legenda — esse é o cheiro que esta coluna corrige). O campo persistido `estimate_error_pct` continua sendo a fonte da Previsibilidade.
+> **Previsibilidade** por story = `max(0, 100 − estimate_error_pct)` — acurácia da estimativa, **maior = melhor, meta 100%**. O campo persistido `estimate_error_pct` é a fonte.
+>
+> **Alavancagem** depende do `pulse_estimation_method` (#66) e é a mesma coluna nos dois casos:
+>
+> - **`bcp`** → `leverage_vs_reference` (entrega vs cotação de mercado, o número que vende); mostra `—` quando a story não tem `estimated_hours_reference`. A razão vs PLANO **não aparece aqui**: com base calibrada ela colapsa pra ~1.0x e é justamente a previsibilidade, não uma alavancagem — mostrá-la como "leverage" exigiria legenda, e esse é o cheiro que esta coluna corrige.
+> - **demais métodos** → `leverage_ratio` (`estimated_hours / actual_hours`, entrega vs plano). Aqui ela **não** colapsa, porque nada recalibra o denominador — é a alavancagem original do PULSE e é honesta como manchete.
+>
+> Nesta trilha, previsibilidade é contexto, não atributo do time: sem unidade comparável entre times, erro de estimativa mede quem estimou.
 
 ---
 
@@ -363,7 +407,7 @@ The detail level of the summary must respect `pulse_levi_verbosity`.
 
 ```text
 ⚡ Levi: Dashboard salvo em {dashboard_file}
-   {total} stories medidas | Previsibilidade: {predictability_score}% | Alavancagem: {avg_leverage_vs_reference}x
+   {total} stories medidas | Previsibilidade: {predictability_score}% | Alavancagem: {avg_leverage_vs_reference if method == "bcp" else avg_leverage_ratio}x (vs {"REFERÊNCIA" if method == "bcp" else "PLANO"})
 ```
 
 ---
@@ -380,7 +424,11 @@ The detail level of the summary must respect `pulse_levi_verbosity`.
 - The project forecast section (`🔮 Previsão de Projeto`) must only be included if `pulse_include_capacity_forecast == yes` AND the scored backlog has remaining BCP (an empty backlog → no section). Since v0.8 it forecasts `BCP × h/BCP ± CI(90%)`, replacing the pre-0.8 leverage-extrapolation capacity forecast.
 - The categories table must use the categories defined in `pulse_dev_categories` (not hardcoded categories)
 - The Approval-Wait Halts section must only be rendered when `total_approval_wait_count + total_pre_approved_batch_count > 0`
-- The "**Alavancagem (vs REFERÊNCIA)**" row must only be rendered when `avg_leverage_vs_reference` exists (≥1 story has `leverage_vs_reference`); with no such story, omit the row entirely (there is no alavancagem to report). Never write `estimated_hours_reference` — it is read-only input owned by `bmad-module-bcp`. Alavancagem is **reported, never a target**; predictability remains the hero (do not promote alavancagem above the predictability row). The vs-PLANO ratio is never rendered as a metric (it is the predictability) — it lives only in the anti-Goodhart note as the explanation.
+- **Exactly one Alavancagem row renders, selected by `pulse_estimation_method` (#66).** On `bcp`, the "**Alavancagem (vs REFERÊNCIA)**" row, and only when `avg_leverage_vs_reference` exists (≥1 story has `leverage_vs_reference`) — with no such story, omit it: there is no alavancagem to report yet. On every other method, the "**Alavancagem (vs PLANO)**" row. Never render both, and never render the vs-PLANO ratio as a headline on the `bcp` path: with a calibrated basis it *is* the predictability, and presenting it as leverage is the mislabel this branch exists to fix.
+- **A path is never described as missing what the other has.** Do not render the Cotação/Economia rows, or a note about their absence, outside the `bcp` path. The hours path is the default and complete configuration, not a degraded one.
+- `pulse_leverage_threshold_exceptional` / `pulse_leverage_threshold_solid` band the **vs-PLANO** row only. Against a frozen reference they mean nothing — applying them there is how a converged `0.9` gets labelled "weak leverage" when it means the plan matched reality.
+- Never write `estimated_hours_reference` — it is read-only input, derived upstream by the BCP scoring skills.
+- Alavancagem is **reported, never a target**. On the `bcp` path predictability stays the hero and Alavancagem must not be promoted above it. On the other paths predictability may appear as context but must **not** be framed as a property of the team.
 - The BCP Productivity section must only be rendered when at least one story has a `bcp_recorded` block; stories without BCP data render unchanged in all other sections
 - Never read or write the BCP baseline file — BCP productivity is computed purely from `pulse_metrics` fields PULSE itself recorded
 - The v0.8 digest (`digest.md`) is **generated only** — PULSE never calls Slack/Linear or any external API directly; delivery is delegated to the user-configured `on_complete` command (thin, local-first)
