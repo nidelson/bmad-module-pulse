@@ -1,0 +1,52 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Workflow customization surface for bmad-bcp-score-batch. Mirrors the
+# BMad workflow customization shape under the [workflow] namespace.
+
+[workflow]
+
+# --- Configurable below. Overrides merge by the BMad structural rules: ---
+#   scalars: override wins • arrays (persistent_facts, activation_steps_*): append
+#   arrays-of-tables with `code`/`id`: replace matching items, append new ones.
+
+# Steps to run before the standard activation (glob resolution, dependencies).
+# Overrides append. Use for pre-flight loads, compliance checks, etc.
+
+activation_steps_prepend = []
+
+# Steps to run after activation but before the batch plan runs.
+# Overrides append. Use for context-heavy setup such as filtering the
+# story glob by an external label set.
+
+activation_steps_append = []
+
+# Persistent facts the workflow keeps in mind for the whole run
+# (team scoring conventions applied across the whole batch).
+# Overrides append.
+#
+# Each entry is either:
+#   - a literal sentence, e.g. "Em batch retroativo, prefira `domain-rules-heavy` para stories de billing."
+#   - a file reference prefixed with `file:`, e.g. "file:{project-root}/docs/bcp-scoring-policy.md"
+#     (glob patterns are supported; the file's contents are loaded and treated as facts).
+
+persistent_facts = []
+
+# Scalar: executed AFTER the batch workflow has fully persisted all
+# scored stories (and NEVER before). Default empty = no-op. Override wins.
+#
+# Invariants:
+# - Hook runs AFTER persistence — every scored story already has its
+#   `bcp.*` block on disk. Per-story failures do NOT abort the batch
+#   (resilience contract); the hook runs after the aggregate report.
+# - Hook MUST NOT mutate any story frontmatter (single-writer principle).
+# - Hook MUST NOT mutate `bcp-baseline.yaml` (the batch does not touch it
+#   — `recalibrate`/`backfill-baseline` are the writers).
+# - Error in hook is warn, not rollback — scores already committed.
+# - In `--dry-run-cost` (no persistence) the hook is SKIPPED.
+#
+# Override in `{project-root}/_bmad/custom/bmad-bcp-score-batch.toml`:
+#
+#   [workflow]
+#   on_complete = "after the aggregate report, invoke `/bmad-bcp-backfill-baseline` with the same glob to also recalibrate the baseline from the freshly-scored history."
+
+on_complete = ""
