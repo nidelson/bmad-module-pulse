@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.9.0](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.7...v0.9.0) (2026-08-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* **agent:** retire Levi, install Maxine as the Delivery Predictability Analyst ([#95](https://github.com/nidelson/bmad-module-pulse/issues/95))
+
+### Features
+
+* **agent:** retire Levi, install Maxine as the Delivery Predictability Analyst ([#95](https://github.com/nidelson/bmad-module-pulse/issues/95)) ([eda48b0](https://github.com/nidelson/bmad-module-pulse/commit/eda48b0b4c607822bfc7088957de614fb1309bb5))
+* **bcp:** author the track-done to recalibrate sequence as one file ([#90](https://github.com/nidelson/bmad-module-pulse/issues/90)) ([1893c48](https://github.com/nidelson/bmad-module-pulse/commit/1893c483fbeb1f8fc2b284eb7d90593e099d5b53)), closes [#84](https://github.com/nidelson/bmad-module-pulse/issues/84)
+* **bcp:** complete the port — baseline seeding and the orphaned coverage ([#92](https://github.com/nidelson/bmad-module-pulse/issues/92)) ([e88ebf5](https://github.com/nidelson/bmad-module-pulse/commit/e88ebf50d9c2ccee96d226c0dbea2955ffaf099d)), closes [#84](https://github.com/nidelson/bmad-module-pulse/issues/84)
+* **bcp:** port the calibration cycle ([#89](https://github.com/nidelson/bmad-module-pulse/issues/89)) ([2cf2afa](https://github.com/nidelson/bmad-module-pulse/commit/2cf2afa710e28d924898198f18a637cd583057f7)), closes [#84](https://github.com/nidelson/bmad-module-pulse/issues/84)
+* **bcp:** port the canonical ruler and lock it against silent drift ([#87](https://github.com/nidelson/bmad-module-pulse/issues/87)) ([1bc598d](https://github.com/nidelson/bmad-module-pulse/commit/1bc598d54b0db523755993013b6d7f97b0a547b8)), closes [#84](https://github.com/nidelson/bmad-module-pulse/issues/84)
+* **bcp:** port the scoring engine and its 794 lines of tests ([#88](https://github.com/nidelson/bmad-module-pulse/issues/88)) ([d864913](https://github.com/nidelson/bmad-module-pulse/commit/d864913480fce1836be6cbd0166d07ad39170fe4)), closes [#84](https://github.com/nidelson/bmad-module-pulse/issues/84)
+* **dashboard:** pick the leverage metric by estimation_method, not by field presence ([#94](https://github.com/nidelson/bmad-module-pulse/issues/94)) ([9b47867](https://github.com/nidelson/bmad-module-pulse/commit/9b4786706e11b7c62ee13c468c763dc2ab3bb730))
+
+
+### Bug Fixes
+
+* **bcp:** give the bcp_* settings a home that survives BCP's removal ([#91](https://github.com/nidelson/bmad-module-pulse/issues/91)) ([b26bbef](https://github.com/nidelson/bmad-module-pulse/commit/b26bbef1b6839fe5131cd0e554c1d4a171761a2e))
+* **bcp:** restore the scoring trigger the port dropped ([#93](https://github.com/nidelson/bmad-module-pulse/issues/93)) ([13e47f8](https://github.com/nidelson/bmad-module-pulse/commit/13e47f8c66f4fdd6bae85da132ac39e16cc5a41f))
+* **setup:** detect bmad-build and inject the hooks the user actually runs ([#85](https://github.com/nidelson/bmad-module-pulse/issues/85)) ([51b690b](https://github.com/nidelson/bmad-module-pulse/commit/51b690bc1d52b142f48c840e33f68624e9a797cc)), closes [#83](https://github.com/nidelson/bmad-module-pulse/issues/83)
+* **tests:** scope the narrative guard to this checkout, and prove it reads something ([#98](https://github.com/nidelson/bmad-module-pulse/issues/98)) ([4095424](https://github.com/nidelson/bmad-module-pulse/commit/40954243f99578db087649a9f43f488e27792f22))
+
+
+### Documentation
+
+* **bcp:** tell the reader where scoring actually lives ([#96](https://github.com/nidelson/bmad-module-pulse/issues/96)) ([59c098e](https://github.com/nidelson/bmad-module-pulse/commit/59c098edaa729cb71f612a2bc5aad10a9ad6505b))
+
 ## [0.8.7](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.6...v0.8.7) (2026-07-29)
 
 
