@@ -25,6 +25,21 @@ def bmad_64_consumer(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
+def bmad_build_consumer(tmp_path: Path) -> Path:
+    """Consumer project on the unified `bmad-build` architecture.
+
+    Deliberately keeps the deprecated `bmad-dev-story` shim alongside it: that
+    is the real-world layout, and the reason the probe must check `bmad-build`
+    first. Detecting the old tier here is not a harmless mislabel — it sends
+    the setup's overrides to a skill the user no longer invokes.
+    """
+    src = FIXTURES_ROOT / "bmad-build"
+    dst = tmp_path / "consumer"
+    shutil.copytree(src, dst)
+    return dst
+
+
+@pytest.fixture
 def bmad_63_consumer(tmp_path: Path) -> Path:
     """Consumer project with BMAD 6.3.x layout (workflow.md present, no customize.toml)."""
     src = FIXTURES_ROOT / "bmad-6.3.x"

@@ -22,6 +22,27 @@ def run(consumer: Path, *args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
+def test_emits_build_override_on_unified_architecture(bmad_build_consumer: Path):
+    result = run(bmad_build_consumer, "--skill", "bmad-build")
+    assert result.returncode == 0, result.stderr
+    out = bmad_build_consumer / "_bmad/custom/bmad-build.toml"
+    assert out.exists()
+    assert sha256(out) == sha256(GOLDEN / "customize-bmad-build.toml")
+
+
+def test_build_override_carries_both_hooks(bmad_build_consumer: Path):
+    """One file, both hooks — bmad-build implements and reviews in one workflow.
+
+    The split architecture needs two files because bmad-dev-story ends at
+    "review"; here the review layers run in-process, so a single on_complete is
+    the honest completion point.
+    """
+    run(bmad_build_consumer, "--skill", "bmad-build")
+    body = (bmad_build_consumer / "_bmad/custom/bmad-build.toml").read_text(encoding="utf-8")
+    assert "bmad-pulse-track-start" in body
+    assert "bmad-pulse-track-done" in body
+
+
 def test_emits_dev_story_override_on_fresh_install(bmad_64_consumer: Path):
     result = run(bmad_64_consumer, "--skill", "bmad-dev-story")
     assert result.returncode == 0, result.stderr

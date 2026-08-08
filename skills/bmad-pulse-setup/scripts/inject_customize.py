@@ -15,7 +15,11 @@ import sys
 from pathlib import Path
 
 TEMPLATES_DIR = Path(__file__).parent.parent / "assets/customize-templates"
-SUPPORTED_SKILLS = {"bmad-dev-story", "bmad-code-review"}
+# `bmad-build` is the unified architecture's single target; the other two are the
+# split architecture's pair. Which set applies comes from `detect_bmad_capability.py`
+# (`inject_targets` in its payload) — never assume, the deprecated `bmad-dev-story`
+# shim survives on disk next to `bmad-build`.
+SUPPORTED_SKILLS = {"bmad-build", "bmad-dev-story", "bmad-code-review"}
 
 EXIT_OK = 0
 EXIT_BAD_ARGS = 2
