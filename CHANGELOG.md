@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/nidelson/bmad-module-pulse/compare/v0.9.0...v0.9.1) (2026-08-09)
+
+
+### Bug Fixes
+
+* **track-done:** stop celebrating estimate accuracy where accuracy measures the estimator ([#99](https://github.com/nidelson/bmad-module-pulse/issues/99)) ([ce1d7bc](https://github.com/nidelson/bmad-module-pulse/commit/ce1d7bc09387098748d7cee37c866bed1d103c3f))
+
 ## [0.9.0](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.7...v0.9.0) (2026-08-08)
 
 
