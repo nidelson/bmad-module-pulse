@@ -5,6 +5,44 @@ skip to the version you are migrating from.
 
 ---
 
+## v0.9.1 — the track-done card celebrates something different on the `hours` path (issue #97)
+
+**Who this affects:** every install **not** using `pulse_estimation_method = "bcp"`
+— which is the default. No action required; nothing to configure. The data written
+to `pulse_metrics` is unchanged, including `estimate_error_pct`. Only the closing
+line of the terminal card changed.
+
+**What changed:** the celebration used to trigger on estimate accuracy on every
+path. It now does so only on `bcp`.
+
+| Path | Before | After |
+| --- | --- | --- |
+| `bcp` | `🎯 On-plan (estimate within 15%)` / `⚠ Off-plan` | unchanged |
+| `hours`, `story_points`, `tshirt` | same as `bcp` | `✅ Clean run — first-pass, no HALTs`, `✅ First-pass`, or `📊 Data recorded.` |
+
+**Why.** Accuracy is a property of the *team* only when the estimate comes from a
+comparable unit. Without a ruler, the estimator and the executor are the same
+agent, and a trophy for being on-plan rewards padding the estimate — the mirror
+image of the v0.6 problem, where a trophy for leverage magnitude rewarded
+inflating it. Both incentives act on the same variable, in opposite directions,
+so the honest move on that path is to celebrate what is *observed* instead:
+first-pass review, and a clean HALT count.
+
+The off-plan warning moved with it, for the same reason: "review the estimate
+basis" is advice about a ruler. Where the basis is a person's judgement, it reads
+as blame for a number nothing could have calibrated.
+
+**Two details:**
+
+- `bmad-pulse-track-backfill` branches identically, except its non-`bcp`
+  celebration checks first-pass **only**. That skill does not reconstruct halts,
+  so claiming "no HALTs" would assert data it deliberately refuses to invent.
+- The legacy `pulse_leverage_threshold_*` keys stay retired as celebration
+  triggers. The dashboard does band the hours-path leverage with them (#66), but
+  that is reporting, not a per-story trophy.
+
+---
+
 ## v0.9 — the agent is Maxine, and two config keys lost the old name (issue #84)
 
 **Who this affects:** every install. The change is cosmetic at the surface and

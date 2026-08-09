@@ -244,6 +244,103 @@ def test_backfill_celebration_inverted_too():
     assert "🔥 Exceptional!" not in text
 
 
+# --- #97: the celebration branches on estimation_method ---------------------
+# Accuracy only earns a trophy where a canonical ruler makes the estimate
+# comparable. On every other path the estimator and the executor are the same
+# agent, so celebrating accuracy rewards padding and celebrating leverage
+# magnitude rewards inflating — opposite incentives on the same variable. Those
+# paths celebrate what is observed instead: first-pass, and a clean HALT count.
+#
+# These assert the STRUCTURE rather than substrings. Every string checked here
+# was already present before the branch existed, so a substring test passes
+# whether or not the branch is correct — the shape is the only thing that
+# distinguishes the two worlds.
+
+
+def _celebration_line(path) -> str:
+    """The card's celebration line — the one that starts by picking a method."""
+    lines = [
+        line.strip()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip().startswith('{pulse_estimation_method == "bcp" ?')
+    ]
+    assert len(lines) == 1, (
+        f"{path.parent.name}: expected exactly one method-branched celebration, "
+        f"found {len(lines)}"
+    )
+    return lines[0]
+
+
+def _split_branches(line: str) -> tuple[str, str]:
+    """Return (bcp_branch, other_branch) by walking balanced parentheses."""
+    body = line[line.index("?") + 1 :].rstrip("}").strip()
+    assert body.startswith("("), f"expected a parenthesised bcp branch, got: {body[:40]}"
+    depth = 0
+    for index, char in enumerate(body):
+        depth += (char == "(") - (char == ")")
+        if depth == 0:
+            bcp = body[1:index]
+            rest = body[index + 1 :].lstrip()
+            assert rest.startswith(":"), f"expected ':' after the bcp branch, got: {rest[:40]}"
+            return bcp, rest[1:].strip().strip("()")
+    raise AssertionError(f"unbalanced parentheses in celebration line: {line}")
+
+
+def test_accuracy_trophy_is_confined_to_the_bcp_path():
+    """🎯 On-plan may only appear where a ruler makes on-plan mean something."""
+    for card in (TRACK_DONE, TRACK_BACKFILL):
+        bcp, other = _split_branches(_celebration_line(card))
+        assert "🎯 On-plan" in bcp, f"{card.parent.name}: bcp path lost its accuracy trophy"
+        assert "🎯 On-plan" not in other, (
+            f"{card.parent.name}: the non-bcp path celebrates estimate accuracy, which "
+            f"rewards padding the estimate — the bug #97 exists to fix"
+        )
+
+
+def test_non_bcp_path_never_reads_the_estimate():
+    """The whole point: no estimate-derived value may drive that path's outcome."""
+    for card in (TRACK_DONE, TRACK_BACKFILL):
+        _, other = _split_branches(_celebration_line(card))
+        for forbidden in ("estimate_error_pct", "leverage_ratio", "leverage_vs_reference"):
+            assert forbidden not in other, (
+                f"{card.parent.name}: non-bcp celebration reads {forbidden}; it must "
+                f"celebrate observed quality, not anything derived from the estimate"
+            )
+        assert "first_pass" in other, (
+            f"{card.parent.name}: non-bcp celebration must reward the observed signal"
+        )
+
+
+def test_off_plan_warning_is_scoped_to_the_bcp_path():
+    """"Review the estimate basis" is advice about a ruler.
+
+    On the hours path the basis is a person's judgement, so the line reads as
+    blame for a number nothing could have calibrated.
+    """
+    for card in (TRACK_DONE, TRACK_BACKFILL):
+        bcp, other = _split_branches(_celebration_line(card))
+        assert "Off-plan" in bcp, f"{card.parent.name}: bcp path lost the off-plan warning"
+        assert "Off-plan" not in other, (
+            f"{card.parent.name}: the non-bcp path still warns about the estimate basis"
+        )
+
+
+def test_only_track_done_celebrates_a_clean_halt_count():
+    """track-backfill refuses to reconstruct halts, so it cannot claim there were none.
+
+    Celebrating "no HALTs" on a retroactive entry would be a claim about data the
+    skill deliberately does not have.
+    """
+    _, done_other = _split_branches(_celebration_line(TRACK_DONE))
+    assert "halt_count == 0" in done_other, (
+        "track-done observes halts live and should reward a clean run"
+    )
+    _, backfill_other = _split_branches(_celebration_line(TRACK_BACKFILL))
+    assert "halt_count" not in backfill_other, (
+        "track-backfill does not reconstruct halts — it must not celebrate their absence"
+    )
+
+
 def test_leverage_thresholds_marked_legacy():
     """The leverage thresholds stay for back-compat but are flagged legacy —
     they no longer drive any celebration."""

@@ -68,9 +68,9 @@ The keys this workflow uses:
 - `pulse_sprint_status_filename`
 - `pulse_estimation_method` (story_points / hours / t-shirt / bcp)
 - `pulse_story_point_hours_factor` (story points → hours conversion factor)
-- `pulse_leverage_threshold_exceptional` (e.g. 4) — _legacy since v0.6: no longer drives celebration (kept for back-compat)_
-- `pulse_leverage_threshold_solid` (e.g. 2) — _legacy since v0.6: no longer drives celebration_
-- `pulse_leverage_warning_threshold` (e.g. 1) — _legacy since v0.6: no longer drives celebration_
+- `pulse_leverage_threshold_exceptional` (e.g. 4) — _legacy since v0.6: never drives this card's celebration. The dashboard does band the hours-path leverage with it (#66), which is reporting, not a per-story trophy._
+- `pulse_leverage_threshold_solid` (e.g. 2) — _legacy since v0.6: same as above_
+- `pulse_leverage_warning_threshold` (e.g. 1) — _legacy since v0.6: same as above_
 - `pulse_alert_on_halt` (yes / warn / no)
 - `pulse_alert_unused_skills` (yes / no)
 - `pulse_process_health_checks` (standard / strict / minimal)
@@ -287,8 +287,9 @@ Display in the terminal:
    Quality: {first_pass ? "✅ first-pass" : "🔄 " + review_cycles + " cycles"}
    Tasks: {task_count}
    Category: {category}
-   {estimate_error_pct <= 15 ? (first_pass ? "🎯 On-plan! (estimate within 15%, first-pass)" : "🎯 On-plan (estimate within 15%)") : estimate_error_pct >= 50 ? "⚠ Off-plan — review the estimate basis, not the speed." : "📊 Data recorded."}
+   {pulse_estimation_method == "bcp" ? (estimate_error_pct <= 15 ? (first_pass ? "🎯 On-plan! (estimate within 15%, first-pass)" : "🎯 On-plan (estimate within 15%)") : estimate_error_pct >= 50 ? "⚠ Off-plan — review the estimate basis, not the speed." : "📊 Data recorded.") : (first_pass && halt_count == 0 ? "✅ Clean run — first-pass, no HALTs" : first_pass ? "✅ First-pass" : "📊 Data recorded.")}
    <!-- v0.6: celebration triggers on estimate ACCURACY (on-plan), not on leverage magnitude. A high multiplier is an uncalibrated estimate, not a win (anti-Goodhart). pulse_leverage_threshold_exceptional/solid are retired as celebration triggers — leverage is reported "vs PLAN" as context only. -->
+   <!-- #97: and accuracy only earns the trophy on the `bcp` path. Both incentives act on the SAME variable (estimated_hours), in opposite directions: celebrating accuracy rewards padding the estimate, celebrating leverage magnitude rewards inflating it. A canonical ruler is what breaks the tie — it makes the estimate comparable, so being on-plan becomes a property of the delivery. Without one the estimator and the executor are the same agent, and any estimate-derived celebration is gameable by the person it is congratulating. The other paths therefore celebrate what is OBSERVED rather than estimated: first-pass and a clean HALT count. Same reason the off-plan warning is scoped to `bcp` — "review the estimate basis" is advice about a ruler; on the hours path the basis is a person's judgement, and the line reads as blame for a number nothing could have calibrated. -->
 
    📋 Process Health
    Flow: {flow_check}
