@@ -261,7 +261,8 @@ Display (respect `pulse_verbosity`):
    {if bcp_recorded}BCP: {bcp_recorded.total} pts | {bcp_recorded.h_per_bcp_actual}h/BCP actual vs {bcp_recorded.h_per_bcp_estimated}h/BCP est ({bcp_recorded.drift_pct:+}% drift){end}
    Quality: {first_pass ? "✅ first-pass" : "🔄 " + review_cycles + " cycles"}
    Category: {category}
-   {estimate_error_pct <= 15 ? (first_pass ? "🎯 On-plan! (estimate within 15%, first-pass)" : "🎯 On-plan (estimate within 15%)") : estimate_error_pct >= 50 ? "⚠ Off-plan — review the estimate basis, not the speed." : "📊 Data recorded."}
+   {pulse_estimation_method == "bcp" ? (estimate_error_pct <= 15 ? (first_pass ? "🎯 On-plan! (estimate within 15%, first-pass)" : "🎯 On-plan (estimate within 15%)") : estimate_error_pct >= 50 ? "⚠ Off-plan — review the estimate basis, not the speed." : "📊 Data recorded.") : (first_pass ? "✅ First-pass" : "📊 Data recorded.")}
+   <!-- #97: same branch as track-done, with one deliberate difference — the non-bcp celebration here checks first_pass ONLY, never a HALT count. This skill does not reconstruct halts (see BEHAVIOR RESTRICTIONS), so "no HALTs" would be a claim about data it refused to invent. A retroactive entry celebrates the one observed signal it actually has. -->
 
    💡 {if pulse_coaching_mode == yes}Run /bmad-pulse-track-start and /bmad-pulse-track-done on future stories to capture process health and halts, which backfill cannot reconstruct.{end}
 ```
