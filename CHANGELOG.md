@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.2](https://github.com/nidelson/bmad-module-pulse/compare/v0.9.1...v0.9.2) (2026-08-16)
+
+
+### Bug Fixes
+
+* **templates:** add one-shot route to skip guard ([#104](https://github.com/nidelson/bmad-module-pulse/issues/104)) ([152fbba](https://github.com/nidelson/bmad-module-pulse/commit/152fbbafcece86ec969cd0d12f87ca631745c9e3))
+* **templates:** remove invalid placeholder and widen skip guard in bmad-build hooks ([#102](https://github.com/nidelson/bmad-module-pulse/issues/102)) ([8bc2689](https://github.com/nidelson/bmad-module-pulse/commit/8bc268991f6ba16827c133001effcf8879ab5055))
+
 ## [0.9.1](https://github.com/nidelson/bmad-module-pulse/compare/v0.9.0...v0.9.1) (2026-08-09)
 
 
