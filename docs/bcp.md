@@ -92,6 +92,17 @@ bcp:                               # written by bmad-bcp-score — tracking surf
 ---
 ```
 
+> **`category` has no fixed enum — it is whatever `pulse_dev_categories` says.** The
+> field is free text validated only against your project's configured list
+> (`_bmad/custom/config.toml`, or the module's setup prompt). If your project ships
+> harness/tooling work (dependency overrides, dev-loop scripts, process scaffolding)
+> alongside product code, give it its own category (e.g. `harness`) instead of
+> forcing it into `backend`/`security`/`fullstack`. Categories exist so `h_per_bcp`
+> calibrates separately per kind of work — mixing harness samples into a product
+> category pollutes that category's rate for everyone who scores product work
+> against it, in both directions: harness samples drag a product rate toward
+> harness's own economics, and vice versa.
+
 The schema lives at `skills/bmad-bcp-score/assets/bcp-frontmatter.schema.yaml` and
 is enforced by `jsonschema` in the test suite — it is a contract, not
 documentation with a `.yaml` extension.
