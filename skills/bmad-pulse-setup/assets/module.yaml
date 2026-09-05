@@ -78,6 +78,8 @@ pulse_dev_categories:
       label: 'Standard 3: backend / frontend / mobile'
     - value: data_heavy
       label: 'Data Heavy: backend / data-eng / ml / frontend'
+    - value: standard_5_harness
+      label: 'Standard 5: backend / web / mobile / fullstack / harness'
     - value: custom
       label: Custom (specify comma-separated list)
 pulse_default_category:
