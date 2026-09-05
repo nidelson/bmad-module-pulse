@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.3](https://github.com/nidelson/bmad-module-pulse/compare/v0.9.2...v0.9.3) (2026-09-05)
+
+
+### Documentation
+
+* **setup:** add harness as a first-class dev category ([#105](https://github.com/nidelson/bmad-module-pulse/issues/105)) ([ef2de7b](https://github.com/nidelson/bmad-module-pulse/commit/ef2de7b8db42f2ae30515bd3d79a107773f41069))
+
 ## [0.9.2](https://github.com/nidelson/bmad-module-pulse/compare/v0.9.1...v0.9.2) (2026-08-16)
 
 
