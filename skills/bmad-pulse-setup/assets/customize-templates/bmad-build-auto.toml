@@ -12,30 +12,28 @@
 # automated route: the story ships and PULSE never hears about it. Nothing
 # errors, because an absent customization file is a valid state.
 #
-# THE UNATTENDED RUN IS THE BETTER MEASUREMENT, not a degraded one. `track-done`
-# asks a human three questions because in an interactive session only the human
-# knows the answers. Here the workflow itself does, and its answers are more
-# reliable than a person's recollection:
+# WHAT THIS FILE DOES *NOT* DO, AND WHY. It starts the measurement and never
+# closes it. Closing belongs to the loop plugin at `post_story` — see
+# `assets/loop-plugin/`.
 #
-#   - `review_cycles` is recorded, pass by pass, in the `## Review Triage Log`
-#     section this workflow appends to `{spec_file}`. Counting rows beats asking
-#     someone to remember.
-#   - `effective_hours` exists to strip human idle time out of wall-clock. There
-#     is no human in the loop, so wall-clock already IS effective time.
-#   - `halts` are approval waits, incidents and user-initiated pauses. Nobody is
-#     being asked for approval, so on a clean run there are genuinely none —
-#     that is the true answer, not a refusal to answer.
+# The first version of this template closed the measurement from `on_complete`,
+# copying `bmad-build.toml`, where that is correct and says so: "review has
+# already run inside this workflow via workflow.review_layers". Under the loop
+# it is FALSE. `on_complete` fires at the end of the DEV session, and the
+# orchestrator runs review afterwards as independent sessions. Measured on a
+# real story: `end_ts` stamped at 02:45:25 while review ran 02:48:07 → 04:45:01,
+# recording 1.05h against a 3.05h span and `first_pass: true` on a story that
+# took three review cycles. Under-measured by 2.9x, and the numbers look
+# plausible enough to enter the baseline unchallenged.
 #
-# So the instruction below tells the workflow to REPORT WHAT IT OBSERVED. The
-# one thing it must not do is invent: a fabricated halt is subtracted from
-# `actual_hours` and silently inflates leverage, which is exactly the corruption
-# this module exists to prevent.
+# The premise travelled across an architecture boundary where it does not hold.
+# There is no wording that fixes it: no instruction placed here can observe a
+# review session that has not started.
 #
-# ONE GATE THAT MATTERS: the workflow can run in two legs. With
-# `spec_checkpoint` enabled, leg 1 plans and halts at `ready-for-dev` having
-# implemented nothing; leg 2 implements. Both legs execute these activation
-# steps. Stamping `start_ts` on leg 1 would put the human checkpoint wait —
-# minutes or days — inside `actual_hours` as if it were development.
+# IF YOU DRIVE `bmad-build-auto` WITHOUT `bmad-loop`, the plugin never fires and
+# stories will carry `start_ts` with no `end_ts`. Close them with
+# `/bmad-pulse-track-done <story_id>`, or with `bmad-pulse-track-backfill` after
+# the fact. An open measurement is visible and fixable; a wrong one is neither.
 
 [workflow]
 
@@ -43,4 +41,4 @@ activation_steps_append = [
   "PULSE auto-tracking — DEFERRED TRIGGER, register it now and fire it later. Milestone: in step-03 (implement), at the point where the workflow follows `sync-sprint-status.md` with `target_status` = `in-progress`, and BEFORE executing the implementation handoff, invoke the bmad-pulse-track-start skill passing the story_id explicitly (e.g. /bmad-pulse-track-start 15.3). Derive the story_id from the frontmatter of `{spec_file}` — never from the `in-progress` field of sprint-status, because this workflow just wrote that field and reading it back would be circular. The skill is idempotent: if a start_ts already exists for this story it asks before overwriting, and in an unattended run the answer is to keep the existing value. SKIP the invocation entirely, without error, when any of these hold: this run is a planning leg that ends at `ready-for-dev` without implementing (implementation has not started, and stamping it here would count the checkpoint wait as development time); `story_key` could not be resolved (no key, nowhere to record the metric); or the story is exploratory/read-only with no real implementation.",
 ]
 
-on_complete = "PULSE auto-tracking: invoke the bmad-pulse-track-done skill, passing the story_id of the just-built story as argument (e.g. /bmad-pulse-track-done 15.3). It records end_ts, calculates the AI Leverage Ratio and writes actual_hours.\n\nThe skill will ask three questions that normally need a human. This run is unattended, and you have better answers than a human would — supply them from what the run actually did, and never from a guess:\n\n- `review_cycles`: count the entries this run appended to the `## Review Triage Log` section of `{spec_file}` — one per review pass. That log is the record of what happened; do not estimate. If the review step ran once and passed, the answer is 1. A resumed or follow-up pass counts the passes THIS run performed, not the rows carried over from an earlier one.\n- `effective_hours`: do NOT supply a value. This field exists to strip human idle time out of wall-clock, and an unattended run has none — wall-clock already is the effective working time. Supplying a number here would override a good measurement with an invented one.\n- halts: report the ones the run actually recorded, and only those. A halt is a blocking pause over two minutes — an approval wait, an incident, an external pause. An unattended run asks nobody for approval, so on a clean run the honest answer is none. Never invent one to look thorough: halts are SUBTRACTED from actual_hours, so a fabricated halt inflates the leverage ratio and corrupts the baseline for every story scored after it.\n\nSkip the invocation entirely, without error, when `story_key` never resolved, or when this run implemented nothing (a planning-only leg has no completion to record)."
+on_complete = ""

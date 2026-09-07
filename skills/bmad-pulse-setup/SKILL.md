@@ -317,20 +317,9 @@ customization file is a valid state, so the gap only surfaces later, as a story
 with no `start_ts` and a baseline that never learned from it.
 
 **What the unattended template does differently, and why it is not a downgrade.**
-`track-done` normally asks the user for `review_cycles`, `effective_hours` and
-halts. There is no user here — but the workflow has better answers than a person
-would:
-
-| field | interactive source | unattended source |
-| --- | --- | --- |
-| `review_cycles` | the user's recollection | counted from `## Review Triage Log`, which the workflow writes one entry per review pass |
-| `effective_hours` | the user strips their own idle time | not supplied — wall-clock already *is* effective time with no human in the loop |
-| halts | the user recalls the pauses | reported only if the run recorded one; on a clean run the honest answer is none |
-
-The template is permissive about a *missing* halt and absolute about an
-*invented* one, because the costs are not symmetric: halts are subtracted from
-`actual_hours`, so a fabricated one inflates that story's leverage ratio and
-then enters the per-category baseline that prices every story scored after it.
+The template **starts** the measurement and never closes it. Closing belongs to
+the loop plugin (next section) — `on_complete` fires at the end of the DEV
+session, and under an orchestrator the review runs *after* that.
 
 **The planning leg is skipped on purpose.** With `spec_checkpoint` enabled the
 workflow runs in two legs — leg 1 plans and halts at `ready-for-dev` having
@@ -345,6 +334,69 @@ the spec is written by step-02 of that same workflow. So the a-priori window
 here is the end of step-02, once the spec reaches `ready-for-dev` and before
 step-03 implements. A leg-1 halt is the cleanest form of that window: the
 estimate exists and no code does.
+
+### Install the loop plugin — it is what closes the measurement
+
+Required whenever the project is driven by `bmad-loop`. Copy the plugin and add
+it to the trust allowlist:
+
+```bash
+mkdir -p "{project-root}/.bmad-loop/plugins/pulse"
+cp ./assets/loop-plugin/* "{project-root}/.bmad-loop/plugins/pulse/"
+```
+
+Then, in `{project-root}/.bmad-loop/policy.toml`:
+
+```toml
+[plugins]
+enabled = ["pulse"]
+```
+
+**Installing is not enabling.** The loop pins a digest of `policy.toml` at launch
+and never loads a plugin outside the allowlist — editing that file is a manual
+operator action, outside any run, by design.
+
+**Why closing lives here and not in the template.** `on_complete` fires at the
+end of the DEV session. Under `bmad-loop` the review runs afterwards, as
+independent orchestrator sessions, so a `track-done` anchored there stamps
+`end_ts` before review has started.
+
+Measured on a real story: `end_ts` at 02:45:25 while review ran 02:48:07 →
+04:45:01 — **1.05h recorded against a 3.05h span**, and `first_pass: true` on a
+story that took three review cycles. Under-measured by 2.9x, with numbers
+plausible enough to enter the baseline unchallenged.
+
+That premise was inherited from `bmad-build.toml`, where it is true and says so
+("review has already run inside this workflow via `workflow.review_layers`").
+Under the loop it is false, and no wording fixes it: no instruction can observe
+a session that has not started.
+
+`post_story` is the correct seam — the engine emits it after `story-done` and
+after worktree integration, including on the resumed path.
+
+**Recalibration moved with it**, and not only for tidiness: it reads
+`actual_hours`, which only becomes correct once the measurement closes. Left in
+the template it would feed the per-category baseline a number written before
+review — and that baseline prices every story scored afterwards.
+
+**The hook is deterministic — no agent session.** It reads the run's
+`journal.jsonl` and writes the fields:
+
+| field | source |
+| --- | --- |
+| `end_ts` | the `story-done` event |
+| `review_cycles` | count of review sessions (a session that timed out counts — it burned real time that is already inside `actual_hours`) |
+| `first_pass` | derived, not asserted |
+
+So it costs no tokens, needs no auth, and cannot invent a value. During the work
+that produced this plugin an expiring OAuth session killed four separate
+processes, each with a silent 73-byte stderr — a measurement step that fails
+that way is missing exactly when the run was long enough to matter.
+
+**If you drive `bmad-build-auto` without `bmad-loop`**, the plugin never fires
+and stories carry `start_ts` with no `end_ts`. Close them with
+`/bmad-pulse-track-done <story_id>`, or `bmad-pulse-track-backfill` after the
+fact. An open measurement is visible and fixable; a wrong one is neither.
 
 ### Give the `bcp_*` settings a home that survives
 
