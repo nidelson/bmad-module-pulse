@@ -44,7 +44,7 @@ Epic 14: ██████████████░░░░░░  6.9x (3 s
 Epic 15: ████████████████████  8.4x (1 story)
 ```
 
-📊 **[Ver dashboard completo →](examples/dashboards/mature-bmad-team.md)** *(quebra por categoria, previsão de capacidade, insights da Maxine, breakdown story-a-story)*
+📊 **[Ver dashboard completo →](examples/dashboards/mature-bmad-team.md)** *(quebra por categoria, previsão de capacidade, insights da Max, breakdown story-a-story)*
 
 Veja [mais cenários de dashboard](examples/dashboards/) para diferentes tamanhos de time e estágios de adoção.
 
@@ -70,7 +70,7 @@ PULSE mede isso!
 
 - **Um número defensável de previsibilidade do seu SDLC** — quão perto suas estimativas caem da realidade, sprint a sprint, pronto para o seu deck de stakeholders. (Alavancagem também — mas como sinal do primeiro mês, não a manchete.)
 - **Aviso antecipado de trabalho travado** — previsões de capacidade e alertas de halt antes da sprint escorregar.
-- **Um coach, não só um dashboard** — Maxine (a agente do PULSE) lê seus sinais e te diz *onde* a alavancagem está vazando.
+- **Um coach, não só um dashboard** — Max (a agente do PULSE) lê seus sinais e te diz *onde* a alavancagem está vazando.
 
 ---
 
@@ -166,9 +166,9 @@ pulse_estimation_method = "bcp"     # default: "hours"
 
 ---
 
-## Maxine — sua agente coach
+## Max — sua agente coach
 
-**Maxine** é a Analista de Previsibilidade de Entrega do PULSE. Ela lê suas métricas e te diz, em linguagem clara, onde o squad está perdendo tempo: drift de estimativa, etapas BMAD sendo puladas, agentes mal utilizados. Lidera com o número que a configuração atual consegue defender — alavancagem enquanto a estimativa for em horas, previsibilidade quando uma régua canônica a torna comparável entre times.
+**Max** é a Analista de Previsibilidade de Entrega do PULSE. Ela lê suas métricas e te diz, em linguagem clara, onde o squad está perdendo tempo: drift de estimativa, etapas BMAD sendo puladas, agentes mal utilizados. Lidera com o número que a configuração atual consegue defender — alavancagem enquanto a estimativa for em horas, previsibilidade quando uma régua canônica a torna comparável entre times.
 
 Ela mede o sistema, nunca a pessoa. E nunca dá um número sem a faixa em volta dele.
 
@@ -189,7 +189,7 @@ PULSE instrumenta três pontos no ciclo de vida da story BMAD:
 | **≥ 3.0x** | Excepcional | IA está comprimindo materialmente seu SDLC. Documente o padrão, replique. |
 | **1.8x – 2.9x** | Sólido | Alavancagem saudável. A norma para times BMAD maduros. |
 | **1.2x – 1.7x** | Atenção | Ganho marginal. Investigue onde a IA está desacelerando. |
-| **< 1.2x** | Alerta | IA não está puxando o peso dela. Maxine vai apontar a causa provável. |
+| **< 1.2x** | Alerta | IA não está puxando o peso dela. Max vai apontar a causa provável. |
 
 ### Capacidades
 
@@ -198,7 +198,7 @@ PULSE instrumenta três pontos no ciclo de vida da story BMAD:
 - **Forecast** — projeção de capacidade baseada em alavancagem rolante e velocidade do time.
 - **Audit** — checagens de saúde de processo: stories sem estimativa, trabalho parado, artefatos faltando.
 - **Alert** — detecção de halt quando uma story trava além da estimativa.
-- **Coach** — Maxine lê as métricas e aponta gargalos em linguagem clara.
+- **Coach** — Max lê as métricas e aponta gargalos em linguagem clara.
 
 ### Categorias de halt — separando trabalho de IA de tempo de espera
 
@@ -316,7 +316,7 @@ Esse número não é o teto, nem uma meta. É um ponto de dado vs um benchmark f
 - **v0.6 — Inverter o velocímetro.** A métrica-herói passa a ser convergência/acurácia (um ~1.0x estável é saudável; um multiplicador alto sinaliza estimativa inflada, não velocidade) mais o drift auto-referente de `h/BCP`. Detecção de regime via `estimated_hours_basis`. **Três enquadramentos de multiplicador:** "vs PLANO" (colapsa → previsibilidade) e "vs REFERÊNCIA frozen" (denominador congelado, ROI estável que não colapsa, lendo `estimated_hours_reference` do `bmad-module-bcp`) — nunca "vs humano".
 - **v0.7 — A ação que importa.** Um alerta de drift no momento da estimativa — _"stories como X erraram +N% nas últimas K — reestimar?"_ — interrompendo a estimativa ruim antes de virar compromisso.
 - **v0.8 — Previsibilidade para precificar.** Forecast de projeto `BCP × h/BCP ± IC(90%)` para times que faturam por hora; quebras por desenvolvedor/agente e digests Slack/Linear entram aqui.
-- **v0.9 — A régua entra em casa.** A pontuação BCP passa a ser uma feature opt-in do próprio PULSE (as seis skills `bmad-bcp-*`), em vez de um módulo separado que precisava ser instalado ao lado. Levi se aposenta e **Maxine** assume como Analista de Previsibilidade de Entrega.
+- **v0.9 — A régua entra em casa.** A pontuação BCP passa a ser uma feature opt-in do próprio PULSE (as seis skills `bmad-bcp-*`), em vez de um módulo separado que precisava ser instalado ao lado. Levi se aposenta e **Max** assume como Analista de Previsibilidade de Entrega.
 - **v1.0 — Proposta à equipe principal do BMAD** para adoção nativa.
 
 > **Nota de leitura.** Os marcos até a v0.8 foram entregues quando a pontuação
