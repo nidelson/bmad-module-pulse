@@ -1,0 +1,358 @@
+# RFC — PULSE token telemetry
+
+> **Status:** Draft for Party Mode
+> **Author:** Nidelson Gimenez (with Claude Opus 4.7)
+> **Date opened:** 2026-05-23
+> **Target Party Mode session:** Phase 1 (structural decisions) + Phase 2 (surface/UX)
+> **Related work:** v0.4.10 auto-tracking fix ([#47](https://github.com/nidelson/bmad-module-pulse/issues/47), [PR #48](https://github.com/nidelson/bmad-module-pulse/pull/48))
+
+---
+
+## 0. TL;DR
+
+Can PULSE measure the number of AI tokens consumed during the implementation window (between `track-start` and `track-done`)? Technically yes — by parsing Claude Code's per-session JSONL transcripts. But it introduces real architectural tradeoffs that need cross-role debate before any code lands.
+
+This RFC frames the tensions and produces a decision record. **Do not start implementation before Party Mode closes the open questions in §6.**
+
+---
+
+## 1. Context
+
+PULSE today records two timestamps per story (`start_ts` from `bmad-pulse-track-start`, `end_ts` from `bmad-pulse-track-done`) and derives `actual_hours = end_ts - start_ts`. Combined with `estimated_hours` (or BCP-derived hours via the optional `pulse_estimation_method=bcp` integration), PULSE computes the **AI Leverage Ratio**.
+
+The current contract:
+
+- **Tool-agnostic core.** PULSE skills make no assumption about which AI assistant the developer used (Claude Code, Cursor, Cline, Aider, Copilot, plain ChatGPT). The metric works the same way regardless.
+- **Read-only on story frontmatter.** PULSE never writes to the story file; it only reads status/id and writes to its own `pulse_metrics:` block.
+- **Zero-coupling boundary with BCP scoring.** PULSE may consume BCP data but never writes `bcp-baseline.yaml`. *(As written in 2026-05, scoring lived in a separate `bmad-module-bcp`; it has since been merged into this repository and archived — see §11.8.)*
+- **Deterministic auto-tracking** (post v0.4.10): trigger lives in `activation_steps_append` (executed), never in `persistent_facts` (passive). Pinned by `tests/test_auto_tracking_trigger.py`.
+
+The proposal under discussion is whether to add a **token-usage measurement** on top of time-based leverage.
+
+---
+
+## 2. Source of truth for the token data
+
+Claude Code persists every session as a JSON-Lines transcript at:
+
+```
+~/.claude/projects/<cwd-encoded>/<session-id>.jsonl
+```
+
+where `<cwd-encoded>` is the project's working directory with `/` replaced by `-` (e.g. `-Users-nidelson-Projects-nidelson-sip`).
+
+Each assistant message contains a `usage` block:
+
+```json
+{
+  "usage": {
+    "input_tokens": 1234,
+    "output_tokens": 567,
+    "cache_creation_input_tokens": 320,
+    "cache_read_input_tokens": 8900
+  },
+  "model": "claude-opus-4-7",
+  "timestamp": "2026-05-23T14:32:11Z"
+}
+```
+
+Summing over the window `[start_ts, end_ts]` yields tokens consumed during the implementation. Multi-session implementations require globbing across files.
+
+---
+
+## 3. Proposed design (strawman — to be challenged in Party Mode)
+
+A new opt-in skill `bmad-pulse-token-telemetry`, OR a hook in `bmad-pulse-track-done`, that:
+
+1. Resolves the story's `cwd` → encodes the path → locates the transcripts directory.
+2. Globs all `.jsonl` files in that directory.
+3. For each line, parses JSON, filters by `timestamp ∈ [start_ts, end_ts]`.
+4. Sums `input_tokens`, `output_tokens`, `cache_creation_input_tokens`, `cache_read_input_tokens`, grouped by `model`.
+5. Writes a new block to `pulse_metrics[story].token_usage`:
+
+```yaml
+token_usage:
+  input_fresh: 12340
+  input_cached_read: 89000
+  input_cache_creation: 3200
+  output: 5670
+  by_model:
+    claude-opus-4-7: { in: 9000, out: 4200 }
+    claude-sonnet-4-6: { in: 3340, out: 1470 }
+  cost_usd_estimate: 1.23   # optional, requires pricing table
+  sources: [".claude/projects/<encoded>/<sess-id-1>.jsonl", "<sess-id-2>.jsonl"]
+  collected_at: 2026-05-23T15:00:00Z
+```
+
+6. Stays **opt-in** behind a config flag (e.g. `pulse_telemetry_adapter=claude_code` in `bmad/config.yaml` or `_bmad/custom/pulse.toml`).
+7. Preserves the read-only invariant on story frontmatter (writes only to `pulse_metrics:`).
+
+---
+
+## 4. Tensions
+
+### 4.1. Agnosticism vs concrete value
+
+PULSE's tool-agnostic positioning is load-bearing — it's part of why it can be adopted by squads using different AI tools. A token adapter that only works with Claude Code threatens that positioning, even if scoped as opt-in.
+
+**Counter-position:** an opt-in adapter pattern is precisely the escape hatch. Cursor/Cline/etc. can have their own adapters later; the core stays agnostic.
+
+### 4.2. Window contains noise
+
+The wall-clock window `[start_ts, end_ts]` already includes pauses, lunch, meetings, parallel work on other stories, off-topic conversations. `actual_hours` lives with this. **Token totals amplify it** — every chat message within the window counts, even unrelated ones.
+
+**Mitigation options:**
+- Filter by `cwd` matching the story's project (excludes off-project chat) — partial fix.
+- Require the user to confirm/scope the window manually — defeats automation.
+- Accept the noise as the price of automation — same compromise as `actual_hours`.
+
+### 4.3. Multi-session reality
+
+Two-day implementations span `N` JSONL files. Glob + merge is straightforward computationally, but adds I/O cost and edge cases (session that started before `start_ts` and ended after).
+
+### 4.4. Tokens ≠ cost
+
+Same total token count costs differently depending on model (Opus 4.7 vs Sonnet 4.6 vs Haiku 4.5). And `cache_read_input_tokens` cost ~10× less than fresh input. Reporting raw totals without splitting masks the actual economic signal.
+
+**Question:** does PULSE expose `cost_usd_estimate`? If yes, who maintains the pricing table and how often? If no, raw token counts are misleading.
+
+### 4.5. Integration with BCP
+
+Bruno's BCP rule card produces a complexity score that drives `estimated_hours`. Adding token data raises a derived-metric question: is `tokens_per_BCP` meaningful?
+
+- Pro: ties cognitive complexity to AI cost — could surface "complex stories cost N tokens per BCP point" patterns.
+- Con: tokens are noisy; dividing by BCP doesn't denoise; may produce a metric that looks rigorous but isn't.
+
+### 4.6. Surface saturation
+
+PULSE already surfaces leverage ratio + actual_hours + estimated_hours. Adding tokens + cost + by_model adds three more dimensions. **At what point does the dashboard stop helping and start hiding?**
+
+This is Levi's territory (Phase 2 of Party Mode).
+
+---
+
+## 5. Cast for Party Mode
+
+### Phase 1 — Structural decisions (mandatory)
+
+| Agent | Role in this RFC | Why |
+|---|---|---|
+| **BMad Builder (BMB)** | Module architecture authority | Owns the contract — zero-coupling, opt-in pattern, customize.toml shape, skill boundaries. Final say on whether this becomes a PULSE skill or a separate module. |
+| **Architect** | Technical design | Adapter isolation, JSONL parsing, multi-session merge, invariants, performance, edge cases. |
+| **Bruno (bcp-agent)** | Consumer of the metric | Whether `tokens_per_BCP` is signal or noise. Whether the new block should appear in BCP recalibration loops. |
+
+### Phase 2 — Surface/UX (after Phase 1 closes)
+
+| Agent | Role | Why |
+|---|---|---|
+| **Levi (pulse-agent)** | PULSE persona / surface owner | How to narrate `token_usage` to the user. New menu code? Where in dashboard? When to hide vs surface? Privacy framing. |
+| **PM** | Scope arbiter | Feature in core vs separate module vs deferred-to-backlog. Sequencing with other PULSE work. |
+
+### Optional (call if Phase 1 deadlocks)
+
+- **Analyst** — prior-art research: `ccusage`, Cline telemetry, OpenAI usage API formats, what other dev-tracking modules do.
+
+### Cut
+
+- **Pulse agent (Levi) in Phase 1** — Levi is the executor/voice, not the designer. Including Levi too early risks UX debates before the data shape is settled.
+
+---
+
+## 6. Open questions for Party Mode to decide
+
+Numbered for tracking. Each Party Mode output should reference these.
+
+1. **Adapter pattern**: opt-in `pulse_telemetry_adapter=claude_code` config flag, or core feature, or separate module `bmad-module-pulse-telemetry`?
+2. **Data location**: new `pulse_metrics[story].token_usage` block, or separate file `pulse_token_telemetry.yaml`, or external (no persistence)?
+3. **Window semantics**: raw `[start_ts, end_ts]`, or filtered by `cwd`/project match, or user-confirmed window?
+4. **Multi-session**: glob-and-merge automatically, or limit to one session, or require explicit session-id list?
+5. **Pricing**: include `cost_usd_estimate` with maintained pricing table, or ship raw tokens only?
+6. **Derived metrics**: expose `tokens_per_BCP`, `cost_per_estimated_hour`, both, neither?
+7. **Invariants**: confirm read-only on story frontmatter still holds. Confirm zero-coupling with BCP still holds. Any new invariants this introduces?
+8. **Privacy/framing**: how is "AI used N tokens" surfaced? Voluntary disclosure? Default off? Per-squad config?
+9. **Trigger**: hook in existing `track-done` (always runs) vs new skill `track-tokens` (manual invocation) vs both?
+10. **Test surface**: which invariants need regression tests pinned (similar to `test_auto_tracking_trigger.py`)?
+
+---
+
+## 7. Pre-reads for Party Mode participants
+
+- `skills/bmad-pulse-track-start/workflow.md` — current track-start contract (Step 1 decoupled from `in-progress` status, v0.4.10).
+- `skills/bmad-pulse-track-done/workflow.md` — current track-done flow + on_complete hook.
+- `skills/bmad-pulse-setup/assets/customize-templates/bmad-dev-story.toml` — current activation trigger surface.
+- `tests/test_auto_tracking_trigger.py` — invariants pinned in v0.4.10 (model for what token-telemetry tests should look like).
+- `docs/MIGRATION.md` — v0.4.0 and v0.4.9 migration patterns.
+- `~/.claude/projects/-Users-nidelson-Projects-nidelson-sip/<session>.jsonl` — sample transcript with `usage` blocks (Phase 1 Architect reference).
+- BCP scope and Bruno's role — scoring now ships in this repository (`bmad-bcp-score`); the standalone module that originally hosted it is archived. See §11.8.
+
+---
+
+## 8. Decision record (to be filled by Party Mode output)
+
+Phase 1 output goes here as a numbered decision list mapped to §6 questions:
+
+```
+D1. Adapter pattern: <decision> — <one-line rationale>
+D2. Data location:   <decision> — <one-line rationale>
+...
+D10. Test surface:   <decision> — <one-line rationale>
+```
+
+Phase 2 output (after Phase 1):
+
+```
+S1. Menu code: <code> — <one-line rationale>
+S2. Dashboard placement: <where> — <one-line rationale>
+S3. Narration template: <text>
+S4. Hide/surface threshold: <rule>
+S5. Privacy framing: <text>
+```
+
+Once both phases are filled in, this RFC moves from `Status: Draft` to `Status: Decided` and a GitHub issue is opened referencing this file as the design spec.
+
+---
+
+## 9. Non-goals (do not let Party Mode drift into these)
+
+- Implementing the feature in this RFC — design only.
+- Building token telemetry for tools other than Claude Code in v1 — adapter pattern allows this later.
+- Refactoring `bmad-pulse-track-done` beyond what this RFC requires.
+- Changing the leverage ratio formula — token data is **additive**, not a replacement.
+- BCP scoring changes — Bruno is a consumer here, not a redesign target.
+
+---
+
+## 10. Footer
+
+After Party Mode closes Phase 1 and Phase 2, open a GitHub issue titled `feat(pulse): token telemetry adapter (Claude Code) — see docs/rfcs/2026-05-23-pulse-token-telemetry.md` and assign based on whichever decision §6 produces.
+
+---
+
+## 11. Addendum — 2026-09-07: what the field answered while this RFC waited
+
+This RFC was written on 2026-05-23 as a Party Mode pre-read. It sat open for
+three and a half months. In that time the surrounding tooling moved, and **four
+of the ten open questions in §6 now have empirical answers** — not opinions to
+deliberate, but observations from running code.
+
+Recording them here rather than deleting the questions: the reasoning in §4 is
+still the best framing of the problem, and the tensions it names all survived.
+
+### 11.1. Q5 (pricing) — answered by prior art, not by decision
+
+§4.4 asked: *"who maintains the pricing table and how often?"* — and treated it
+as the blocker for `cost_usd_estimate`.
+
+**Nobody should maintain it.** The pattern used by CodeBurn (an independent
+spend-tracking tool for the same transcripts) is a **versioned snapshot of a
+public source**, resolved in priority order:
+
+```text
+1. LiteLLM        (model_prices_and_context_window.json — broad, maintained)
+2. manual overrides
+3. models.dev     (first-party makers only)
+4. OpenRouter     (resale rates — coverage backstop)
+```
+
+Two files split by confidence, so a reseller's variant name can never shadow a
+canonical match. No network at runtime; updating prices is a pull request.
+
+This dissolves Q5 as posed. The remaining decision is narrower: *does PULSE ship
+the snapshot, or read one the consumer provides?*
+
+### 11.2. Q1/§4.1 (agnosticism) — the fear was justified, the framing was not
+
+§2 assumed a single source: *"Claude Code JSONL transcripts"*. That is no longer
+the shape of the problem. `bmad-loop` ships **four** usage parsers:
+
+| parser | source |
+| --- | --- |
+| `claude-jsonl` | `~/.claude/projects/**/*.jsonl` |
+| `codex-rollout` | `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` |
+| `gemini-chat` | Gemini CLI |
+| `copilot-events` | Copilot |
+
+So **token collection is already provider-agnostic upstream** — the adapter
+pattern §3 proposes may be reinventing something PULSE can consume instead of
+build. What is *not* agnostic is pricing, which is exactly Q5.
+
+Empirical note: a locally-defined `glm` profile reuses `claude-jsonl` untouched
+(it runs the `claude` binary against a different `ANTHROPIC_BASE_URL`), so
+"one adapter per vendor" overcounts the work.
+
+### 11.3. §4.4 needs a correction: cache is not one concept
+
+The RFC says *"`cache_read_input_tokens` cost ~10× less than fresh input"*. True
+for Anthropic. **The two providers do not share an economic model:**
+
+| | Anthropic | Codex (`gpt-6-astra`) |
+| --- | --- | --- |
+| cache write | billed, and it is a *decision* | carved out of `input_tokens` |
+| fields | `cache_creation_*` / `cache_read_*` | `cached_input_tokens` / `cache_write_input_tokens` |
+| actionable? | yes — rewrite or let it go cold | not really |
+
+Verified in real rollouts. A unified schema that assumes Anthropic's shape will
+carry a dead field for the other provider.
+
+### 11.4. New question the RFC could not have anticipated
+
+`bmad-loop` supports **per-stage adapters** (`StageAdapterPolicy`): `dev`,
+`review` and `triage` can each run a different binary and model. A run can
+implement with one vendor and review with another.
+
+That makes a measurement possible that nothing else in this space reports:
+
+> **cost per phase, per model** — is a review by a different vendor cheaper *and*
+> better than a same-model review?
+
+This is a stronger argument for token telemetry in PULSE than anything in §1,
+because it converts telemetry from reporting into **architecture evidence**.
+
+### 11.5. Q6 (`tokens_per_BCP`) — revisit the hesitation
+
+§4.5 worried this *"may produce a metric that looks rigorous but isn't"*. Fair
+caution. But it is also the one metric general-purpose spend trackers **cannot**
+compute: they group by branch, project or session, and have no concept of a
+story, a complexity score, `first_pass` or `review_cycles`.
+
+Cost per token is commodity. **Cost per BCP** is not.
+
+### 11.6. Consequence for the Party Mode cast
+
+With Q5 resolved by prior art and Q1/Q3 narrowed by upstream reality, the Phase 1
+agenda is materially smaller. Convening a full cast to decide what has already
+been measured is the waste this module exists to detect.
+
+Suggested revision: fold Q5 into the implementation issue, keep Phase 1 for the
+genuinely open structural questions (Q2 data location, Q7 invariants, Q9
+trigger), and keep Phase 2 as-is — §4.6 (surface saturation) is now *more*
+pressing, not less, since a USD dimension is heavier than a token count.
+
+### 11.7. Prerequisite discovered elsewhere
+
+Issue #111: the dashboard has **no script** — 460 lines of prose ask an LLM to
+compute 26 aggregations by hand. Before PULSE reports **money**, the arithmetic
+should move into deterministic code. An LLM computing a median carries silent
+variance; an LLM computing a dollar figure carries it into decisions.
+
+Treat #111 as a soft prerequisite for surfacing cost, independent of how §6 is
+decided.
+
+### 11.8. The BCP module referenced in §1 and §7 no longer exists standalone
+
+Written in 2026-05, this RFC named `bmad-module-bcp` as a separate repository —
+in the zero-coupling invariant (§1) and in the pre-reads (§7).
+
+Scoring has since been **merged into this repository** (`bmad-bcp-score`) and the
+standalone module archived. `tests/test_port_narrative.py` pins the consequence:
+naming the archived module as the owner of a field, or as a place to install
+from, *"sends the reader to a repository that has no skills left."*
+
+Both references above were rewritten to describe the capability rather than the
+dead repository. **The invariant itself is unchanged** — PULSE still consumes BCP
+data and still never writes `bcp-baseline.yaml`; only the owner's address moved.
+
+Worth noting for its own sake: the RFC did not rot on its own. A test caught it
+three and a half months later, on the first commit that touched the file. That
+is the gate this addendum argues for elsewhere (§11.7) — prose that names a
+moving part should be checked by something that runs.
