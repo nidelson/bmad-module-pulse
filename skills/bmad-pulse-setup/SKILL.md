@@ -295,6 +295,57 @@ is the same place either way.
 `bmad-create-story` has no plain template — emitting it without `--with-bcp`
 exits 2. PULSE has nothing to say to story authoring unless scoring is on.
 
+### Cover the unattended route (`bmad-build-auto`)
+
+Emit this whenever the project is driven by an orchestrator — `bmad-loop` or any
+runner that executes stories without a human at the keyboard. It is independent
+of the tier question above: `bmad-build-auto` is a **separate skill directory**,
+not a variant of `bmad-build`.
+
+```bash
+python3 ./scripts/inject_customize.py \
+    --project-root "{project-root}" \
+    --skill bmad-build-auto          # add --with-bcp when scoring is on
+```
+
+**Why a project needs it even with `bmad-build.toml` already installed.** BMAD
+resolves customization per skill *name* — `load_customization()` reads
+`_bmad/custom/<skill-name>.toml`. The hooks installed for `bmad-build` are
+invisible to `bmad-build-auto`, so without this file an orchestrated run ships
+the story and PULSE never hears about it. Nothing errors: an absent
+customization file is a valid state, so the gap only surfaces later, as a story
+with no `start_ts` and a baseline that never learned from it.
+
+**What the unattended template does differently, and why it is not a downgrade.**
+`track-done` normally asks the user for `review_cycles`, `effective_hours` and
+halts. There is no user here — but the workflow has better answers than a person
+would:
+
+| field | interactive source | unattended source |
+| --- | --- | --- |
+| `review_cycles` | the user's recollection | counted from `## Review Triage Log`, which the workflow writes one entry per review pass |
+| `effective_hours` | the user strips their own idle time | not supplied — wall-clock already *is* effective time with no human in the loop |
+| halts | the user recalls the pauses | reported only if the run recorded one; on a clean run the honest answer is none |
+
+The template is permissive about a *missing* halt and absolute about an
+*invented* one, because the costs are not symmetric: halts are subtracted from
+`actual_hours`, so a fabricated one inflates that story's leverage ratio and
+then enters the per-category baseline that prices every story scored after it.
+
+**The planning leg is skipped on purpose.** With `spec_checkpoint` enabled the
+workflow runs in two legs — leg 1 plans and halts at `ready-for-dev` having
+written no code, leg 2 implements — and both legs execute the activation steps.
+Stamping `start_ts` on leg 1 would fold the human checkpoint wait, which can be
+minutes or a weekend, into `actual_hours`.
+
+**With `--with-bcp`, this file also carries the scoring trigger** — the only
+template besides `bmad-create-story` that does. An orchestrated run may never
+call `bmad-create-story`: the loop dispatches build-auto against a story id and
+the spec is written by step-02 of that same workflow. So the a-priori window
+here is the end of step-02, once the spec reaches `ready-for-dev` and before
+step-03 implements. A leg-1 halt is the cleanest form of that window: the
+estimate exists and no code does.
+
 ### Give the `bcp_*` settings a home that survives
 
 Still only when `pulse_estimation_method` is `bcp`. The scoring skills read

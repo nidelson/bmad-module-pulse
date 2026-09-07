@@ -20,10 +20,11 @@ TEMPLATES_DIR = Path(__file__).parent.parent / "assets/customize-templates"
 # (`inject_targets` in its payload) — never assume, the deprecated `bmad-dev-story`
 # shim survives on disk next to `bmad-build`.
 SUPPORTED_SKILLS = {
-    "bmad-build", "bmad-dev-story", "bmad-code-review", "bmad-create-story",
+    "bmad-build", "bmad-build-auto", "bmad-dev-story", "bmad-code-review",
+    "bmad-create-story",
 }
 
-# Skills whose template has a BCP variant. Two different reasons:
+# Skills whose template has a BCP variant. Three different reasons:
 #
 # `bmad-build` and `bmad-code-review` own `on_complete`, which recalibration
 # extends. Their variant REPLACES the plain template at the same destination —
@@ -32,9 +33,19 @@ SUPPORTED_SKILLS = {
 # skips. `bmad-dev-story` carries track-start, which recalibration does not
 # extend, so it has no variant.
 #
+# `bmad-build-auto` is the unattended counterpart of `bmad-build` and carries
+# BOTH halves on its variant: recalibrate on `on_complete`, and — unique to this
+# route — the *scoring* trigger itself. On the interactive route scoring lives in
+# `bmad-create-story`, but an orchestrator-driven run may never call that skill:
+# the loop dispatches build-auto against a story id, and the spec is written by
+# step-02 of the very same workflow. The a-priori window is therefore the end of
+# step-02, before step-03 implements.
+#
 # `bmad-create-story` is the scoring trigger and has NO plain template: PULSE has
 # nothing to say to story authoring unless scoring is on. See BCP_ONLY_SKILLS.
-BCP_VARIANT_SKILLS = {"bmad-build", "bmad-code-review", "bmad-create-story"}
+BCP_VARIANT_SKILLS = {
+    "bmad-build", "bmad-build-auto", "bmad-code-review", "bmad-create-story",
+}
 
 # Skills that exist ONLY as a BCP variant. Emitting one without `--with-bcp` is
 # an error rather than a fallback, because the fallback would be a missing-file
