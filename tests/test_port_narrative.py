@@ -45,6 +45,11 @@ ALLOWED = {
     "CHANGELOG.md",
     "docs/MIGRATION.md",
     "README.md",  # the v0.6 roadmap bullet, kept as a dated record
+    # A dated design document. It names the module in past tense, to record what
+    # the boundary looked like when the RFC was written and what changed since
+    # (§11.8). An RFC that silently adopted today's vocabulary would misrepresent
+    # the state its own decisions were made against.
+    "docs/rfcs/2026-05-23-pulse-token-telemetry.md",
     # These have to name it in order to forbid it: both assert its ABSENCE
     # (from the setup label, and from live prose respectively).
     "tests/test_bcp_integration.py",
