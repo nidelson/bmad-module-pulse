@@ -97,7 +97,7 @@ def test_creates_entry_on_fresh_install(tmp_path: Path):
 
     assert payload["action"] == "created"
     entry = _entry(tmp_path)
-    assert entry["name"] == "Maxine"
+    assert entry["name"] == "Max"
     assert entry["module"] == "pulse"
     assert entry["team"] == "software-development"
     assert entry["description"]
@@ -175,8 +175,8 @@ def test_stale_default_name_is_migrated_not_preserved(consumer_with_custom_entry
 
     assert set(payload["migrated_fields"]) == {"name", "icon"}
     entry = _entry(consumer_with_custom_entry)
-    assert entry["name"] == "Maxine"
-    assert entry["icon"] == "💓"
+    assert entry["name"] == "Max"
+    assert entry["icon"] == "📐"
 
 
 def test_a_hand_written_name_is_still_preserved(consumer_with_custom_entry: Path):
@@ -193,6 +193,32 @@ def test_a_hand_written_name_is_still_preserved(consumer_with_custom_entry: Path
 
     assert "name" not in payload["migrated_fields"]
     assert _entry(consumer_with_custom_entry)["name"] == "Analista"
+
+
+def test_a_v09_install_migrates_from_maxine(consumer_with_custom_entry: Path):
+    """A project that installed at v0.9 has `Maxine`/`💓` on disk, not `Levi`.
+
+    This is why LEGACY_FRAGMENT_VALUES is cumulative rather than a single
+    "previous" value: the migration is decided by what *this* project holds,
+    and installs sit at every past release at once. Dropping Levi when adding
+    Maxine would strand the older installs; never adding Maxine strands the
+    v0.9 ones — they would keep a roster reading `💓 Maxine` while the skill
+    introduces itself as Max.
+    """
+    path = _custom_path(consumer_with_custom_entry)
+    path.write_text(
+        path.read_text(encoding="utf-8")
+        .replace('name = "Levi"', 'name = "Maxine"')
+        .replace('icon = "⚡"', 'icon = "💓"'),
+        encoding="utf-8",
+    )
+
+    payload = _run(consumer_with_custom_entry)
+
+    assert set(payload["migrated_fields"]) == {"name", "icon"}
+    entry = _entry(consumer_with_custom_entry)
+    assert entry["name"] == "Max"
+    assert entry["icon"] == "📐"
 
 
 def test_team_comments_are_never_rewritten(consumer_with_custom_entry: Path):

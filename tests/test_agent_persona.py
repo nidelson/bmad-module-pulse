@@ -1,4 +1,6 @@
-"""The agent persona is Maxine, and the retirement of Levi is bounded (#84).
+"""The agent persona is Max, and the retirement of older personas is bounded.
+
+Persona lineage: Levi (until v0.9) -> Maxine (v0.9, #84) -> Max.
 
 Swapping the persona looks like a find-and-replace and is not one. The name
 appears in four kinds of place, and only the first should change:
@@ -6,7 +8,7 @@ appears in four kinds of place, and only the first should change:
 | where                                      | what it is           | rename? |
 | ------------------------------------------ | -------------------- | ------- |
 | customize.toml, SKILL.md, workflows, README | the live persona     | yes     |
-| `pulse_levi_*` config keys                  | consumer-facing API  | yes, with fallback |
+| `pulse_levi_*` config keys                  | consumer-facing API  | done in v0.9 |
 | `bmad-pulse-agent-levi/` in cleanup scripts | a legacy folder name | **no**  |
 | docs/MIGRATION.md history, CHANGELOG        | the record           | **no**  |
 
@@ -15,6 +17,18 @@ project still has on disk; rewriting them makes the cleanup silently stop
 matching, and the project keeps two divergent entry points for one agent
 forever. The tests below pin the boundary in both directions — gone from the
 persona surfaces, still present in the migration surfaces.
+
+Row two is why this rename was cheap. v0.9 renamed `pulse_levi_verbosity` to
+`pulse_verbosity` precisely so the *next* persona would cost nothing: no
+consumer-facing key carries a name anymore, so Maxine -> Max touches no API
+and needs no fallback. The test that pins it (`test_config_keys_are_persona_free`)
+is what keeps that true for the persona after this one.
+
+GENDER IS PART OF THE SWAP, and it is the half a name-only replace misses.
+Maxine was `she`; Max is `he`. Those pronouns sit in sentences that never
+contain the name — `Says she does not know yet`, `never lists her` — so
+grepping for the old name finds none of them. `test_no_persona_surface_speaks_
+in_the_old_gender` covers what the name-based assertions cannot see.
 """
 from __future__ import annotations
 
@@ -52,9 +66,9 @@ MIGRATION_SURFACES = [
 
 LEGACY_FOLDER = "bmad-pulse-agent-levi"
 
-NAME = "Maxine"
+NAME = "Max"
 TITLE = "Delivery Predictability Analyst"
-ICON = "💓"
+ICON = "📐"
 
 
 @pytest.fixture(scope="module")
@@ -62,10 +76,10 @@ def agent_block() -> dict:
     return tomllib.loads(CUSTOMIZE.read_text(encoding="utf-8"))["agent"]
 
 
-# ── the persona is Maxine everywhere the user meets her ──────────────────────
+# ── the persona is Max everywhere the user meets him ─────────────────────────
 
 
-def test_customize_declares_maxine(agent_block: dict):
+def test_customize_declares_max(agent_block: dict):
     assert agent_block["name"] == NAME
     assert agent_block["title"] == TITLE
     assert agent_block["icon"] == ICON
@@ -87,6 +101,38 @@ def test_no_persona_surface_still_speaks_as_levi():
     inside fenced example blocks rather than prose."""
     stale = [p.name for p in PERSONA_SURFACES if "Levi" in p.read_text(encoding="utf-8")]
     assert not stale, f"still speaking as Levi: {stale}"
+
+
+def test_no_persona_surface_still_names_maxine():
+    """The counterpart for the persona this one replaced. Kept separate from
+    the Levi assertion so a failure names which persona leaked back in."""
+    stale = [p.name for p in PERSONA_SURFACES if "Maxine" in p.read_text(encoding="utf-8")]
+    assert not stale, f"still speaking as Maxine: {stale}"
+
+
+# ── gender travels with the name, and hides where the name is not ────────────
+
+FEMININE = re.compile(r"\b(she|her|hers)\b", re.IGNORECASE)
+
+
+@pytest.mark.parametrize("surface", PERSONA_SURFACES, ids=lambda p: p.name)
+def test_no_persona_surface_speaks_in_the_old_gender(surface: Path):
+    """Max is `he`. The trap is that pronouns outlive a name-based rename:
+    `Says she does not know yet` and `never lists her` contain no persona name,
+    so every grep for "Maxine" reports the file clean while the agent still
+    refers to itself as a woman.
+
+    Scoped to persona surfaces on purpose — CHANGELOG and MIGRATION.md describe
+    Maxine in the past tense and *should* keep saying `she` about her.
+    """
+    offenders = [
+        line.strip()
+        for line in surface.read_text(encoding="utf-8").splitlines()
+        if FEMININE.search(line)
+    ]
+    assert not offenders, (
+        f"{surface.name} still uses feminine pronouns for Max: {offenders[:3]}"
+    )
 
 
 def test_no_customize_value_names_levi(agent_block: dict):
@@ -135,7 +181,7 @@ def test_legacy_folder_name_survives_in_the_cleanup_scripts():
 
 def test_migration_doc_explains_the_swap():
     doc = (REPO_ROOT / "docs/MIGRATION.md").read_text(encoding="utf-8")
-    assert "Maxine" in doc
+    assert "Max" in doc
     assert "pulse_levi_verbosity" in doc, (
         "the renamed config keys must be named in the migration doc — a "
         "consumer greps for the key they have, not the one they should have"
