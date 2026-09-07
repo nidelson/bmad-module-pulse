@@ -1,0 +1,57 @@
+# PULSE plugin for `bmad-loop` — closes the measurement after review
+#
+# Drop this directory at `<project>/.bmad-loop/plugins/pulse/` and enable it in
+# `.bmad-loop/policy.toml`:
+#
+#     [plugins]
+#     enabled = ["pulse"]
+#
+# Installing is NOT enabling: the loop pins a digest of `policy.toml` at launch,
+# and a plugin outside the allowlist is never loaded. That gate is deliberate —
+# a plugin runs code inside your run.
+#
+# WHY THIS EXISTS. `track-done` used to hang off the `on_complete` of
+# `bmad-build-auto`, which fires at the end of the DEV session. Under `bmad-loop`
+# the review runs AFTER that, as independent orchestrator sessions, so the
+# measurement closed before review had started. Measured on a real story: 1.05h
+# recorded against a 3.05h span, `first_pass: true` on a story that took three
+# review cycles. Under-measured by 2.9x, and the wrong numbers look plausible.
+#
+# `post_story` is the correct seam. The engine emits it after `story-done` and
+# after worktree integration, including on the resumed path — `engine.py` says
+# so: "a resumed story that just reached DONE gets the same post-story hook the
+# _loop path fires".
+#
+# WHY NOT `pre_story` FOR track-start. It fires before everything, including the
+# planning leg of a `spec_checkpoint` run. Stamping `start_ts` there would book
+# the human approval wait — minutes, or a weekend — as development time. That is
+# the same bug at the other end. track-start stays where it is: inside step-03,
+# when the workflow marks the story `in-progress`.
+
+[plugin]
+name = "pulse"
+# Required, and checked by the loader against the build it runs on: a
+# third-party plugin declaring an unsupported api_version is SKIPPED, while a
+# builtin hard-errors. Skipping is silent, so a bumped API means this plugin
+# stops measuring without saying so — see the CI load test in the PULSE repo,
+# which asserts the manifest still resolves.
+api_version = 1
+version = "1.0.0"
+description = "Closes PULSE measurement from the loop journal, after review"
+
+[hooks.post_story]
+# Deterministic: reads the journal, writes the fields. No agent session, so it
+# costs no tokens, needs no auth, and cannot invent a value. An OAuth session
+# expiring mid-run killed four separate processes during the work that produced
+# this plugin, each with a silent 73-byte stderr — a measurement step that can
+# fail that way is missing exactly when the run was long enough to matter.
+cmd = "uv run --no-cache {scripts}/track-done-from-journal.py"
+timeout_sec = 90
+
+# Non-blocking on purpose. A missing measurement is a gap in the baseline; a
+# failed build is a gap in the product. The hook never gets to decide the second
+# one, so it exits 0 on every "cannot measure" path (story deferred, no
+# start_ts, status file absent) and reserves non-zero for "I was asked to write
+# and the data was inconsistent".
+blocking = false
+fail_closed = false

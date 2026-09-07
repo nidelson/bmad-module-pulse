@@ -1,0 +1,51 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Workflow customization surface for bmad-bcp-rescore. Mirrors the
+# BMad workflow customization shape under the [workflow] namespace.
+
+[workflow]
+
+# --- Configurable below. Overrides merge by the BMad structural rules: ---
+#   scalars: override wins • arrays (persistent_facts, activation_steps_*): append
+#   arrays-of-tables with `code`/`id`: replace matching items, append new ones.
+
+# Steps to run before the standard activation (story resolution, dependencies).
+# Overrides append. Use for pre-flight loads, compliance checks, etc.
+
+activation_steps_prepend = []
+
+# Steps to run after activation but before the rescore preview runs.
+# Overrides append. Use for context-heavy setup such as fetching the
+# scope-change history from an external system to inform the rescore.
+
+activation_steps_append = []
+
+# Persistent facts the workflow keeps in mind for the whole run
+# (team policy on rescore triggers, scope-change conventions).
+# Overrides append.
+#
+# Each entry is either:
+#   - a literal sentence, e.g. "Rescore após scope creep deve sempre incluir o motivo na nota."
+#   - a file reference prefixed with `file:`, e.g. "file:{project-root}/docs/rescore-policy.md"
+#     (glob patterns are supported; the file's contents are loaded and treated as facts).
+
+persistent_facts = []
+
+# Scalar: executed AFTER the rescore workflow has fully persisted the
+# updated story frontmatter and archived the previous block in `bcp.history`
+# (and NEVER before). Default empty = no-op. Override wins.
+#
+# Invariants:
+# - Hook runs AFTER persistence — story frontmatter already reflects
+#   the new `bcp.*` block, and the previous score is archived in `bcp.history`.
+# - Hook MUST NOT mutate the story frontmatter (single-writer principle —
+#   only `apply_score.py --rescore` writes `bcp.*` and rotates `history`).
+# - Error in hook is warn, not rollback — rescore already committed.
+# - In `--dry-run` (no persistence) the hook is SKIPPED.
+#
+# Override in `{project-root}/_bmad/custom/bmad-bcp-rescore.toml`:
+#
+#   [workflow]
+#   on_complete = "if the rescore advisory flagged a >50% delta, open a GitHub issue summarizing the change and the reason captured in the rescore note."
+
+on_complete = ""

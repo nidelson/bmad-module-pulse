@@ -4,10 +4,10 @@ v0.6 made predictability the hero and labelled leverage "vs PLAN". That
 vs-plan leverage collapses to ~1.0x by construction once the estimate basis
 calibrates — which is exactly the predictability signal. Issue #65 adds a
 THIRD framing: leverage **vs a frozen REFERENCE** (`estimated_hours_reference`,
-written upstream by bmad-module-bcp). Its denominator is frozen, so it does
+written upstream by bmad-bcp-score). Its denominator is frozen, so it does
 NOT collapse — an honest, stable ROI number vs a fixed external benchmark.
 
-Like the rest of the BCP integration, PULSE stays passive and zero-coupled:
+Like the rest of the BCP feature, the tracking skills stay passive and zero-coupled:
 it only READS `estimated_hours_reference` (file convention) and divides. It
 never imports BCP, never reads the baseline, never converts BCP→hours, and
 never writes the story frontmatter.
@@ -23,7 +23,7 @@ REPO_ROOT = Path(__file__).parents[1]
 TRACK_START = REPO_ROOT / "skills/bmad-pulse-track-start/workflow.md"
 TRACK_DONE = REPO_ROOT / "skills/bmad-pulse-track-done/workflow.md"
 DASHBOARD = REPO_ROOT / "skills/bmad-pulse-dashboard/workflow.md"
-BCP_DOC = REPO_ROOT / "docs/integration/bcp.md"
+BCP_DOC = REPO_ROOT / "docs/bcp.md"
 
 FIELD = "estimated_hours_reference"
 METRIC = "leverage_vs_reference"

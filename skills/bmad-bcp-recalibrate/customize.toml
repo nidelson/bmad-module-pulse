@@ -1,0 +1,51 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Workflow customization surface for bmad-bcp-recalibrate. Mirrors the
+# BMad workflow customization shape under the [workflow] namespace.
+
+[workflow]
+
+# --- Configurable below. Overrides merge by the BMad structural rules: ---
+#   scalars: override wins • arrays (persistent_facts, activation_steps_*): append
+#   arrays-of-tables with `code`/`id`: replace matching items, append new ones.
+
+# Steps to run before the standard activation (baseline load, source resolution).
+# Overrides append. Use for pre-flight loads, compliance checks, etc.
+
+activation_steps_prepend = []
+
+# Steps to run after activation but before the recalibrate loop runs.
+# Overrides append. Use for context-heavy setup such as fetching extra
+# samples from an external system before the dry-run preview.
+
+activation_steps_append = []
+
+# Persistent facts the workflow keeps in mind for the whole run
+# (team-specific calibration policy, drift thresholds, audit rules).
+# Overrides append.
+#
+# Each entry is either:
+#   - a literal sentence, e.g. "Trate categorias com <3 samples como exploratórias."
+#   - a file reference prefixed with `file:`, e.g. "file:{project-root}/docs/recalibrate-policy.md"
+#     (glob patterns are supported; the file's contents are loaded and treated as facts).
+
+persistent_facts = []
+
+# Scalar: executed AFTER the recalibrate workflow has fully persisted
+# `bcp-baseline.yaml` (and NEVER before). Default empty = no-op. Override wins.
+#
+# Invariants:
+# - Hook runs AFTER persistence — `bcp-baseline.yaml` already reflects
+#   the new `h_per_bcp`, samples, and is_seed state.
+# - Hook MUST NOT mutate `bcp-baseline.yaml` (single-writer principle —
+#   only `recalibrate.py` writes the baseline).
+# - Error in hook is warn, not rollback — recalibrate already committed.
+#
+# To chain a downstream action (e.g. regenerate a PULSE dashboard, post a
+# Slack notification, write a custom audit row), override this in
+# `{project-root}/_bmad/custom/bmad-bcp-recalibrate.toml`:
+#
+#   [workflow]
+#   on_complete = "invoke the /bmad-pulse-dashboard skill (no arguments) to regenerate the cumulative dashboard reflecting the new baseline."
+
+on_complete = ""

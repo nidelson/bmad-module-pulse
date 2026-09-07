@@ -5,6 +5,144 @@ skip to the version you are migrating from.
 
 ---
 
+## Unreleased — the agent is Max: name, gender and icon (`💓` → `📐`)
+
+**Who this affects:** every install. **No action required**, and — unlike v0.9 —
+**nothing breaks**. No config key, skill folder, party-mode key or metric field
+changes. Only what the agent is called, the pronouns it uses about itself, and
+the icon it speaks behind.
+
+**What changed:**
+
+- **Maxine is retired; Max is the agent.** Same role, same identity, same
+  principles, same menu. The persona is masculine now (`he`/`him`).
+- **The icon is `📐`, replacing `💓`.** A set square: the ruler. It points at
+  what the module actually does — a canonical unit that makes estimates
+  comparable across teams — rather than at the pulse metaphor in the name.
+
+**Why this one was free.** v0.9 renamed `pulse_levi_verbosity` to
+`pulse_verbosity` *precisely so the next persona would cost nothing*. That work
+is what makes this release a cosmetic change instead of a breaking one: no
+consumer-facing key carries a persona name, so there is no key to rename and no
+fallback to read. A test (`test_config_keys_are_persona_free`) keeps it true for
+the persona after this one.
+
+**The party-mode roster migrates itself.** `register-party-agent.py` normally
+preserves editorial fields (`name`/`title`/`icon`/`description`) because teams
+edit them by hand. It makes one exception: a value that still matches *exactly*
+what an older release of the script wrote is our own past writing, not a
+customization, and gets refreshed.
+
+That list is **cumulative** — it now holds both `Levi` (pre-v0.9) and `Maxine`
+(v0.9). Installs sit at every past release at once, and the migration is decided
+by the value *your* project has on disk, so retiring a persona adds to the list
+and never replaces it. If you renamed the agent yourself, your name is preserved
+as always.
+
+- **`/bmad-party-mode` will list Max** after the next setup run. If it still
+  says Maxine or Levi, the entry in `_bmad/custom/config.toml` was hand-edited
+  at some point and is being preserved on purpose; re-run setup with `--force`
+  to overwrite it.
+
+**What deliberately still says Maxine:** this guide, the `CHANGELOG`, and the
+`bmad-pulse-agent-levi` folder name inside the cleanup scripts. The first two are
+the record of what happened; the third is a directory that still exists on
+upgrading installs and is only found by literal name. Rewriting any of them
+would either falsify history or silently break the cleanup.
+
+---
+
+## v0.9.1 — the track-done card celebrates something different on the `hours` path (issue #97)
+
+**Who this affects:** every install **not** using `pulse_estimation_method = "bcp"`
+— which is the default. No action required; nothing to configure. The data written
+to `pulse_metrics` is unchanged, including `estimate_error_pct`. Only the closing
+line of the terminal card changed.
+
+**What changed:** the celebration used to trigger on estimate accuracy on every
+path. It now does so only on `bcp`.
+
+| Path | Before | After |
+| --- | --- | --- |
+| `bcp` | `🎯 On-plan (estimate within 15%)` / `⚠ Off-plan` | unchanged |
+| `hours`, `story_points`, `tshirt` | same as `bcp` | `✅ Clean run — first-pass, no HALTs`, `✅ First-pass`, or `📊 Data recorded.` |
+
+**Why.** Accuracy is a property of the *team* only when the estimate comes from a
+comparable unit. Without a ruler, the estimator and the executor are the same
+agent, and a trophy for being on-plan rewards padding the estimate — the mirror
+image of the v0.6 problem, where a trophy for leverage magnitude rewarded
+inflating it. Both incentives act on the same variable, in opposite directions,
+so the honest move on that path is to celebrate what is *observed* instead:
+first-pass review, and a clean HALT count.
+
+The off-plan warning moved with it, for the same reason: "review the estimate
+basis" is advice about a ruler. Where the basis is a person's judgement, it reads
+as blame for a number nothing could have calibrated.
+
+**Two details:**
+
+- `bmad-pulse-track-backfill` branches identically, except its non-`bcp`
+  celebration checks first-pass **only**. That skill does not reconstruct halts,
+  so claiming "no HALTs" would assert data it deliberately refuses to invent.
+- The legacy `pulse_leverage_threshold_*` keys stay retired as celebration
+  triggers. The dashboard does band the hours-path leverage with them (#66), but
+  that is reporting, not a per-story trophy.
+
+---
+
+## v0.9 — the agent is Maxine, and two config keys lost the old name (issue #84)
+
+**Who this affects:** every install. The change is cosmetic at the surface and
+has exactly two mechanical edges — a config key rename and a roster entry.
+
+**What changed:**
+
+- **Levi is retired; Maxine is the agent.** Name, title, icon (`⚡` → `💓`),
+  role, identity and principles are new. The name came from _leverage_, which
+  the module stopped headlining unconditionally in #66 — an agent named after a
+  metric that is now one of two, chosen by configuration, was the wrong front
+  door.
+- **`pulse_levi_verbosity` → `pulse_verbosity`** and **`pulse_levi_coaching_mode`
+  → `pulse_coaching_mode`.** A consumer-facing key naming the persona is what
+  made a cosmetic swap into a breaking change; the keys are now persona-free so
+  the next one costs nothing.
+- **The party-mode roster entry is corrected in place.** `register-party-agent.py`
+  normally preserves editorial fields (`name`/`title`/`icon`/`description`)
+  because the team edits them by hand. It now makes one exception: a value that
+  still matches _exactly_ what an older release of the script wrote is not a
+  team edit, so it is refreshed. A name you chose yourself is still preserved.
+
+**What you have to do: nothing.**
+
+- **The keys keep working.** Every workflow reads the new name first and falls
+  back to the legacy one. Your existing `pulse_levi_verbosity` is still
+  honoured — rename it at your leisure. Without that fallback the setting would
+  stay in your config file, unread, and silently revert to the default: nothing
+  would look broken, the behaviour would just change.
+- **Nothing moves on disk.** The skill folder is still
+  `.claude/skills/bmad-agent-pulse/` and the party-mode key is still
+  `[agents.bmad-agent-pulse]` — a rename in v0.4.5 already decoupled the path
+  from the persona, so this swap does not touch either.
+- **`/bmad-party-mode` will list Maxine** after the next setup run. If it still
+  says Levi, the entry in `_bmad/custom/config.toml` was hand-edited at some
+  point and is being preserved on purpose; re-run setup with `--force` to
+  overwrite it.
+
+**⚠ One case to watch: re-running setup.** The fallback covers the upgrade
+path, where you update the module and change nothing else. If you *also* re-run
+`bmad-pulse-setup`, it prompts for `pulse_verbosity` as a new key and writes
+whatever you answer — including the default, if you accept it — and the new key
+then wins over your old `pulse_levi_verbosity`. The old key is never deleted
+(the writer upserts), so nothing is lost, but the effective value is the one you
+just answered. If you had it on `verbose`, say so at the prompt, or copy the
+value across afterwards.
+
+**One thing that deliberately did not change.** `canonicalId` in the agent
+manifest fragment stays `bmad-pulse-efficiency-analyst`. It is an identifier,
+not a label — churning it on a persona swap is how stable references break.
+
+---
+
 ## toml-first config — `config.toml` with per-key `config.yaml` fallback (issue #73)
 
 **Who this affects:** installs on post-#2285 BMAD, where the canonical config is
@@ -98,6 +236,61 @@ python3 .claude/skills/bmad-pulse-setup/scripts/reconcile-skills.py \
 ```
 
 ---
+
+## Unified BMAD architecture — auto-tracking moves to `bmad-build` (issue #83)
+
+**Symptom:** setup reported success, but no story ever gets `pulse_metrics`.
+Nothing errors — the dashboard is simply empty, and the gap is usually noticed
+weeks later.
+
+**Cause.** Recent BMAD merges story creation, implementation and review into a
+single `bmad-build` workflow, and keeps `bmad-dev-story` on disk as a
+deprecated shim. PULSE's capability probe checked that shim first, reported the
+old architecture, and the setup wrote its hooks into `_bmad/custom/bmad-dev-story.toml`
+and `_bmad/custom/bmad-code-review.toml` — workflows you no longer invoke. The
+gate passed, the summary claimed success, and auto-tracking never fired.
+
+**What changes.** The probe now checks `bmad-build/customize.toml` **first** and
+reports which skills to target in its payload:
+
+```bash
+python3 .claude/skills/bmad-pulse-setup/scripts/detect_bmad_capability.py --project-root .
+# {"capability": "bmad-build", "inject_targets": ["bmad-build"], ...}
+```
+
+| Architecture | `capability` | Override file(s) |
+|---|---|---|
+| Unified (`bmad-build` present) | `bmad-build` | `_bmad/custom/bmad-build.toml` — both hooks in one file |
+| Split (`bmad-dev-story` only) | `bmad-6.4.0+` | `_bmad/custom/bmad-dev-story.toml` + `_bmad/custom/bmad-code-review.toml` |
+
+One file suffices on the unified architecture because review runs in-process
+through `workflow.review_layers`, so `on_complete` is a genuine completion
+point rather than a premature one.
+
+### How to migrate
+
+Only needed if you are on the unified architecture and PULSE was set up before
+this fix. Check with the probe command above — if it prints `"bmad-build"` and
+`_bmad/custom/bmad-build.toml` does not exist, you were affected.
+
+```bash
+# 1. Pull the new PULSE version
+npx bmad-method install --custom-source https://github.com/nidelson/bmad-module-pulse
+
+# 2. Remove the inert overrides (back them up first if you customized the text)
+rm _bmad/custom/bmad-dev-story.toml _bmad/custom/bmad-code-review.toml
+
+# 3. Re-run setup — it now emits bmad-build.toml
+/bmad-pulse-setup
+```
+
+Stories completed while the hooks were inert have no `start_ts`. Recover them
+with `/bmad-pulse-track-backfill`; there is nothing to repair in the sprint
+status itself.
+
+> Keep `_bmad/custom/bmad-code-review.toml` **only** if you deliberately run
+> `/bmad-code-review` as a separate step. Having it alongside `bmad-build.toml`
+> records track-done twice for the same story.
 
 ## v0.7.x → v0.8.0 — Previsibilidade para precificar (forecast de projeto)
 

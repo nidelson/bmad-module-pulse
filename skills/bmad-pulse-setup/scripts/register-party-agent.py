@@ -3,7 +3,7 @@
 # requires-python = ">=3.11"
 # dependencies = ["tomlkit"]
 # ///
-"""Registra o agente PULSE (Levi) na tabela [agents] de _bmad/custom/config.toml.
+"""Registra o agente PULSE (Max) na tabela [agents] de _bmad/custom/config.toml.
 
 Party-mode (bmad-party-mode) monta o roster lendo a tabela [agents] via
 resolve_config.py, que faz deep-merge de _bmad/config.toml (base) com
@@ -11,8 +11,20 @@ _bmad/custom/config.toml (team). Os modulos OFICIAIS tem suas entradas
 [agents.*] escritas no config.toml base pelo installer do BMAD core; um modulo
 CUSTOM (como o PULSE) nao e escrito ali, entao seu agente nunca aparece no
 party-mode. Este script grava a entrada no layer custom (team, committed), que
-sobrevive a re-install. Idempotente / anti-zombie: reescreve a propria entrada
-a cada run e preserva comentarios e demais secoes (tomlkit round-trip).
+sobrevive a re-install. Idempotente: preserva comentarios e demais secoes
+(tomlkit round-trip).
+
+O custom/config.toml e um arquivo human-authored — o time comenta e edita as
+entradas ali. Por isso um re-run NAO reescreve o bloco inteiro: a entrada e
+atualizada in-place (mantendo sua posicao e os comentarios que a precedem) e so
+os campos estruturais (STRUCTURAL_FIELDS) sao regravados. Campos editoriais ja
+presentes (name/title/icon/description) sao preservados — use `--force` para
+restaura-los a partir do fragment.
+
+Excecao: um valor editorial identico ao que uma versao ANTERIOR deste script
+gravou nao e uma edicao do time — e a nossa propria escrita antiga. Preserva-lo
+seria carregar para sempre um nome que a skill nao usa mais. Ver
+LEGACY_FRAGMENT_VALUES.
 """
 import argparse
 import csv
@@ -27,6 +39,60 @@ except ModuleNotFoundError:
     sys.exit(2)
 
 DEFAULT_TEAM = "software-development"
+
+# Campos que o fragment e dono: identificam o registro e podem ser regravados a
+# cada run sem perda. Os demais (name/title/icon/description) sao editoriais —
+# o time os ajusta direto no config.toml, e um re-run nao deve achata-los.
+STRUCTURAL_FIELDS = ("module", "team")
+
+# Valores editoriais que versoes anteriores deste script gravaram. Se o campo no
+# config do time ainda casa EXATAMENTE com um destes, ninguem o editou: e a
+# nossa escrita antiga, e sobrescrever restaura a verdade em vez de destruir uma
+# customizacao. Qualquer outro valor e do time e continua preservado.
+#
+# Sem isso uma troca de persona nao chegaria a projetos ja instalados: `name` e
+# editorial, logo o re-run o preservaria, e o party-mode listaria a persona
+# antiga para sempre enquanto a skill se apresenta com a nova.
+#
+# A lista e CUMULATIVA — cada persona aposentada acrescenta seus valores, nunca
+# os substitui. Um projeto pode estar parado em qualquer release anterior, e o
+# que decide a migracao e o valor que ESTE projeto tem em disco, nao o da ultima
+# troca. Trocar em vez de acrescentar deixaria os instalados na v0.9 (Maxine)
+# presos ao nome antigo, exatamente o bug que esta tabela existe para evitar.
+#
+# Linhagem: Levi (ate v0.9) -> Maxine (v0.9) -> Max.
+LEGACY_FRAGMENT_VALUES = {
+    "name": ("Levi", "Maxine"),
+    "title": (
+        "Hyper-Efficiency Analyst & SDLC Optimizer",
+        # Maxine e Max compartilham o title: a troca foi de nome/genero/icone,
+        # nao de papel. Fica listado assim mesmo — se o time nunca editou, o
+        # valor casa com o atual e a regravacao e no-op.
+        "Delivery Predictability Analyst",
+    ),
+    "icon": ("⚡", "💓"),
+    "description": (
+        "Performance analyst obsessed with efficiency data. Background in "
+        "production engineering and analytics. Transforms numbers into "
+        "improvement narratives. Specialist in AI-assisted development metrics "
+        "and continuous SDLC optimization.",
+        # v0.9 (Maxine). O script deriva `description` da coluna `identity` do
+        # fragment, e essa identity nao tinha pronome — e byte-identica a do
+        # Max. Listada por completude: se um dia o texto mudar junto com a
+        # persona, a entrada ja esta no lugar certo para migrar instalados.
+        "Twenty-five years in engineering, most of them spent watching good "
+        "teams get blamed for systems nobody had measured. Reads a delivery "
+        "pipeline the way a nurse reads a chart: two numbers, taken the same "
+        "way every time, meaning nothing alone and everything in sequence. "
+        "Believes the confidence interval is the product, and that a team "
+        "which knows its own variance can charge for it.",
+    ),
+}
+
+
+def is_stale_default(field: str, value) -> bool:
+    """True quando o valor presente foi escrito por uma versao antiga daqui."""
+    return str(value).strip() in LEGACY_FRAGMENT_VALUES.get(field, ())
 
 
 def load_fragment(fragment_path: Path) -> dict | None:
@@ -50,7 +116,7 @@ def build_entry(row: dict) -> dict:
     return {
         "module": (row.get("module") or "pulse").strip(),
         "team": DEFAULT_TEAM,
-        "name": (row.get("displayName") or "Levi").strip(),
+        "name": (row.get("displayName") or "Max").strip(),
         "title": (row.get("title") or "").strip(),
         "icon": (row.get("icon") or "").strip(),
         "description": (row.get("identity") or row.get("role") or "").strip(),
@@ -61,6 +127,12 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Register the PULSE agent in _bmad/custom/config.toml [agents].")
     ap.add_argument("--project-root", required=True, help="Consumer project root")
     ap.add_argument("--fragment", required=True, help="Path to agent-manifest-fragment.csv")
+    ap.add_argument(
+        "--force",
+        action="store_true",
+        help="Tambem sobrescreve os campos editoriais (name/title/icon/description) "
+             "com os valores do fragment. Sem a flag, campos ja presentes sao preservados.",
+    )
     args = ap.parse_args()
 
     root = Path(args.project_root)
@@ -89,17 +161,43 @@ def main() -> None:
     if agents is None:
         agents = tomlkit.table(is_super_table=True)
         doc["agents"] = agents
-    if key in agents:
-        del agents[key]
 
-    tbl = tomlkit.table()
-    for k, v in entry.items():
-        tbl[k] = v
-    agents[key] = tbl
+    existing = agents.get(key)
+    if existing is None:
+        tbl = tomlkit.table()
+        for k, v in entry.items():
+            tbl[k] = v
+        agents[key] = tbl
+        action = "created"
+        written = dict(entry)
+        migrated = []
+    else:
+        # Atualiza in-place. Recriar a entrada (del + reatribuicao) a moveria
+        # para o fim de [agents], desgarrando os comentarios que a precedem no
+        # arquivo do time.
+        migrated = []
+        for k, v in entry.items():
+            stale = k in existing and is_stale_default(k, existing[k])
+            if args.force or k in STRUCTURAL_FIELDS or k not in existing or stale:
+                existing[k] = v
+                if stale and not args.force:
+                    migrated.append(k)
+        action = "forced" if args.force else ("migrated" if migrated else "updated")
+        written = {k: existing[k] for k in entry}
 
     custom.write_text(tomlkit.dumps(doc), encoding="utf-8")
     print(json.dumps(
-        {"status": "success", "agent_key": key, "custom_config_path": str(custom), "entry": entry},
+        {
+            "status": "success",
+            "action": action,
+            "agent_key": key,
+            "custom_config_path": str(custom),
+            # Campos que estavam com o valor default antigo e foram atualizados
+            # sem --force. Sai no payload para que o setup consiga dizer ao
+            # usuario o que mudou no arquivo do time dele.
+            "migrated_fields": migrated,
+            "entry": written,
+        },
         ensure_ascii=False,
     ))
 

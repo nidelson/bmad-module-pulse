@@ -8,10 +8,16 @@ test = [
     "pytest>=8.0",
     "pyyaml>=6.0",
     "tomlkit>=0.13",
+    # `bcp-frontmatter.schema.yaml` ships as a versioned contract; jsonschema is
+    # what makes it enforced rather than documentation with a .yaml extension.
+    "jsonschema>=4.0",
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+# `skills` is here because the BCP scoring scripts keep their tests next to the
+# code they exercise (`skills/bmad-bcp-score/scripts/tests/`). Without it those
+# 794 lines are collected by nothing and CI stays green having run none of them.
+testpaths = ["skills", "tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 addopts = "-ra --strict-markers"
