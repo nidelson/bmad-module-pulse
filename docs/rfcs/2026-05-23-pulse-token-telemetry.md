@@ -24,7 +24,7 @@ The current contract:
 
 - **Tool-agnostic core.** PULSE skills make no assumption about which AI assistant the developer used (Claude Code, Cursor, Cline, Aider, Copilot, plain ChatGPT). The metric works the same way regardless.
 - **Read-only on story frontmatter.** PULSE never writes to the story file; it only reads status/id and writes to its own `pulse_metrics:` block.
-- **Zero-coupling boundary with `bmad-module-bcp`.** PULSE may consume BCP data but never writes `bcp-baseline.yaml`.
+- **Zero-coupling boundary with BCP scoring.** PULSE may consume BCP data but never writes `bcp-baseline.yaml`. *(As written in 2026-05, scoring lived in a separate `bmad-module-bcp`; it has since been merged into this repository and archived — see §11.8.)*
 - **Deterministic auto-tracking** (post v0.4.10): trigger lives in `activation_steps_append` (executed), never in `persistent_facts` (passive). Pinned by `tests/test_auto_tracking_trigger.py`.
 
 The proposal under discussion is whether to add a **token-usage measurement** on top of time-based leverage.
@@ -183,7 +183,7 @@ Numbered for tracking. Each Party Mode output should reference these.
 - `tests/test_auto_tracking_trigger.py` — invariants pinned in v0.4.10 (model for what token-telemetry tests should look like).
 - `docs/MIGRATION.md` — v0.4.0 and v0.4.9 migration patterns.
 - `~/.claude/projects/-Users-nidelson-Projects-nidelson-sip/<session>.jsonl` — sample transcript with `usage` blocks (Phase 1 Architect reference).
-- `bmad-module-bcp` issue [#1](https://github.com/nidelson/bmad-module-bcp/issues/1) — BCP scope and Bruno's role (Bruno reference).
+- BCP scope and Bruno's role — scoring now ships in this repository (`bmad-bcp-score`); the standalone module that originally hosted it is archived. See §11.8.
 
 ---
 
@@ -337,3 +337,22 @@ variance; an LLM computing a dollar figure carries it into decisions.
 
 Treat #111 as a soft prerequisite for surfacing cost, independent of how §6 is
 decided.
+
+### 11.8. The BCP module referenced in §1 and §7 no longer exists standalone
+
+Written in 2026-05, this RFC named `bmad-module-bcp` as a separate repository —
+in the zero-coupling invariant (§1) and in the pre-reads (§7).
+
+Scoring has since been **merged into this repository** (`bmad-bcp-score`) and the
+standalone module archived. `tests/test_port_narrative.py` pins the consequence:
+naming the archived module as the owner of a field, or as a place to install
+from, *"sends the reader to a repository that has no skills left."*
+
+Both references above were rewritten to describe the capability rather than the
+dead repository. **The invariant itself is unchanged** — PULSE still consumes BCP
+data and still never writes `bcp-baseline.yaml`; only the owner's address moved.
+
+Worth noting for its own sake: the RFC did not rot on its own. A test caught it
+three and a half months later, on the first commit that touched the file. That
+is the gate this addendum argues for elsewhere (§11.7) — prose that names a
+moving part should be checked by something that runs.
