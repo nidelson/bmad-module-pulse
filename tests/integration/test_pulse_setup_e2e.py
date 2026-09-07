@@ -7,6 +7,7 @@ script contract (exit codes, paths, JSON outputs).
 from __future__ import annotations
 
 import hashlib
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -26,6 +27,49 @@ def run(*args: str) -> subprocess.CompletedProcess[str]:
         [sys.executable, *args],
         capture_output=True,
         text=True,
+    )
+
+
+@pytest.mark.integration
+def test_e2e_fresh_install_on_bmad_build(bmad_build_consumer: Path):
+    """Full setup chain on the unified architecture, driven by `inject_targets`.
+
+    The consumer keeps the deprecated `bmad-dev-story` shim on disk, so this
+    also proves the chain does not fall back to the split pair when both
+    layouts are present.
+    """
+    # 1. Capability gate — the payload, not just the exit code
+    detect = run(str(SCRIPTS / "detect_bmad_capability.py"),
+                 "--project-root", str(bmad_build_consumer))
+    assert detect.returncode == 0
+    payload = json.loads(detect.stdout)
+    assert payload["capability"] == "bmad-build"
+    assert payload["inject_targets"] == ["bmad-build"]
+
+    # 2. Cleanup legacy (no-op — no workflow.md on this architecture)
+    cleanup = run(str(SCRIPTS / "cleanup-legacy.py"),
+                  "--remove-pulse-markers",
+                  "--project-root", str(bmad_build_consumer))
+    assert cleanup.returncode == 0
+
+    # 3. Emit exactly the targets the probe named
+    for skill in payload["inject_targets"]:
+        emit = run(str(SCRIPTS / "inject_customize.py"),
+                   "--project-root", str(bmad_build_consumer),
+                   "--skill", skill)
+        assert emit.returncode == 0, emit.stderr
+
+    # 4. Golden snapshot match
+    out = bmad_build_consumer / "_bmad/custom/bmad-build.toml"
+    assert sha256(out) == sha256(GOLDEN / "customize-bmad-build.toml")
+
+    # 5. The split pair must NOT have been written
+    custom = bmad_build_consumer / "_bmad/custom"
+    assert not (custom / "bmad-dev-story.toml").exists(), (
+        "injecting into the deprecated shim is the bug this fixes"
+    )
+    assert not (custom / "bmad-code-review.toml").exists(), (
+        "review runs inside bmad-build; a second target double-records track-done"
     )
 
 

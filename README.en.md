@@ -38,7 +38,7 @@ Epic 14: ██████████████░░░░░░  6.9x (3 s
 Epic 15: ████████████████████  8.4x (1 story)
 ```
 
-📊 **[View full dashboard →](examples/dashboards/mature-bmad-team.md)** *(category breakdown, capacity forecast, Levi's insights, story-by-story breakdown)*
+📊 **[View full dashboard →](examples/dashboards/mature-bmad-team.md)** *(category breakdown, capacity forecast, Max's insights, story-by-story breakdown)*
 
 Browse [more dashboard scenarios](examples/dashboards/) for different team sizes and adoption stages.
 
@@ -64,7 +64,7 @@ PULSE measures that!
 
 - **A defensible predictability number for your SDLC** — how close your estimates land to reality, sprint over sprint, ready for your stakeholder deck. (Leverage too — but as the first-month signal, not the headline.)
 - **Early warning on stalled work** — capacity forecasts and halt alerts before a sprint slips.
-- **A coach, not just a dashboard** — Levi (PULSE's agent) reads your signals and tells you *where* the leverage is leaking.
+- **A coach, not just a dashboard** — Max (PULSE's agent) reads your signals and tells you *where* the leverage is leaking.
 
 ---
 
@@ -142,13 +142,45 @@ PULSE attaches to your existing BMAD story files — no schema migrations, no se
 | `bmad-pulse-track-backfill` | `/bmad-pulse-track-backfill [story_id] --hi <ts> --hf <ts>` | Retroactively record HI/HF + metrics for a story tracked too late |
 | `bmad-pulse-dashboard` | `/bmad-pulse-dashboard` | Generate cumulative dashboard |
 
+**BCP estimation — opt-in** (these only come into play with `pulse_estimation_method = "bcp"`):
+
+| Skill | Command | Function |
+|---|---|---|
+| `bmad-bcp-rule-card` | `/bmad-bcp-rule-card [element]` | Display the canonical ruler (10 elements × 5 sizes) |
+| `bmad-bcp-score` | `/bmad-bcp-score [story]` | Score a story and derive `estimated_hours` from the score |
+| `bmad-bcp-score-batch` | `/bmad-bcp-score-batch [glob]` | Score existing stories in batch (retroactive) |
+| `bmad-bcp-rescore` | `/bmad-bcp-rescore [story]` | Re-score after a scope change, preserving history |
+| `bmad-bcp-recalibrate` | `/bmad-bcp-recalibrate [story]` | Recalibrate the per-category baseline from real hours |
+| `bmad-bcp-backfill-baseline` | `/bmad-bcp-backfill-baseline [glob]` | Leave the cold start using already-delivered history |
+
 ---
 
-## Levi — your coach agent
+## BCP estimation — optional, and optional for real
 
-**Levi** is PULSE's Hyper-Efficiency Analyst. He reads your metrics and tells you, in plain English, where the squad is losing time: estimation drift, BMAD steps being skipped, agents being misused. He celebrates real wins, calls out drift, and suggests process fixes.
+PULSE was born measuring **leverage**: you estimated 10h, shipped in 1h, that's 10x. The number is real, but the denominator is a guess — and recalibrating a guess converges on nothing, because there is no comparable unit underneath it.
 
-He doesn't moralize. He points.
+Turning on **BCP** estimation (Business Complexity Points, a CI&T framework) swaps the guess for a canonical ruler: `10 BCP × 5h/BCP = 50h`. Now the estimate is comparable across teams and across time, and recalibration starts to mean something — what it reveals is the squad's **predictability**. That is the pulse PULSE is after.
+
+```toml
+# _bmad/config.toml — [modules.pulse]
+pulse_estimation_method = "bcp"     # default: "hours"
+```
+
+| Without BCP | With BCP |
+|---|---|
+| Estimate in hours, subjective | Estimate derived from a score against a ruler |
+| Hero metric: **leverage** (does not collapse — nothing recalibrates it) | Hero metric: **predictability** (leverage moves to the frozen denominator) |
+| No BCP sections in the dashboard | BCP productivity, `BCP × h/BCP ± CI 90%` forecast, baseline convergence |
+
+**`hours` stays the default, and nothing nudges you toward BCP.** A project without it renders a complete dashboard — no empty section, no warning that something is "missing". That is the product, not a degraded mode. Details, the frontmatter contract, and the internal boundary between scoring and measuring: **[docs/bcp.md](docs/bcp.md)**.
+
+---
+
+## Max — your coach agent
+
+**Max** is PULSE's Delivery Predictability Analyst. He reads your metrics and tells you, in plain English, where the squad is losing time: estimation drift, BMAD steps being skipped, agents being misused. He leads with whichever number the current configuration can honestly defend — leverage while estimates are in hours, predictability once a canonical ruler makes them comparable across teams.
+
+He measures the system, never the person. And he never gives you a number without the band around it.
 
 ---
 
@@ -167,7 +199,7 @@ PULSE instruments three points in the BMAD story lifecycle:
 | **≥ 3.0x** | Exceptional | AI is materially compressing your SDLC. Document the pattern, replicate it. |
 | **1.8x – 2.9x** | Solid | Healthy AI leverage. The norm for mature BMAD teams. |
 | **1.2x – 1.7x** | Caution | Marginal gain. Investigate where the AI is slowing down. |
-| **< 1.2x** | Warning | AI is not pulling its weight. Levi will surface the likely cause. |
+| **< 1.2x** | Warning | AI is not pulling its weight. Max will surface the likely cause. |
 
 ### Capabilities
 
@@ -176,7 +208,7 @@ PULSE instruments three points in the BMAD story lifecycle:
 - **Forecast** — capacity projection based on rolling leverage and team velocity.
 - **Audit** — process health checks for stories without estimates, halted work, missing artifacts.
 - **Alert** — halt detection when a story stalls beyond its estimate.
-- **Coach** — Levi reads the metrics and pinpoints bottlenecks in plain English.
+- **Coach** — Max reads the metrics and pinpoints bottlenecks in plain English.
 
 ### Halt categories — separating dev work from wait time
 
@@ -284,7 +316,7 @@ Every PULSE skill ships a `customize.toml` exposing the same override surface as
 - Arrays: append (base → team → user concatenate).
 - Arrays of tables with `code` or `id`: replace matching entries, append new ones.
 
-### Example 1 — give Levi a persistent fact
+### Example 1 — give Max a persistent fact
 
 `_bmad/custom/bmad-agent-pulse.toml`:
 
@@ -331,7 +363,7 @@ extra_sections = [
 ]
 ```
 
-### Example 5 — override Levi's "new record" cutoff
+### Example 5 — override Max's standout cutoff
 
 `_bmad/custom/bmad-agent-pulse.toml`:
 
@@ -362,7 +394,13 @@ That number isn't the ceiling. It's a data point. PULSE exists so your team can 
 - **v0.6 — Invert the speedometer.** The hero metric becomes convergence/accuracy (a stable ~1.0x is healthy; a high multiplier flags inflated estimates, not speed) plus self-referential `h/BCP` drift. Regime detection via `estimated_hours_basis`. Multipliers always read "vs PLAN", never "vs human".
 - **v0.7 — The action that matters.** A drift alert at estimation time — _"stories like X have missed by +N% over the last K — re-estimate?"_ — interrupting a bad estimate before it becomes a commitment.
 - **v0.8 — Predictability for pricing.** Project forecast `BCP × h/BCP ± CI(90%)` for teams that bill by the hour; per-developer/agent breakdowns and Slack/Linear digests fold in here.
+- **v0.9 — The ruler moves in.** BCP scoring becomes an opt-in feature of PULSE itself (the six `bmad-bcp-*` skills) instead of a separate module installed alongside it. Levi retires and **Max** takes over as Delivery Predictability Analyst.
 - **v1.0 — Pitch to BMAD core** for native adoption.
+
+> **Reading note.** The milestones up to v0.8 shipped while BCP scoring still
+> lived in a separate module, and the text above preserves that — it is the
+> record of what shipped when. From v0.9 on, everything they call "the BCP
+> module" lives here.
 
 > **Why the shift?** PULSE's own data showed leverage measures the *estimate's basis*, not the work — calibration drives any multiplier toward 1.0x by construction, so a leverage target literally rewards never calibrating. The durable signal is predictability: _did you ship what you promised, and can you prove it?_ The 10x→1x graph isn't the problem — it's the moat. (Token-usage telemetry is parked as a possible separate module.)
 

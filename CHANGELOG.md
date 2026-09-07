@@ -1,5 +1,84 @@
 # Changelog
 
+## [0.9.4](https://github.com/nidelson/bmad-module-pulse/compare/v0.9.3...v0.9.4) (2026-09-07)
+
+
+### Bug Fixes
+
+* **setup:** close the measurement after review, not at the end of dev ([#109](https://github.com/nidelson/bmad-module-pulse/issues/109)) ([df9ee37](https://github.com/nidelson/bmad-module-pulse/commit/df9ee374e6f47d3a5405b93c6015998a06914f64))
+
+## [0.9.3](https://github.com/nidelson/bmad-module-pulse/compare/v0.9.2...v0.9.3) (2026-09-07)
+
+
+### Features
+
+* **agent:** rename the persona to Max, masculine, with a set-square icon ([#107](https://github.com/nidelson/bmad-module-pulse/issues/107)) ([85c36d5](https://github.com/nidelson/bmad-module-pulse/commit/85c36d5cab5c1bb23a597796d67409571c7cbe28))
+* **setup:** measure the unattended route (bmad-build-auto) ([#108](https://github.com/nidelson/bmad-module-pulse/issues/108)) ([f370c37](https://github.com/nidelson/bmad-module-pulse/commit/f370c378435c5192b689a6ccde1dcebd0621008d))
+
+
+### Documentation
+
+* **setup:** add harness as a first-class dev category ([#105](https://github.com/nidelson/bmad-module-pulse/issues/105)) ([ef2de7b](https://github.com/nidelson/bmad-module-pulse/commit/ef2de7b8db42f2ae30515bd3d79a107773f41069))
+
+## [0.9.2](https://github.com/nidelson/bmad-module-pulse/compare/v0.9.1...v0.9.2) (2026-08-16)
+
+
+### Bug Fixes
+
+* **templates:** add one-shot route to skip guard ([#104](https://github.com/nidelson/bmad-module-pulse/issues/104)) ([152fbba](https://github.com/nidelson/bmad-module-pulse/commit/152fbbafcece86ec969cd0d12f87ca631745c9e3))
+* **templates:** remove invalid placeholder and widen skip guard in bmad-build hooks ([#102](https://github.com/nidelson/bmad-module-pulse/issues/102)) ([8bc2689](https://github.com/nidelson/bmad-module-pulse/commit/8bc268991f6ba16827c133001effcf8879ab5055))
+
+## [0.9.1](https://github.com/nidelson/bmad-module-pulse/compare/v0.9.0...v0.9.1) (2026-08-09)
+
+
+### Bug Fixes
+
+* **track-done:** stop celebrating estimate accuracy where accuracy measures the estimator ([#99](https://github.com/nidelson/bmad-module-pulse/issues/99)) ([ce1d7bc](https://github.com/nidelson/bmad-module-pulse/commit/ce1d7bc09387098748d7cee37c866bed1d103c3f))
+
+## [0.9.0](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.7...v0.9.0) (2026-08-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* **agent:** retire Levi, install Maxine as the Delivery Predictability Analyst ([#95](https://github.com/nidelson/bmad-module-pulse/issues/95))
+
+### Features
+
+* **agent:** retire Levi, install Maxine as the Delivery Predictability Analyst ([#95](https://github.com/nidelson/bmad-module-pulse/issues/95)) ([eda48b0](https://github.com/nidelson/bmad-module-pulse/commit/eda48b0b4c607822bfc7088957de614fb1309bb5))
+* **bcp:** author the track-done to recalibrate sequence as one file ([#90](https://github.com/nidelson/bmad-module-pulse/issues/90)) ([1893c48](https://github.com/nidelson/bmad-module-pulse/commit/1893c483fbeb1f8fc2b284eb7d90593e099d5b53)), closes [#84](https://github.com/nidelson/bmad-module-pulse/issues/84)
+* **bcp:** complete the port — baseline seeding and the orphaned coverage ([#92](https://github.com/nidelson/bmad-module-pulse/issues/92)) ([e88ebf5](https://github.com/nidelson/bmad-module-pulse/commit/e88ebf50d9c2ccee96d226c0dbea2955ffaf099d)), closes [#84](https://github.com/nidelson/bmad-module-pulse/issues/84)
+* **bcp:** port the calibration cycle ([#89](https://github.com/nidelson/bmad-module-pulse/issues/89)) ([2cf2afa](https://github.com/nidelson/bmad-module-pulse/commit/2cf2afa710e28d924898198f18a637cd583057f7)), closes [#84](https://github.com/nidelson/bmad-module-pulse/issues/84)
+* **bcp:** port the canonical ruler and lock it against silent drift ([#87](https://github.com/nidelson/bmad-module-pulse/issues/87)) ([1bc598d](https://github.com/nidelson/bmad-module-pulse/commit/1bc598d54b0db523755993013b6d7f97b0a547b8)), closes [#84](https://github.com/nidelson/bmad-module-pulse/issues/84)
+* **bcp:** port the scoring engine and its 794 lines of tests ([#88](https://github.com/nidelson/bmad-module-pulse/issues/88)) ([d864913](https://github.com/nidelson/bmad-module-pulse/commit/d864913480fce1836be6cbd0166d07ad39170fe4)), closes [#84](https://github.com/nidelson/bmad-module-pulse/issues/84)
+* **dashboard:** pick the leverage metric by estimation_method, not by field presence ([#94](https://github.com/nidelson/bmad-module-pulse/issues/94)) ([9b47867](https://github.com/nidelson/bmad-module-pulse/commit/9b4786706e11b7c62ee13c468c763dc2ab3bb730))
+
+
+### Bug Fixes
+
+* **bcp:** give the bcp_* settings a home that survives BCP's removal ([#91](https://github.com/nidelson/bmad-module-pulse/issues/91)) ([b26bbef](https://github.com/nidelson/bmad-module-pulse/commit/b26bbef1b6839fe5131cd0e554c1d4a171761a2e))
+* **bcp:** restore the scoring trigger the port dropped ([#93](https://github.com/nidelson/bmad-module-pulse/issues/93)) ([13e47f8](https://github.com/nidelson/bmad-module-pulse/commit/13e47f8c66f4fdd6bae85da132ac39e16cc5a41f))
+* **setup:** detect bmad-build and inject the hooks the user actually runs ([#85](https://github.com/nidelson/bmad-module-pulse/issues/85)) ([51b690b](https://github.com/nidelson/bmad-module-pulse/commit/51b690bc1d52b142f48c840e33f68624e9a797cc)), closes [#83](https://github.com/nidelson/bmad-module-pulse/issues/83)
+* **tests:** scope the narrative guard to this checkout, and prove it reads something ([#98](https://github.com/nidelson/bmad-module-pulse/issues/98)) ([4095424](https://github.com/nidelson/bmad-module-pulse/commit/40954243f99578db087649a9f43f488e27792f22))
+
+
+### Documentation
+
+* **bcp:** tell the reader where scoring actually lives ([#96](https://github.com/nidelson/bmad-module-pulse/issues/96)) ([59c098e](https://github.com/nidelson/bmad-module-pulse/commit/59c098edaa729cb71f612a2bc5aad10a9ad6505b))
+
+## [0.8.7](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.6...v0.8.7) (2026-07-29)
+
+
+### Bug Fixes
+
+* **setup:** stop register-party-agent from flattening local edits on re-run ([#81](https://github.com/nidelson/bmad-module-pulse/issues/81)) ([8abe71f](https://github.com/nidelson/bmad-module-pulse/commit/8abe71fb9bb4508060b420788568cf8529372357))
+
+## [0.8.6](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.5...v0.8.6) (2026-07-25)
+
+
+### Bug Fixes
+
+* **dashboard,track-done:** divide h/BCP and the implied reference rate by the story's final BCP ([#79](https://github.com/nidelson/bmad-module-pulse/issues/79)) ([d2da6bf](https://github.com/nidelson/bmad-module-pulse/commit/d2da6bf35fc88b3685b923d732aa97d585692c3f))
+
 ## [0.8.5](https://github.com/nidelson/bmad-module-pulse/compare/v0.8.4...v0.8.5) (2026-07-18)
 
 

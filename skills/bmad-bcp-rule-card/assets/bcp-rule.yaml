@@ -1,0 +1,160 @@
+# =============================================================================
+#  Business Complexity Points (BCP) — Canonical Rule
+# =============================================================================
+#  Business Complexity Points (BCP) is a software complexity normalization
+#  framework created by CI&T (www.ciandt.com) in 2015, adopted by Itau
+#  Unibanco in 2018, and released as open source under the MIT License in
+#  May 2026: https://github.com/flow-ciandt/bcp-agent
+#
+#  Source: https://github.com/flow-ciandt/bcp-agent
+#  Institutional page: https://ciandt.com/us/en-us/complexitypoints
+#  Canonical ruler image: https://dmwnh9nwzeoaa.cloudfront.net/2020-12/bcp-ruler.png
+#
+#  DO NOT EDIT the `elements`, `sizes`, `definition`, `descriptor` or `points`
+#  content below. Under MIT this is no longer a legal constraint (it was, under
+#  the previous CC BY-NC-ND publication) — it is a design decision of this
+#  module: a BCP score is only comparable across teams when the ruler is the
+#  same. Diverging is allowed, but requires bumping `rule_version` and accepting
+#  that the resulting scores are not comparable with other installations.
+#  Only the editorial `hints` block (NOT part of the CI&T rule) is authored here.
+#  Both the bmad-module-bcp code and this embedded rule are MIT.
+# =============================================================================
+
+schema_version: "1.0"
+rule_version: "1.0"
+
+license:
+  name: "MIT License"
+  spdx: "MIT"
+  url: "https://github.com/flow-ciandt/bcp-agent/blob/main/LICENSE"
+  attribution: >-
+    Business Complexity Points (BCP) is a software complexity normalization
+    framework created by CI&T (www.ciandt.com), released as open source under
+    the MIT License. Copyright (c) 2025 CI&T HyperX.
+  creator: "CI&T"
+  source: "https://github.com/flow-ciandt/bcp-agent"
+  # Publicacao anterior (ate maio/2026): CC BY-NC-ND 4.0 via
+  # https://ciandt.com/us/en-us/complexitypoints — ver ATTRIBUTION.md
+  previous_license: "CC-BY-NC-ND-4.0"
+
+# Fibonacci point scale per size (verbatim from the canonical ruler header).
+sizes:
+  XS: 1
+  S: 2
+  M: 3
+  L: 5
+  XL: 8
+
+# 10 complexity elements × 5 sizes. `descriptor: null` means the canonical
+# ruler leaves that cell blank. `always_there: true` marks the four elements
+# the ruler brackets under "ALWAYS THERE".
+elements:
+  - name: "Business Rules"
+    slug: business_rules
+    always_there: false
+    definition: "Any kind of business instruction with clear trigger and interruption points."
+    descriptors:
+      XS: "Direct instructions, simple formulas or validations"
+      S: "Iterative processes with few phases/steps and no decision points"
+      M: "Iterative processes with few phases/steps and few decision points"
+      L: null
+      XL: "Iterative processes with many phases/steps and/or many decision points"
+
+  - name: "Interface Elements"
+    slug: interface_elements
+    always_there: false
+    definition: "Interface elements that represent business concepts."
+    descriptors:
+      XS: null
+      S: "Add and/or Remove up to 5 static interface elements in an existing business context"
+      M: "Add and/or Remove up to 5 static interface elements in a new business context"
+      L: "Add and/or Remove up to 5 dynamic interface elements in an existing business context"
+      XL: "Add and/or Remove up to 5 dynamic interface elements in an new business context"
+
+  - name: "Roles/Permissions"
+    slug: roles_permissions
+    always_there: true
+    definition: "Number of different permission sets specified by the Backlog Item for existing roles in the application."
+    descriptors:
+      XS: "Same permissions for all users"
+      S: "Permission sets in the same depth level"
+      M: "Permission sets encompassing two or more depth levels"
+      L: null
+      XL: null
+
+  - name: "Solution Variabilities"
+    slug: solution_variabilities
+    always_there: true
+    definition: "Solutions accomplishing the same business objective that may vary influenced by a parameter."
+    descriptors:
+      XS: "Single solution for the business flow"
+      S: null
+      M: "Common solution with small changes of behavior according to a parameter"
+      L: null
+      XL: "Solution varies significantly according to a parameter"
+
+  - name: "Boundaries"
+    slug: boundaries
+    always_there: true
+    definition: "Amount of business relevant entities involved in a Backlog Item domain"
+    descriptors:
+      XS: "DB and/or UI or do not cross boundaries (selfcontained)"
+      S: "Reading, writing, exchanging information with a physical device"
+      M: "Remote Business Services exchanging perennial information"
+      L: null
+      XL: "Remote Business Service with ethereal exchange information"
+
+  - name: "Domain Entities"
+    slug: domain_entities
+    always_there: true
+    definition: "Number of Entities incorporated into the business domain or modified by the Backlog Item."
+    descriptors:
+      XS: "1"
+      S: "2 or 3"
+      M: "4 or 5"
+      L: "6 or 7"
+      XL: "more than 7"
+
+  - name: "New Domain Entities"
+    slug: new_domain_entities
+    always_there: false
+    definition: "Interactions that a Backlog Item has to  sources/destinations affected by ownership, validity and the durability of the information exchanged."
+    descriptors:
+      XS: null
+      S: "Add new attributes or relationships for up to 3 existing entities"
+      M: null
+      L: "Add to business context up to 3 new entities"
+      XL: null
+
+  - name: "Background Processes"
+    slug: background_processes
+    always_there: false
+    definition: "Stealth processes that do not prevent the use of the system during its execution."
+    descriptors:
+      XS: null
+      S: "Process triggered by a system event"
+      M: "Scheduled process"
+      L: "Scheduled process triggered manually"
+      XL: "External independent process"
+
+  - name: "Notifications"
+    slug: notifications
+    always_there: false
+    definition: "Any kind of notification requirement in a Backlog Item."
+    descriptors:
+      XS: "Sending a software or hardware notification as outcome of an event"
+      S: null
+      M: null
+      L: null
+      XL: null
+
+  - name: "Audits"
+    slug: audits
+    always_there: false
+    definition: "Information trail for business manipulations on Domain Entities."
+    descriptors:
+      XS: "Audit trail for 1 entity"
+      S: null
+      M: null
+      L: null
+      XL: null

@@ -8,7 +8,7 @@ description: >-
   Metrics module that calculates AI Leverage Ratio, first-pass rate, and process
   health per story. Generates cumulative dashboards with trends and capacity
   forecasts.
-module_version: 0.8.5
+module_version: 0.9.4
 default_selected: false
 module_greeting: >
   PULSE installed successfully! Against facts, there are no arguments.
@@ -30,8 +30,8 @@ pulse_estimation_method:
       label: T-Shirt Sizes (S/M/L/XL — normalized automatically)
     - value: bcp
       label: >-
-        Business Complexity Points (estimated_hours derived upstream by
-        bmad-module-bcp — PULSE stays passive)
+        Business Complexity Points (estimated_hours derived from a complexity
+        score by the bmad-bcp-* skills, in this module)
 pulse_story_point_hours_factor:
   prompt: How many hours on average equal 1 story point in your team?
   default: '4.0'
@@ -78,6 +78,8 @@ pulse_dev_categories:
       label: 'Standard 3: backend / frontend / mobile'
     - value: data_heavy
       label: 'Data Heavy: backend / data-eng / ml / frontend'
+    - value: standard_5_harness
+      label: 'Standard 5: backend / web / mobile / fullstack / harness'
     - value: custom
       label: Custom (specify comma-separated list)
 pulse_default_category:
@@ -184,8 +186,8 @@ pulse_auto_dashboard:
       label: >-
         Yes — auto-regenerate after every track-done (best for solo / serial
         workflows)
-pulse_levi_verbosity:
-  prompt: Level of detail in Levi's responses?
+pulse_verbosity:
+  prompt: Level of detail in the agent's responses?
   default: standard
   result: '{value}'
   single-select:
@@ -195,8 +197,8 @@ pulse_levi_verbosity:
       label: Standard — metrics + insights + recommendations (Recommended)
     - value: verbose
       label: Verbose — full analysis with educational context
-pulse_levi_coaching_mode:
-  prompt: Should Levi proactively suggest process improvements?
+pulse_coaching_mode:
+  prompt: Should the agent proactively suggest process improvements?
   default: 'yes'
   result: '{value}'
   single-select:

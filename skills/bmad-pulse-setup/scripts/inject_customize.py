@@ -15,15 +15,64 @@ import sys
 from pathlib import Path
 
 TEMPLATES_DIR = Path(__file__).parent.parent / "assets/customize-templates"
-SUPPORTED_SKILLS = {"bmad-dev-story", "bmad-code-review"}
+# `bmad-build` is the unified architecture's single target; the other two are the
+# split architecture's pair. Which set applies comes from `detect_bmad_capability.py`
+# (`inject_targets` in its payload) — never assume, the deprecated `bmad-dev-story`
+# shim survives on disk next to `bmad-build`.
+SUPPORTED_SKILLS = {
+    "bmad-build", "bmad-build-auto", "bmad-dev-story", "bmad-code-review",
+    "bmad-create-story",
+}
+
+# Skills whose template has a BCP variant. Three different reasons:
+#
+# `bmad-build` and `bmad-code-review` own `on_complete`, which recalibration
+# extends. Their variant REPLACES the plain template at the same destination —
+# the two are alternatives, never both, so a project with scoring disabled never
+# receives the recalibrate instruction at all, not even as text that checks and
+# skips. `bmad-dev-story` carries track-start, which recalibration does not
+# extend, so it has no variant.
+#
+# `bmad-build-auto` is the unattended counterpart of `bmad-build` and carries
+# BOTH halves on its variant: recalibrate on `on_complete`, and — unique to this
+# route — the *scoring* trigger itself. On the interactive route scoring lives in
+# `bmad-create-story`, but an orchestrator-driven run may never call that skill:
+# the loop dispatches build-auto against a story id, and the spec is written by
+# step-02 of the very same workflow. The a-priori window is therefore the end of
+# step-02, before step-03 implements.
+#
+# `bmad-create-story` is the scoring trigger and has NO plain template: PULSE has
+# nothing to say to story authoring unless scoring is on. See BCP_ONLY_SKILLS.
+BCP_VARIANT_SKILLS = {
+    "bmad-build", "bmad-build-auto", "bmad-code-review", "bmad-create-story",
+}
+
+# Skills that exist ONLY as a BCP variant. Emitting one without `--with-bcp` is
+# an error rather than a fallback, because the fallback would be a missing-file
+# traceback for a file that is absent on purpose.
+BCP_ONLY_SKILLS = {"bmad-create-story"}
 
 EXIT_OK = 0
 EXIT_BAD_ARGS = 2
 EXIT_CONFLICT = 3
 
 
-def emit(project_root: Path, skill: str, force: bool) -> int:
-    template = TEMPLATES_DIR / f"{skill}.toml"
+def emit(project_root: Path, skill: str, force: bool, with_bcp: bool = False) -> int:
+    if with_bcp and skill not in BCP_VARIANT_SKILLS:
+        sys.stderr.write(
+            f"error: --with-bcp is not valid for skill '{skill}'. "
+            f"Only {sorted(BCP_VARIANT_SKILLS)} have a BCP variant.\n"
+        )
+        return EXIT_BAD_ARGS
+    if skill in BCP_ONLY_SKILLS and not with_bcp:
+        sys.stderr.write(
+            f"error: '{skill}' has no plain template — it exists only to trigger "
+            f"BCP scoring. Re-run with --with-bcp, or skip it entirely when "
+            f"pulse_estimation_method is not 'bcp'.\n"
+        )
+        return EXIT_BAD_ARGS
+    suffix = ".bcp.toml" if with_bcp else ".toml"
+    template = TEMPLATES_DIR / f"{skill}{suffix}"
     if not template.exists():
         sys.stderr.write(f"error: template missing for skill '{skill}': {template}\n")
         return EXIT_BAD_ARGS
@@ -47,8 +96,11 @@ def main() -> int:
     parser.add_argument("--skill", choices=sorted(SUPPORTED_SKILLS), required=True)
     parser.add_argument("--force", action="store_true",
                         help="overwrite an existing destination file")
+    parser.add_argument("--with-bcp", action="store_true",
+                        help="emit the variant that chains BCP recalibrate after "
+                             "track-done; only when pulse_estimation_method is 'bcp'")
     args = parser.parse_args()
-    return emit(args.project_root, args.skill, args.force)
+    return emit(args.project_root, args.skill, args.force, args.with_bcp)
 
 
 if __name__ == "__main__":

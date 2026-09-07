@@ -1,0 +1,56 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Workflow customization surface for bmad-bcp-rule-card. Mirrors the
+# BMad workflow customization shape under the [workflow] namespace.
+
+[workflow]
+
+# --- Configurable below. Overrides merge by the BMad structural rules: ---
+#   scalars: override wins • arrays (persistent_facts, activation_steps_*): append
+#   arrays-of-tables with `code`/`id`: replace matching items, append new ones.
+
+# Steps to run before the standard activation (rule load, filter argument).
+# Overrides append. Use for pre-flight loads, compliance checks, etc.
+
+activation_steps_prepend = []
+
+# Steps to run after activation but before the rule card is rendered.
+# Overrides append. Use for context-heavy setup such as pre-loading a
+# team glossary that should accompany the card.
+
+activation_steps_append = []
+
+# Persistent facts the workflow keeps in mind for the whole run
+# (display preferences, team-specific notes to append to the card).
+# Overrides append.
+#
+# Each entry is either:
+#   - a literal sentence, e.g. "Always remind the team: `domain-rules-heavy` != `boundary-heavy`."
+#   - a file reference prefixed with `file:`, e.g. "file:{project-root}/docs/rule-card-notes.md"
+#     (glob patterns are supported; the file's contents are loaded and treated as facts).
+
+persistent_facts = []
+
+# Scalar: executed AFTER the rule card has been rendered to the user
+# (and NEVER before). Default empty = no-op. Override wins.
+#
+# Note: this skill is read-only — there is no primary artifact persisted
+# to disk. The hook runs **after display**, not after persistence. Use
+# it to offer follow-up actions, surface related skills, or log the
+# consultation to an external system.
+#
+# Invariants:
+# - Hook runs AFTER the card is rendered.
+# - Hook MUST NOT modify `assets/bcp-rule.yaml` — immutable by design decision.
+#   Not a licence constraint: the rule is MIT and legally modifiable. What the
+#   immutability is load-bearing for is cross-team score comparability, which is
+#   the only property that makes a BCP score meaningful outside the team that
+#   produced it. `tests/test_bcp_rule_immutability.py` enforces the version bump.
+# - Error in hook is warn — the card was already displayed.
+#
+# Override in `{project-root}/_bmad/custom/bmad-bcp-rule-card.toml`:
+#
+#   [workflow]
+#   on_complete = "after rendering the card, offer the user the option to start a scoring session by invoking /bmad-bcp-score."
+
+on_complete = ""

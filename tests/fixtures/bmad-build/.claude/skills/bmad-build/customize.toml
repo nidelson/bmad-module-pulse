@@ -1,0 +1,6 @@
+# Fixture: unified bmad-build architecture (BMAD >=6.10).
+[workflow]
+activation_steps_prepend = []
+activation_steps_append = []
+persistent_facts = []
+on_complete = ""

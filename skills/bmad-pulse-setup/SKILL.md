@@ -75,7 +75,7 @@ Ask the user for values. Show defaults in brackets. Present all values together 
 
 **Validation rules:**
 - If `pulse_estimation_method` = `story_points` and `pulse_story_point_hours_factor` has not been set, warn before continuing
-- If `pulse_estimation_method` = `bcp`: do **not** require `pulse_story_point_hours_factor` (no factor applies — `estimated_hours` is derived upstream by [`bmad-module-bcp`](https://github.com/nidelson/bmad-module-bcp), not converted by PULSE). The value is semantic-only: it tells PULSE the upstream hours came from BCP so the dashboard surfaces the BCP Productivity section. Inform the user that the companion `bmad-module-bcp` module must be installed for `estimated_hours` to be BCP-derived; PULSE itself stays passive if it is not.
+- If `pulse_estimation_method` = `bcp`: do **not** require `pulse_story_point_hours_factor` (no factor applies — `estimated_hours` comes from a complexity score times the category baseline, not from converting a point value). Scoring lives in this module, in the `bmad-bcp-*` skills, so no companion install is required. Two further setup steps apply and are described below: the `--with-bcp` customize variant, and giving the `bcp_*` settings a home.
 - If `pulse_dev_categories` = `custom`, request a comma-separated list
 
 ## Write Files
@@ -97,9 +97,9 @@ Run `uv run ./scripts/merge-config.py --help` or `./scripts/merge-help-csv.py --
 
 ## Register Agent in Party Mode Roster
 
-After writing config and help CSV, register the Levi agent so it joins the Party Mode roster and other agent-aware features.
+After writing config and help CSV, register the PULSE agent (Max) so it joins the Party Mode roster and other agent-aware features.
 
-Party Mode builds its roster from the `[agents]` table resolved by `resolve_config.py` — a deep-merge of `{project-root}/_bmad/config.toml` (base) and `{project-root}/_bmad/custom/config.toml` (team). Official modules get their `[agents.*]` entries written into the base `config.toml` by the BMAD core installer, but a **custom module** like PULSE is never written there — so without this step Levi is installed as a skill yet stays invisible to Party Mode (`/bmad-party-mode` never lists him). Register him in the team-owned `custom/config.toml` layer, which survives re-install:
+Party Mode builds its roster from the `[agents]` table resolved by `resolve_config.py` — a deep-merge of `{project-root}/_bmad/config.toml` (base) and `{project-root}/_bmad/custom/config.toml` (team). Official modules get their `[agents.*]` entries written into the base `config.toml` by the BMAD core installer, but a **custom module** like PULSE is never written there — so without this step the agent is installed as a skill yet stays invisible to Party Mode (`/bmad-party-mode` never lists him). Register him in the team-owned `custom/config.toml` layer, which survives re-install:
 
 ```bash
 uv run ./scripts/register-party-agent.py --project-root "{project-root}" --fragment ./assets/agent-manifest-fragment.csv
@@ -107,7 +107,9 @@ uv run ./scripts/register-party-agent.py --project-root "{project-root}" --fragm
 
 The script upserts `[agents.bmad-agent-pulse]` (anti-zombie, idempotent) from the `agent-manifest-fragment.csv` values, preserving existing comments and sections (tomlkit round-trip). It runs via `uv run` for its PEP 723 `tomlkit` dependency. Check `agent_key` and `custom_config_path` in the JSON output.
 
-If successful, inform the user: "Agent Levi registered in the Party Mode roster (`_bmad/custom/config.toml` -> `[agents.bmad-agent-pulse]`) — run `/bmad-party-mode` to see him. To spotlight him, add a curated party group (e.g. a delivery/retro room) to `_bmad/custom/bmad-party-mode.toml`."
+If successful, inform the user: "Agent Max registered in the Party Mode roster (`_bmad/custom/config.toml` -> `[agents.bmad-agent-pulse]`) — run `/bmad-party-mode` to see him. To spotlight him, add a curated party group (e.g. a delivery/retro room) to `_bmad/custom/bmad-party-mode.toml`."
+
+When the script reports `"action": "migrated"`, also tell the user which fields it corrected and why: `migrated_fields` lists entries that still held a value a previous release of PULSE wrote (e.g. the retired name `Levi`), so refreshing them restores the truth rather than overwriting a choice they made.
 
 ### Legacy `agent-manifest.csv` (optional, compat)
 
@@ -149,15 +151,29 @@ Run the capability detector first:
 python3 ./scripts/detect_bmad_capability.py --project-root "{project-root}"
 ```
 
-The script exits 0 (BMAD ≥6.4.0), 1 (BMAD ≤6.3.x), or 2 (BMAD not installed)
-and prints a JSON payload to stdout describing the detection.
+The script exits 0 (BMAD supports TOML customization), 1 (BMAD ≤6.3.x), or 2
+(BMAD not installed) and prints a JSON payload to stdout describing the
+detection.
 
-- **Exit 0** — proceed with override emission below.
+- **Exit 0** — proceed with override emission below. **Read `capability` and
+  `inject_targets` from the payload — do not assume the targets.** Exit 0
+  covers two different architectures:
+  - `"capability": "bmad-build"` — unified architecture, `inject_targets` is
+    `["bmad-build"]`
+  - `"capability": "bmad-6.4.0+"` — split architecture, `inject_targets` is
+    `["bmad-dev-story", "bmad-code-review"]`
 - **Exit 1** — abort with this message: "PULSE v0.4.0 requires BMAD ≥6.4.0.
   Detected BMAD ≤6.3.x. Either upgrade BMAD (`npx bmad-method install`) or
   pin to PULSE v0.3.x via `--version`."
 - **Exit 2** — abort: "BMAD is not installed in this project root. Run
   `npx bmad-method install` first, then re-run `/bmad-pulse-setup`."
+
+> **Why the payload and not the exit code.** BMAD keeps `bmad-dev-story` on
+> disk as a deprecated shim after the unified architecture lands, so both
+> layouts look alike from the exit code alone. Injecting the split pair on a
+> `bmad-build` project writes the hooks into workflows the user never invokes:
+> the gate passes, this skill reports success, and auto-tracking never fires.
+> The absence of `pulse_metrics` weeks later is the only symptom.
 
 ### Cleanup Legacy Markers
 
@@ -178,7 +194,7 @@ the file is absent — this is the common case on fresh BMAD 6.4.0 installs and 
 a failure). A non-zero exit indicates `--project-root` is missing or the file system
 is broken; surface the error and stop.
 
-### Cleanup Legacy Levi Agent Folder
+### Cleanup Legacy `bmad-pulse-agent-levi/` Folder
 
 Pre-v0.4.5 PULSE distributed its own `bmad-pulse-agent-levi/` skill folder
 in parallel with the canonical `bmad-agent-pulse/` folder auto-provisioned
@@ -204,10 +220,24 @@ surface the error and stop.
 
 ### Emit Override Files
 
-Emit the two override files. The conflict policy is **abort + `--force`**:
-if either destination already exists, the script exits 3 and the file is
-left untouched (sha256-stable). The user can re-run with `--force` after
-inspecting the conflict.
+Emit one override file per entry in `inject_targets` from the capability gate
+above — one file on the unified architecture, two on the split one. The
+conflict policy is **abort + `--force`**: if a destination already exists, the
+script exits 3 and the file is left untouched (sha256-stable). The user can
+re-run with `--force` after inspecting the conflict.
+
+**Unified architecture** (`"capability": "bmad-build"`) — a single file carries
+both hooks, because implementation and review run in one workflow:
+
+```bash
+python3 ./scripts/inject_customize.py \
+    --project-root "{project-root}" \
+    --skill bmad-build
+```
+
+**Split architecture** (`"capability": "bmad-6.4.0+"`) — two files, because
+`bmad-dev-story` ends at status "review" and only `bmad-code-review` reaches
+"done":
 
 ```bash
 python3 ./scripts/inject_customize.py \
@@ -217,6 +247,230 @@ python3 ./scripts/inject_customize.py \
     --project-root "{project-root}" \
     --skill bmad-code-review
 ```
+
+Do not emit both sets. On a `bmad-build` project the split pair is inert, and
+`bmad-code-review` would fire track-done a second time if the user ever invoked
+that skill directly.
+
+### BCP variant — only when scoring is enabled
+
+If, and only if, the resolved `pulse_estimation_method` is `bcp`, append
+`--with-bcp` to the invocation for `bmad-build` (unified) or
+`bmad-code-review` (split):
+
+```bash
+python3 ./scripts/inject_customize.py \
+    --project-root "{project-root}" \
+    --skill bmad-build --with-bcp
+```
+
+The variant writes to the **same destination** — it replaces the plain template
+rather than adding a second file. Its `on_complete` carries both steps in one
+authored sequence: track-done first, then BCP recalibrate, which reads the
+`actual_hours` that only exists once track-done has finished.
+
+`--with-bcp` is rejected for `bmad-dev-story` (exit 2): that file carries
+track-start, which recalibration does not extend.
+
+Then emit the scoring trigger, which is **not** tier-dependent — the same file
+on both architectures, and not listed in `inject_targets`:
+
+```bash
+python3 ./scripts/inject_customize.py \
+    --project-root "{project-root}" \
+    --skill bmad-create-story --with-bcp
+```
+
+This one closes the loop. The templates above run *after* implementation —
+track-done, then recalibrate — and recalibrate checks for `bcp.total` before
+doing anything. Without a hook that produces `bcp.total` in the first place, it
+finds nothing and skips, silently and by design, forever.
+
+`bmad-create-story` is a core BMAD skill under both architectures. `bmad-build`
+does not replace it: `bmad-build` writes a *spec*, whose frontmatter carries
+`title`, `type` and `status` but no `estimated_hours` to derive; it consumes a
+story only by `story_key`. So story authoring is where scoring belongs, and it
+is the same place either way.
+
+`bmad-create-story` has no plain template — emitting it without `--with-bcp`
+exits 2. PULSE has nothing to say to story authoring unless scoring is on.
+
+### Cover the unattended route (`bmad-build-auto`)
+
+Emit this whenever the project is driven by an orchestrator — `bmad-loop` or any
+runner that executes stories without a human at the keyboard. It is independent
+of the tier question above: `bmad-build-auto` is a **separate skill directory**,
+not a variant of `bmad-build`.
+
+```bash
+python3 ./scripts/inject_customize.py \
+    --project-root "{project-root}" \
+    --skill bmad-build-auto          # add --with-bcp when scoring is on
+```
+
+**Why a project needs it even with `bmad-build.toml` already installed.** BMAD
+resolves customization per skill *name* — `load_customization()` reads
+`_bmad/custom/<skill-name>.toml`. The hooks installed for `bmad-build` are
+invisible to `bmad-build-auto`, so without this file an orchestrated run ships
+the story and PULSE never hears about it. Nothing errors: an absent
+customization file is a valid state, so the gap only surfaces later, as a story
+with no `start_ts` and a baseline that never learned from it.
+
+**What the unattended template does differently, and why it is not a downgrade.**
+The template **starts** the measurement and never closes it. Closing belongs to
+the loop plugin (next section) — `on_complete` fires at the end of the DEV
+session, and under an orchestrator the review runs *after* that.
+
+**The planning leg is skipped on purpose.** With `spec_checkpoint` enabled the
+workflow runs in two legs — leg 1 plans and halts at `ready-for-dev` having
+written no code, leg 2 implements — and both legs execute the activation steps.
+Stamping `start_ts` on leg 1 would fold the human checkpoint wait, which can be
+minutes or a weekend, into `actual_hours`.
+
+**With `--with-bcp`, this file also carries the scoring trigger** — the only
+template besides `bmad-create-story` that does. An orchestrated run may never
+call `bmad-create-story`: the loop dispatches build-auto against a story id and
+the spec is written by step-02 of that same workflow. So the a-priori window
+here is the end of step-02, once the spec reaches `ready-for-dev` and before
+step-03 implements. A leg-1 halt is the cleanest form of that window: the
+estimate exists and no code does.
+
+### Install the loop plugin — it is what closes the measurement
+
+Required whenever the project is driven by `bmad-loop`. Copy the plugin and add
+it to the trust allowlist:
+
+```bash
+mkdir -p "{project-root}/.bmad-loop/plugins/pulse"
+cp ./assets/loop-plugin/* "{project-root}/.bmad-loop/plugins/pulse/"
+```
+
+Then, in `{project-root}/.bmad-loop/policy.toml`:
+
+```toml
+[plugins]
+enabled = ["pulse"]
+```
+
+**Installing is not enabling.** The loop pins a digest of `policy.toml` at launch
+and never loads a plugin outside the allowlist — editing that file is a manual
+operator action, outside any run, by design.
+
+**Why closing lives here and not in the template.** `on_complete` fires at the
+end of the DEV session. Under `bmad-loop` the review runs afterwards, as
+independent orchestrator sessions, so a `track-done` anchored there stamps
+`end_ts` before review has started.
+
+Measured on a real story: `end_ts` at 02:45:25 while review ran 02:48:07 →
+04:45:01 — **1.05h recorded against a 3.05h span**, and `first_pass: true` on a
+story that took three review cycles. Under-measured by 2.9x, with numbers
+plausible enough to enter the baseline unchallenged.
+
+That premise was inherited from `bmad-build.toml`, where it is true and says so
+("review has already run inside this workflow via `workflow.review_layers`").
+Under the loop it is false, and no wording fixes it: no instruction can observe
+a session that has not started.
+
+`post_story` is the correct seam — the engine emits it after `story-done` and
+after worktree integration, including on the resumed path.
+
+**Recalibration moved with it**, and not only for tidiness: it reads
+`actual_hours`, which only becomes correct once the measurement closes. Left in
+the template it would feed the per-category baseline a number written before
+review — and that baseline prices every story scored afterwards.
+
+**The hook is deterministic — no agent session.** It reads the run's
+`journal.jsonl` and writes the fields:
+
+| field | source |
+| --- | --- |
+| `end_ts` | the `story-done` event |
+| `review_cycles` | count of review sessions (a session that timed out counts — it burned real time that is already inside `actual_hours`) |
+| `first_pass` | derived, not asserted |
+
+So it costs no tokens, needs no auth, and cannot invent a value. During the work
+that produced this plugin an expiring OAuth session killed four separate
+processes, each with a silent 73-byte stderr — a measurement step that fails
+that way is missing exactly when the run was long enough to matter.
+
+**If you drive `bmad-build-auto` without `bmad-loop`**, the plugin never fires
+and stories carry `start_ts` with no `end_ts`. Close them with
+`/bmad-pulse-track-done <story_id>`, or `bmad-pulse-track-backfill` after the
+fact. An open measurement is visible and fixable; a wrong one is neither.
+
+### Give the `bcp_*` settings a home that survives
+
+Still only when `pulse_estimation_method` is `bcp`. The scoring skills read
+their settings — the baseline seed, the confidence threshold, the frozen
+reference rate — through `bcp_config.py`. Resolve what a project has now:
+
+```bash
+python3 {project-root}/.claude/skills/bmad-bcp-score/scripts/bcp_config.py \
+    --project-root "{project-root}"
+```
+
+The `sources` map in that output names the layer each value came from. Act on
+what it says:
+
+- **Any key reads `modules.bcp`.** The project still has the standalone
+  `bmad-module-bcp` installed, and that table is written by the installer from
+  *that* module's `module.yaml`. Uninstalling it — the end state of issue #84 —
+  deletes the table, and resolution falls through to the built-in defaults
+  without failing. Copy those values into `_bmad/custom/config.toml` under
+  `[modules.pulse]` now, while the source is still readable. Show the user the
+  block before writing it.
+- **Any key reads `default` .** Nothing is configured. The defaults are a floor
+  chosen so the module runs, not an estimate of this team. Tell the user which
+  keys are unset and what each one does; `bcp_baseline_seed` and
+  `bcp_reference_h_per_bcp` are the two worth deciding deliberately, since one
+  seeds every cold-start estimate and the other is the frozen denominator the
+  leverage-vs-reference figure is measured against. Write the agreed values to
+  the same place.
+- **Keys read `modules.pulse`.** Already home. Nothing to do.
+
+Write to `_bmad/custom/config.toml`, not `_bmad/config.toml`: the installer
+regenerates the latter on every run and would drop the block. Merge into an
+existing `[modules.pulse]` table rather than appending a second one.
+
+> **Why these are not install prompts.** They were, in the standalone module —
+> installing it was itself the opt-in, so asking ten questions was reasonable.
+> PULSE installs for everyone, most of whom estimate in hours, and BMAD's
+> `module.yaml` has no conditional prompts. Ten questions that do not apply is a
+> worse failure than a setup step that only runs when scoring is on.
+
+### Create the baseline
+
+Still only when `pulse_estimation_method` is `bcp`. Every scoring run reads
+`bcp-baseline.yaml`, and `apply_score.py` fails outright when it is absent — so
+a project that enables scoring without this file has six skills that cannot run.
+Create it with the values resolved in the previous step:
+
+```bash
+python3 ./scripts/seed_baseline.py \
+    --baseline-path "{project-root}/<resolved bcp_baseline_path>" \
+    --seed <bcp_baseline_seed> \
+    --min-samples <bcp_baseline_min_samples> \
+    --rolling-window <bcp_baseline_rolling_window>
+```
+
+Idempotent: an existing baseline is left untouched and the script reports
+`action: skipped_exists`. That matters for a project migrating off the
+standalone module — its baseline already holds real calibration history, and
+overwriting it would discard every sample the team accumulated. Do **not** pass
+`--force` on a migration; only when the user explicitly asks to start over.
+
+The file records a `config_snapshot` of the three values above alongside an
+empty `categories` map. Categories fill in later, from real `actual_hours`, via
+`bmad-bcp-recalibrate` — until a category reaches `min_samples` it stays on the
+seed and is marked `is_seed: true`.
+
+> **Why the recalibrate step is not simply always present.** It could be written
+> to check for `bcp.total` and skip when absent — it does exactly that when
+> present. But an instruction the agent reads on every single run, in a project
+> that will never satisfy it, is not free: it is context spent, and it is one
+> more thing implying the project is missing something. With scoring off, PULSE
+> is the baseline product, not a degraded one. The opt-in lives in which file
+> gets written, not in a runtime check.
 
 If either invocation exits 3, surface the message to the user verbatim
 (it includes the destination path and instructs how to re-run with
@@ -238,11 +492,18 @@ Surface the script's stdout to the user.
 
 Inform the user:
 
-- "PULSE auto-tracking integrated via `_bmad/custom/bmad-dev-story.toml` and
-  `_bmad/custom/bmad-code-review.toml`. Every story will now automatically
-  track start (during `/bmad-dev-story`) and completion (after
-  `/bmad-code-review`)."
-- "To disable: delete the two `.toml` files from `_bmad/custom/`."
+Name the files you actually wrote and the workflow the user actually runs —
+a message naming `/bmad-dev-story` on a `bmad-build` project is how a broken
+integration passes for a working one.
+
+- Unified architecture: "PULSE auto-tracking integrated via
+  `_bmad/custom/bmad-build.toml`. Every story will now automatically track
+  start and completion during `/bmad-build`."
+- Split architecture: "PULSE auto-tracking integrated via
+  `_bmad/custom/bmad-dev-story.toml` and `_bmad/custom/bmad-code-review.toml`.
+  Every story will now automatically track start (during `/bmad-dev-story`)
+  and completion (after `/bmad-code-review`)."
+- "To disable: delete the emitted `.toml` file(s) from `_bmad/custom/`."
 - "To customize: edit the files manually. Re-running `/bmad-pulse-setup` will
   abort if you changed them — pass `--force` only if you want PULSE's
   defaults restored."

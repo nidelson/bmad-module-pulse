@@ -10,7 +10,7 @@ config_section: 'pulse'
 
 **Goal:** Record the completion timestamp, calculate AI Leverage Ratio, and display the Efficiency Pulse for the story.
 
-**Your Role:** You are Levi, closing the measurement cycle and celebrating (or diagnosing) the result.
+**Your Role:** You are Max, closing the measurement cycle and reporting the result with its band.
 
 You will continue to operate with your given name, identity, and communication_style, merged with the details of this role description.
 
@@ -68,15 +68,22 @@ The keys this workflow uses:
 - `pulse_sprint_status_filename`
 - `pulse_estimation_method` (story_points / hours / t-shirt / bcp)
 - `pulse_story_point_hours_factor` (story points → hours conversion factor)
-- `pulse_leverage_threshold_exceptional` (e.g. 4) — _legacy since v0.6: no longer drives celebration (kept for back-compat)_
-- `pulse_leverage_threshold_solid` (e.g. 2) — _legacy since v0.6: no longer drives celebration_
-- `pulse_leverage_warning_threshold` (e.g. 1) — _legacy since v0.6: no longer drives celebration_
+- `pulse_leverage_threshold_exceptional` (e.g. 4) — _legacy since v0.6: never drives this card's celebration. The dashboard does band the hours-path leverage with it (#66), which is reporting, not a per-story trophy._
+- `pulse_leverage_threshold_solid` (e.g. 2) — _legacy since v0.6: same as above_
+- `pulse_leverage_warning_threshold` (e.g. 1) — _legacy since v0.6: same as above_
 - `pulse_alert_on_halt` (yes / warn / no)
 - `pulse_alert_unused_skills` (yes / no)
 - `pulse_process_health_checks` (standard / strict / minimal)
-- `pulse_levi_verbosity` (concise / standard / verbose)
-- `pulse_levi_coaching_mode` (yes / metrics-only)
+- `pulse_verbosity` (concise / standard / verbose)
+- `pulse_coaching_mode` (yes / metrics-only)
 - `date` as current system-generated datetime (ISO 8601)
+
+> **Renamed in v0.9.** `pulse_verbosity` and `pulse_coaching_mode` were
+> `pulse_levi_verbosity` and `pulse_levi_coaching_mode`. Read the new key
+> first and **fall back to the legacy name** when it is absent: an upgrading
+> project still has the old key in its config, and a rename without a
+> fallback reverts it to the default silently — the setting is still in the
+> file, just no longer read, so nothing looks broken.
 
 ### Paths
 
@@ -151,9 +158,9 @@ If `pulse_estimation_method` is `bcp`:
 
 ```text
 estimated_hours = value recorded directly in hours
-                  (already derived upstream by bmad-module-bcp — PULSE does NOT
-                   compute hours from BCP points; it consumes the field as-is,
-                   identical to the `hours` branch)
+                  (already derived by the sibling bmad-bcp-score skill — this
+                   skill does NOT compute hours from BCP points; it consumes the
+                   field as-is, identical to the `hours` branch)
 ```
 
 **Leverage calculation:**
@@ -208,20 +215,33 @@ leverage_vs_reference = round(estimated_hours_reference / actual_hours, 1)
 ```
 
 This is the **stable ROI** number: its denominator is **frozen** (the reference rate is
-governed upstream by `bmad-module-bcp`, never recalibrated), so unlike `leverage_ratio`
+governed configuration, never recalibrated), so unlike `leverage_ratio`
 (vs PLAN, which collapses to ~1.0x by construction as the estimate basis calibrates) it
 **does not collapse**. It is an honest multiplier **vs a fixed external benchmark**, not
-"vs human" and not a target — predictability stays the hero metric. PULSE only **reads**
+"vs human" and not a target — predictability stays the hero metric. This skill only **reads**
 the field (file convention) and divides; it never computes the reference, never reads the
 BCP baseline, and never writes the story frontmatter (read-only input owned by
-`bmad-module-bcp`).
+`bmad-bcp-score`).
 
 **BCP productivity (only when a BCP total is available for this story):**
 
-Resolve `bcp_total` as `pulse_metrics[story].bcp_at_start.total` (snapshotted by
-track-start). If that snapshot is absent, re-read the story frontmatter `bcp.total`
-(read-only) as a fallback. If neither yields a number, skip this block entirely —
-behave exactly as today.
+Resolve `bcp_total` from the story frontmatter `bcp.total` (read-only) — the
+story's **final** BCP. If the frontmatter yields no total, fall back to
+`pulse_metrics[story].bcp_at_start.total` (snapshotted by track-start). If neither
+yields a number, skip this block entirely — behave exactly as today.
+
+**Why the final total, not the start snapshot.** `estimated_hours` is derived
+upstream from the final BCP, so `h_per_bcp_estimated = estimated_hours / bcp_total`
+only holds when the same total sits on both sides. A story rescored mid-flight
+(start 15, final 13) measured against the snapshot pairs a numerator from one
+scoring with a denominator from another, describing no state the story was ever
+in. The error does not stay local: `h_per_bcp_actual` feeds the observed
+per-category baseline and `drift_pct` feeds the convergence signal, so a stale
+denominator biases the very numbers the team calibrates estimates against.
+
+When the two totals differ, keep `bcp_at_start.total` as evidence of the rescore
+(the dashboard labels such a story **rescored**) — the divergence is worth
+recording, it just must not be the denominator.
 
 When `bcp_total` is a positive number, add a `bcp_recorded` field to the story
 entry in `pulse_metrics`:
@@ -239,21 +259,23 @@ pulse_metrics:
     # ... existing fields ...
     bcp_recorded:
       total: 21
-      h_per_bcp_actual: 4.13
-      h_per_bcp_estimated: 4.13
+      h_per_bcp_actual: 5.0
+      h_per_bcp_estimated: 5.0
       drift_pct: 0.0
 ```
 
-PULSE does **not** update any BCP baseline. Baseline maturation is the
-`bmad-module-bcp` module's responsibility (via `/bmad-bcp-recalibrate`). This step
-only records read-derived telemetry inside the `pulse_metrics:` section.
+This skill does **not** update any BCP baseline. Baseline maturation belongs to the
+sibling `bmad-bcp-recalibrate` skill, which runs **after** this one — when scoring is
+enabled, setup installs an `on_complete` sequence whose STEP 2 invokes it with the
+`actual_hours` STEP 1 just recorded. This step only records read-derived telemetry
+inside the `pulse_metrics:` section.
 
 ### Step 4: Generate Efficiency Pulse + Process Health
 
 Display in the terminal:
 
 ```text
-⚡ Levi: Story {story_id} — DONE!
+📐 Max: Story {story_id} — DONE!
 
    📊 Efficiency
    Human estimate: {estimated_hours}h ({dev_count} devs)
@@ -265,8 +287,9 @@ Display in the terminal:
    Quality: {first_pass ? "✅ first-pass" : "🔄 " + review_cycles + " cycles"}
    Tasks: {task_count}
    Category: {category}
-   {estimate_error_pct <= 15 ? (first_pass ? "🎯 On-plan! (estimate within 15%, first-pass)" : "🎯 On-plan (estimate within 15%)") : estimate_error_pct >= 50 ? "⚠ Off-plan — review the estimate basis, not the speed." : "📊 Data recorded."}
+   {pulse_estimation_method == "bcp" ? (estimate_error_pct <= 15 ? (first_pass ? "🎯 On-plan! (estimate within 15%, first-pass)" : "🎯 On-plan (estimate within 15%)") : estimate_error_pct >= 50 ? "⚠ Off-plan — review the estimate basis, not the speed." : "📊 Data recorded.") : (first_pass && halt_count == 0 ? "✅ Clean run — first-pass, no HALTs" : first_pass ? "✅ First-pass" : "📊 Data recorded.")}
    <!-- v0.6: celebration triggers on estimate ACCURACY (on-plan), not on leverage magnitude. A high multiplier is an uncalibrated estimate, not a win (anti-Goodhart). pulse_leverage_threshold_exceptional/solid are retired as celebration triggers — leverage is reported "vs PLAN" as context only. -->
+   <!-- #97: and accuracy only earns the trophy on the `bcp` path. Both incentives act on the SAME variable (estimated_hours), in opposite directions: celebrating accuracy rewards padding the estimate, celebrating leverage magnitude rewards inflating it. A canonical ruler is what breaks the tie — it makes the estimate comparable, so being on-plan becomes a property of the delivery. Without one the estimator and the executor are the same agent, and any estimate-derived celebration is gameable by the person it is congratulating. The other paths therefore celebrate what is OBSERVED rather than estimated: first-pass and a clean HALT count. Same reason the off-plan warning is scoped to `bcp` — "review the estimate basis" is advice about a ruler; on the hours path the basis is a person's judgement, and the line reads as blame for a number nothing could have calibrated. -->
 
    📋 Process Health
    Flow: {flow_check}
@@ -310,11 +333,11 @@ The verification level is determined by `pulse_process_health_checks`:
    - If no underused skills: display "none"
    - If `pulse_alert_unused_skills` is `no`: omit this check
 
-4. **Insight** (respect `pulse_levi_coaching_mode`):
-   - If `pulse_levi_coaching_mode` is `yes`: generate 1 actionable suggestion based on findings
+4. **Insight** (respect `pulse_coaching_mode`):
+   - If `pulse_coaching_mode` is `yes`: generate 1 actionable suggestion based on findings
      - Examples: "Consider tea:automate for fullstack stories"
      - If everything is OK: "Process executed with excellence — no action needed"
-   - If `pulse_levi_coaching_mode` is `metrics-only`: display data only, no suggestions
+   - If `pulse_coaching_mode` is `metrics-only`: display data only, no suggestions
 
 5. **Persistence:**
    - Add the `process_health` field to the story entry in `pulse_metrics`.
@@ -377,7 +400,7 @@ If 5+ stories with complete PULSE data exist, generate analysis:
 - Analyze the trend of `process_health.flow_complete` — if <80% complete, raise an alert
 - Check whether `process_health.unused_skills` repeats patterns (same skill appears 3+ times)
 
-Display as an additional section in the card (respecting `pulse_levi_verbosity`):
+Display as an additional section in the card (respecting `pulse_verbosity`):
 
 - **concise**: average and first-pass rate only
 - **standard**: full display as below
@@ -396,11 +419,11 @@ Display as an additional section in the card (respecting `pulse_levi_verbosity`)
 ## BEHAVIOR RESTRICTIONS
 
 - DO NOT modify anything outside the `pulse_metrics:` section of file `{sprint_status_file}`
-- DO NOT write to the story frontmatter or to any BCP baseline file (`bcp-baseline.yaml`) — `bcp.*` is read-only input owned by `bmad-module-bcp`; baseline recalibration lives in that module
+- DO NOT write to the story frontmatter or to any BCP baseline file (`bcp-baseline.yaml`) — `bcp.*` is read-only input owned by `bmad-bcp-score`; baseline recalibration belongs to `bmad-bcp-recalibrate`, which runs after this skill, never inside it
 - Data is isolated in the `pulse_metrics:` section — zero risk of conflict
 - Communicate in the language configured in `communication_language`
-- Respect `pulse_levi_verbosity` for level of detail (concise / standard / verbose)
-- Respect `pulse_levi_coaching_mode` (yes = suggest improvements, metrics-only = data only)
+- Respect `pulse_verbosity` for level of detail (concise / standard / verbose)
+- Respect `pulse_coaching_mode` (yes = suggest improvements, metrics-only = data only)
 - If no entry exists for the story ID in `pulse_metrics:`, warn and suggest running track-start first
 
 ---

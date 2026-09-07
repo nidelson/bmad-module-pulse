@@ -134,7 +134,7 @@ def test_preserves_existing_custom_toml_content(tmp_path: Path):
         "[core]\n"
         'user_name = "Ada"\n\n'
         "[modules.pulse]\n"
-        'pulse_levi_verbosity = "verbose"\n',
+        'pulse_verbosity = "verbose"\n',
         encoding="utf-8",
     )
     assert run(tmp_path, CUSTOM_MODULE_ANSWERS).returncode == 0
@@ -146,7 +146,7 @@ def test_preserves_existing_custom_toml_content(tmp_path: Path):
         data = tomllib.load(f)
     assert data["core"]["user_name"] == "Ada"  # other section preserved
     # human-only key under [modules.pulse] preserved, answered keys upserted
-    assert data["modules"]["pulse"]["pulse_levi_verbosity"] == "verbose"
+    assert data["modules"]["pulse"]["pulse_verbosity"] == "verbose"
     assert data["modules"]["pulse"]["pulse_estimation_method"] == "bcp"
 
 
