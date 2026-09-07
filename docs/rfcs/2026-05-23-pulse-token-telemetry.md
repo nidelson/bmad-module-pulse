@@ -225,3 +225,115 @@ Once both phases are filled in, this RFC moves from `Status: Draft` to `Status: 
 ## 10. Footer
 
 After Party Mode closes Phase 1 and Phase 2, open a GitHub issue titled `feat(pulse): token telemetry adapter (Claude Code) — see docs/rfcs/2026-05-23-pulse-token-telemetry.md` and assign based on whichever decision §6 produces.
+
+---
+
+## 11. Addendum — 2026-09-07: what the field answered while this RFC waited
+
+This RFC was written on 2026-05-23 as a Party Mode pre-read. It sat open for
+three and a half months. In that time the surrounding tooling moved, and **four
+of the ten open questions in §6 now have empirical answers** — not opinions to
+deliberate, but observations from running code.
+
+Recording them here rather than deleting the questions: the reasoning in §4 is
+still the best framing of the problem, and the tensions it names all survived.
+
+### 11.1. Q5 (pricing) — answered by prior art, not by decision
+
+§4.4 asked: *"who maintains the pricing table and how often?"* — and treated it
+as the blocker for `cost_usd_estimate`.
+
+**Nobody should maintain it.** The pattern used by CodeBurn (an independent
+spend-tracking tool for the same transcripts) is a **versioned snapshot of a
+public source**, resolved in priority order:
+
+```text
+1. LiteLLM        (model_prices_and_context_window.json — broad, maintained)
+2. manual overrides
+3. models.dev     (first-party makers only)
+4. OpenRouter     (resale rates — coverage backstop)
+```
+
+Two files split by confidence, so a reseller's variant name can never shadow a
+canonical match. No network at runtime; updating prices is a pull request.
+
+This dissolves Q5 as posed. The remaining decision is narrower: *does PULSE ship
+the snapshot, or read one the consumer provides?*
+
+### 11.2. Q1/§4.1 (agnosticism) — the fear was justified, the framing was not
+
+§2 assumed a single source: *"Claude Code JSONL transcripts"*. That is no longer
+the shape of the problem. `bmad-loop` ships **four** usage parsers:
+
+| parser | source |
+| --- | --- |
+| `claude-jsonl` | `~/.claude/projects/**/*.jsonl` |
+| `codex-rollout` | `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` |
+| `gemini-chat` | Gemini CLI |
+| `copilot-events` | Copilot |
+
+So **token collection is already provider-agnostic upstream** — the adapter
+pattern §3 proposes may be reinventing something PULSE can consume instead of
+build. What is *not* agnostic is pricing, which is exactly Q5.
+
+Empirical note: a locally-defined `glm` profile reuses `claude-jsonl` untouched
+(it runs the `claude` binary against a different `ANTHROPIC_BASE_URL`), so
+"one adapter per vendor" overcounts the work.
+
+### 11.3. §4.4 needs a correction: cache is not one concept
+
+The RFC says *"`cache_read_input_tokens` cost ~10× less than fresh input"*. True
+for Anthropic. **The two providers do not share an economic model:**
+
+| | Anthropic | Codex (`gpt-6-astra`) |
+| --- | --- | --- |
+| cache write | billed, and it is a *decision* | carved out of `input_tokens` |
+| fields | `cache_creation_*` / `cache_read_*` | `cached_input_tokens` / `cache_write_input_tokens` |
+| actionable? | yes — rewrite or let it go cold | not really |
+
+Verified in real rollouts. A unified schema that assumes Anthropic's shape will
+carry a dead field for the other provider.
+
+### 11.4. New question the RFC could not have anticipated
+
+`bmad-loop` supports **per-stage adapters** (`StageAdapterPolicy`): `dev`,
+`review` and `triage` can each run a different binary and model. A run can
+implement with one vendor and review with another.
+
+That makes a measurement possible that nothing else in this space reports:
+
+> **cost per phase, per model** — is a review by a different vendor cheaper *and*
+> better than a same-model review?
+
+This is a stronger argument for token telemetry in PULSE than anything in §1,
+because it converts telemetry from reporting into **architecture evidence**.
+
+### 11.5. Q6 (`tokens_per_BCP`) — revisit the hesitation
+
+§4.5 worried this *"may produce a metric that looks rigorous but isn't"*. Fair
+caution. But it is also the one metric general-purpose spend trackers **cannot**
+compute: they group by branch, project or session, and have no concept of a
+story, a complexity score, `first_pass` or `review_cycles`.
+
+Cost per token is commodity. **Cost per BCP** is not.
+
+### 11.6. Consequence for the Party Mode cast
+
+With Q5 resolved by prior art and Q1/Q3 narrowed by upstream reality, the Phase 1
+agenda is materially smaller. Convening a full cast to decide what has already
+been measured is the waste this module exists to detect.
+
+Suggested revision: fold Q5 into the implementation issue, keep Phase 1 for the
+genuinely open structural questions (Q2 data location, Q7 invariants, Q9
+trigger), and keep Phase 2 as-is — §4.6 (surface saturation) is now *more*
+pressing, not less, since a USD dimension is heavier than a token count.
+
+### 11.7. Prerequisite discovered elsewhere
+
+Issue #111: the dashboard has **no script** — 460 lines of prose ask an LLM to
+compute 26 aggregations by hand. Before PULSE reports **money**, the arithmetic
+should move into deterministic code. An LLM computing a median carries silent
+variance; an LLM computing a dollar figure carries it into decisions.
+
+Treat #111 as a soft prerequisite for surfacing cost, independent of how §6 is
+decided.
