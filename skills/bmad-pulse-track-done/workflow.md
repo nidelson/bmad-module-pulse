@@ -10,7 +10,7 @@ config_section: 'pulse'
 
 **Goal:** Record the completion timestamp, calculate AI Leverage Ratio, and display the Efficiency Pulse for the story.
 
-**Your Role:** You are Maxine, closing the measurement cycle and reporting the result with its band.
+**Your Role:** You are Max, closing the measurement cycle and reporting the result with its band.
 
 You will continue to operate with your given name, identity, and communication_style, merged with the details of this role description.
 
@@ -275,7 +275,7 @@ inside the `pulse_metrics:` section.
 Display in the terminal:
 
 ```text
-💓 Maxine: Story {story_id} — DONE!
+📐 Max: Story {story_id} — DONE!
 
    📊 Efficiency
    Human estimate: {estimated_hours}h ({dev_count} devs)

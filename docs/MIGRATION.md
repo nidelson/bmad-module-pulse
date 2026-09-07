@@ -5,6 +5,53 @@ skip to the version you are migrating from.
 
 ---
 
+## Unreleased — the agent is Max: name, gender and icon (`💓` → `📐`)
+
+**Who this affects:** every install. **No action required**, and — unlike v0.9 —
+**nothing breaks**. No config key, skill folder, party-mode key or metric field
+changes. Only what the agent is called, the pronouns it uses about itself, and
+the icon it speaks behind.
+
+**What changed:**
+
+- **Maxine is retired; Max is the agent.** Same role, same identity, same
+  principles, same menu. The persona is masculine now (`he`/`him`).
+- **The icon is `📐`, replacing `💓`.** A set square: the ruler. It points at
+  what the module actually does — a canonical unit that makes estimates
+  comparable across teams — rather than at the pulse metaphor in the name.
+
+**Why this one was free.** v0.9 renamed `pulse_levi_verbosity` to
+`pulse_verbosity` *precisely so the next persona would cost nothing*. That work
+is what makes this release a cosmetic change instead of a breaking one: no
+consumer-facing key carries a persona name, so there is no key to rename and no
+fallback to read. A test (`test_config_keys_are_persona_free`) keeps it true for
+the persona after this one.
+
+**The party-mode roster migrates itself.** `register-party-agent.py` normally
+preserves editorial fields (`name`/`title`/`icon`/`description`) because teams
+edit them by hand. It makes one exception: a value that still matches *exactly*
+what an older release of the script wrote is our own past writing, not a
+customization, and gets refreshed.
+
+That list is **cumulative** — it now holds both `Levi` (pre-v0.9) and `Maxine`
+(v0.9). Installs sit at every past release at once, and the migration is decided
+by the value *your* project has on disk, so retiring a persona adds to the list
+and never replaces it. If you renamed the agent yourself, your name is preserved
+as always.
+
+- **`/bmad-party-mode` will list Max** after the next setup run. If it still
+  says Maxine or Levi, the entry in `_bmad/custom/config.toml` was hand-edited
+  at some point and is being preserved on purpose; re-run setup with `--force`
+  to overwrite it.
+
+**What deliberately still says Maxine:** this guide, the `CHANGELOG`, and the
+`bmad-pulse-agent-levi` folder name inside the cleanup scripts. The first two are
+the record of what happened; the third is a directory that still exists on
+upgrading installs and is only found by literal name. Rewriting any of them
+would either falsify history or silently break the cleanup.
+
+---
+
 ## v0.9.1 — the track-done card celebrates something different on the `hours` path (issue #97)
 
 **Who this affects:** every install **not** using `pulse_estimation_method = "bcp"`

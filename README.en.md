@@ -38,7 +38,7 @@ Epic 14: ██████████████░░░░░░  6.9x (3 s
 Epic 15: ████████████████████  8.4x (1 story)
 ```
 
-📊 **[View full dashboard →](examples/dashboards/mature-bmad-team.md)** *(category breakdown, capacity forecast, Maxine's insights, story-by-story breakdown)*
+📊 **[View full dashboard →](examples/dashboards/mature-bmad-team.md)** *(category breakdown, capacity forecast, Max's insights, story-by-story breakdown)*
 
 Browse [more dashboard scenarios](examples/dashboards/) for different team sizes and adoption stages.
 
@@ -64,7 +64,7 @@ PULSE measures that!
 
 - **A defensible predictability number for your SDLC** — how close your estimates land to reality, sprint over sprint, ready for your stakeholder deck. (Leverage too — but as the first-month signal, not the headline.)
 - **Early warning on stalled work** — capacity forecasts and halt alerts before a sprint slips.
-- **A coach, not just a dashboard** — Maxine (PULSE's agent) reads your signals and tells you *where* the leverage is leaking.
+- **A coach, not just a dashboard** — Max (PULSE's agent) reads your signals and tells you *where* the leverage is leaking.
 
 ---
 
@@ -176,11 +176,11 @@ pulse_estimation_method = "bcp"     # default: "hours"
 
 ---
 
-## Maxine — your coach agent
+## Max — your coach agent
 
-**Maxine** is PULSE's Delivery Predictability Analyst. She reads your metrics and tells you, in plain English, where the squad is losing time: estimation drift, BMAD steps being skipped, agents being misused. She leads with whichever number the current configuration can honestly defend — leverage while estimates are in hours, predictability once a canonical ruler makes them comparable across teams.
+**Max** is PULSE's Delivery Predictability Analyst. He reads your metrics and tells you, in plain English, where the squad is losing time: estimation drift, BMAD steps being skipped, agents being misused. He leads with whichever number the current configuration can honestly defend — leverage while estimates are in hours, predictability once a canonical ruler makes them comparable across teams.
 
-She measures the system, never the person. And she never gives you a number without the band around it.
+He measures the system, never the person. And he never gives you a number without the band around it.
 
 ---
 
@@ -199,7 +199,7 @@ PULSE instruments three points in the BMAD story lifecycle:
 | **≥ 3.0x** | Exceptional | AI is materially compressing your SDLC. Document the pattern, replicate it. |
 | **1.8x – 2.9x** | Solid | Healthy AI leverage. The norm for mature BMAD teams. |
 | **1.2x – 1.7x** | Caution | Marginal gain. Investigate where the AI is slowing down. |
-| **< 1.2x** | Warning | AI is not pulling its weight. Maxine will surface the likely cause. |
+| **< 1.2x** | Warning | AI is not pulling its weight. Max will surface the likely cause. |
 
 ### Capabilities
 
@@ -208,7 +208,7 @@ PULSE instruments three points in the BMAD story lifecycle:
 - **Forecast** — capacity projection based on rolling leverage and team velocity.
 - **Audit** — process health checks for stories without estimates, halted work, missing artifacts.
 - **Alert** — halt detection when a story stalls beyond its estimate.
-- **Coach** — Maxine reads the metrics and pinpoints bottlenecks in plain English.
+- **Coach** — Max reads the metrics and pinpoints bottlenecks in plain English.
 
 ### Halt categories — separating dev work from wait time
 
@@ -316,7 +316,7 @@ Every PULSE skill ships a `customize.toml` exposing the same override surface as
 - Arrays: append (base → team → user concatenate).
 - Arrays of tables with `code` or `id`: replace matching entries, append new ones.
 
-### Example 1 — give Maxine a persistent fact
+### Example 1 — give Max a persistent fact
 
 `_bmad/custom/bmad-agent-pulse.toml`:
 
@@ -363,7 +363,7 @@ extra_sections = [
 ]
 ```
 
-### Example 5 — override Maxine's standout cutoff
+### Example 5 — override Max's standout cutoff
 
 `_bmad/custom/bmad-agent-pulse.toml`:
 
@@ -394,7 +394,7 @@ That number isn't the ceiling. It's a data point. PULSE exists so your team can 
 - **v0.6 — Invert the speedometer.** The hero metric becomes convergence/accuracy (a stable ~1.0x is healthy; a high multiplier flags inflated estimates, not speed) plus self-referential `h/BCP` drift. Regime detection via `estimated_hours_basis`. Multipliers always read "vs PLAN", never "vs human".
 - **v0.7 — The action that matters.** A drift alert at estimation time — _"stories like X have missed by +N% over the last K — re-estimate?"_ — interrupting a bad estimate before it becomes a commitment.
 - **v0.8 — Predictability for pricing.** Project forecast `BCP × h/BCP ± CI(90%)` for teams that bill by the hour; per-developer/agent breakdowns and Slack/Linear digests fold in here.
-- **v0.9 — The ruler moves in.** BCP scoring becomes an opt-in feature of PULSE itself (the six `bmad-bcp-*` skills) instead of a separate module installed alongside it. Levi retires and **Maxine** takes over as Delivery Predictability Analyst.
+- **v0.9 — The ruler moves in.** BCP scoring becomes an opt-in feature of PULSE itself (the six `bmad-bcp-*` skills) instead of a separate module installed alongside it. Levi retires and **Max** takes over as Delivery Predictability Analyst.
 - **v1.0 — Pitch to BMAD core** for native adoption.
 
 > **Reading note.** The milestones up to v0.8 shipped while BCP scoring still

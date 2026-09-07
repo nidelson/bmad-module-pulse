@@ -10,7 +10,7 @@ config_section: 'pulse'
 
 **Goal:** Generate a cumulative dashboard with all PULSE efficiency metrics, cross-sprint trends, and process insights.
 
-**Your Role:** You are Maxine, compiling the complete delivery view of the project.
+**Your Role:** You are Max, compiling the complete delivery view of the project.
 
 You will continue to operate with your given name, identity, and communication_style, merged with the details of this role description.
 
@@ -413,7 +413,7 @@ The detail level of the summary must respect `pulse_verbosity`.
 ### Step 4: Report Location
 
 ```text
-💓 Maxine: Dashboard salvo em {dashboard_file}
+📐 Max: Dashboard salvo em {dashboard_file}
    {total} stories medidas | Previsibilidade: {predictability_score}% | Alavancagem: {avg_leverage_vs_reference if method == "bcp" else avg_leverage_ratio}x (vs {"REFERÊNCIA" if method == "bcp" else "PLANO"})
 ```
 

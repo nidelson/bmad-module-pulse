@@ -3,7 +3,7 @@
 # requires-python = ">=3.11"
 # dependencies = ["tomlkit"]
 # ///
-"""Registra o agente PULSE (Maxine) na tabela [agents] de _bmad/custom/config.toml.
+"""Registra o agente PULSE (Max) na tabela [agents] de _bmad/custom/config.toml.
 
 Party-mode (bmad-party-mode) monta o roster lendo a tabela [agents] via
 resolve_config.py, que faz deep-merge de _bmad/config.toml (base) com
@@ -50,18 +50,42 @@ STRUCTURAL_FIELDS = ("module", "team")
 # nossa escrita antiga, e sobrescrever restaura a verdade em vez de destruir uma
 # customizacao. Qualquer outro valor e do time e continua preservado.
 #
-# Sem isso a troca Levi -> Maxine (v0.9) nao chegaria a projetos ja instalados:
-# `name` e editorial, logo o re-run o preservaria, e o party-mode listaria Levi
-# para sempre enquanto a skill se apresenta como Maxine.
+# Sem isso uma troca de persona nao chegaria a projetos ja instalados: `name` e
+# editorial, logo o re-run o preservaria, e o party-mode listaria a persona
+# antiga para sempre enquanto a skill se apresenta com a nova.
+#
+# A lista e CUMULATIVA — cada persona aposentada acrescenta seus valores, nunca
+# os substitui. Um projeto pode estar parado em qualquer release anterior, e o
+# que decide a migracao e o valor que ESTE projeto tem em disco, nao o da ultima
+# troca. Trocar em vez de acrescentar deixaria os instalados na v0.9 (Maxine)
+# presos ao nome antigo, exatamente o bug que esta tabela existe para evitar.
+#
+# Linhagem: Levi (ate v0.9) -> Maxine (v0.9) -> Max.
 LEGACY_FRAGMENT_VALUES = {
-    "name": ("Levi",),
-    "title": ("Hyper-Efficiency Analyst & SDLC Optimizer",),
-    "icon": ("⚡",),
+    "name": ("Levi", "Maxine"),
+    "title": (
+        "Hyper-Efficiency Analyst & SDLC Optimizer",
+        # Maxine e Max compartilham o title: a troca foi de nome/genero/icone,
+        # nao de papel. Fica listado assim mesmo — se o time nunca editou, o
+        # valor casa com o atual e a regravacao e no-op.
+        "Delivery Predictability Analyst",
+    ),
+    "icon": ("⚡", "💓"),
     "description": (
         "Performance analyst obsessed with efficiency data. Background in "
         "production engineering and analytics. Transforms numbers into "
         "improvement narratives. Specialist in AI-assisted development metrics "
         "and continuous SDLC optimization.",
+        # v0.9 (Maxine). O script deriva `description` da coluna `identity` do
+        # fragment, e essa identity nao tinha pronome — e byte-identica a do
+        # Max. Listada por completude: se um dia o texto mudar junto com a
+        # persona, a entrada ja esta no lugar certo para migrar instalados.
+        "Twenty-five years in engineering, most of them spent watching good "
+        "teams get blamed for systems nobody had measured. Reads a delivery "
+        "pipeline the way a nurse reads a chart: two numbers, taken the same "
+        "way every time, meaning nothing alone and everything in sequence. "
+        "Believes the confidence interval is the product, and that a team "
+        "which knows its own variance can charge for it.",
     ),
 }
 
@@ -92,7 +116,7 @@ def build_entry(row: dict) -> dict:
     return {
         "module": (row.get("module") or "pulse").strip(),
         "team": DEFAULT_TEAM,
-        "name": (row.get("displayName") or "Maxine").strip(),
+        "name": (row.get("displayName") or "Max").strip(),
         "title": (row.get("title") or "").strip(),
         "icon": (row.get("icon") or "").strip(),
         "description": (row.get("identity") or row.get("role") or "").strip(),
