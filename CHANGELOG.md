@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.9.3](https://github.com/nidelson/bmad-module-pulse/compare/v0.9.2...v0.9.3) (2026-09-07)
+
+
+### Features
+
+* **agent:** rename the persona to Max, masculine, with a set-square icon ([#107](https://github.com/nidelson/bmad-module-pulse/issues/107)) ([85c36d5](https://github.com/nidelson/bmad-module-pulse/commit/85c36d5cab5c1bb23a597796d67409571c7cbe28))
+* **setup:** measure the unattended route (bmad-build-auto) ([#108](https://github.com/nidelson/bmad-module-pulse/issues/108)) ([f370c37](https://github.com/nidelson/bmad-module-pulse/commit/f370c378435c5192b689a6ccde1dcebd0621008d))
+
+
+### Documentation
+
+* **setup:** add harness as a first-class dev category ([#105](https://github.com/nidelson/bmad-module-pulse/issues/105)) ([ef2de7b](https://github.com/nidelson/bmad-module-pulse/commit/ef2de7b8db42f2ae30515bd3d79a107773f41069))
+
 ## [0.9.2](https://github.com/nidelson/bmad-module-pulse/compare/v0.9.1...v0.9.2) (2026-08-16)
 
 
