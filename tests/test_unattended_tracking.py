@@ -88,8 +88,46 @@ def test_track_start_fires_from_an_executed_activation_step(path: Path):
 
 
 @BOTH
-def test_track_done_fires_on_complete(path: Path):
-    assert "bmad-pulse-track-done" in workflow(path).get("on_complete", "")
+def test_the_template_does_not_close_the_measurement(path: Path):
+    """`on_complete` fires at the end of the DEV session. Under `bmad-loop` the
+    review runs afterwards, as independent orchestrator sessions — so anything
+    that closes a measurement here reads a story that is not finished.
+
+    This assertion replaced four earlier ones that pinned the *wording* of a
+    track-done instruction living in `on_complete`. The wording was fine; the
+    firing point was not, and no phrasing fixes a hook that cannot observe a
+    session which has not started. Measured on story 23.3 of the SIP: 1.05h
+    recorded against a 3.05h span, `first_pass: true` on three review cycles.
+
+    Closing now belongs to the loop plugin at `post_story` — see
+    `assets/loop-plugin/` and `tests/test_loop_plugin.py`.
+    """
+    text = workflow(path).get("on_complete", "")
+    assert "track-done" not in text, (
+        "track-done is back in on_complete — it would stamp end_ts before review"
+    )
+    assert "recalibrate" not in text, (
+        "recalibrate is back in on_complete — it would read the wrong actual_hours "
+        "and feed it to the per-category baseline"
+    )
+
+
+@BOTH
+def test_the_template_still_starts_the_measurement(path: Path):
+    """Removing the closing half must not silently remove the opening one: a
+    story with no `start_ts` is invisible to the plugin, which needs something
+    to close against."""
+    assert "bmad-pulse-track-start" in steps_text(path)
+
+
+@BOTH
+def test_the_template_says_where_closing_went(path: Path):
+    """A reader who greps this file for `track-done` and finds nothing must not
+    conclude that the unattended route does not measure. The comment header
+    carries the pointer, and this test keeps it there."""
+    raw = path.read_text(encoding="utf-8")
+    assert "loop-plugin" in raw
+    assert "post_story" in raw
 
 
 @BOTH
@@ -103,34 +141,38 @@ def test_story_id_is_not_read_back_from_sprint_status(path: Path):
 # ── 2. nobody is asked a question there is no one to answer ──────────────────
 
 
-@BOTH
-def test_review_cycles_comes_from_the_triage_log(path: Path):
-    """The count is recorded in the spec, one entry per review pass. Reading it
-    is measurement; asking an agent to recall it is estimation wearing the same
-    field name."""
-    text = workflow(path).get("on_complete", "")
-    assert "Review Triage Log" in text
-    assert "review_cycles" in text
+# ── the honest-measurement rules moved to the plugin, which enforces them ────
+#
+# Four tests lived here asserting the WORDING of the track-done instruction:
+# that it read `review_cycles` off the Review Triage Log, declined
+# `effective_hours`, and forbade inventing halts. They passed while the hook
+# fired at the wrong moment and recorded 1.05h for a 3.05h story.
+#
+# That is the lesson worth keeping: an instruction's text can be perfectly
+# correct and still be read at a point where the facts it describes do not exist
+# yet. Prose asserted against prose proves only that both were written by the
+# same person on the same day.
+#
+# The plugin does not phrase those rules — it makes them unnecessary. There is
+# no `effective_hours` prompt to decline, because nothing prompts; no halt to
+# invent, because nothing is asked; and `review_cycles` is counted from the
+# journal instead of recalled. See `tests/test_loop_plugin.py`, which asserts
+# behaviour against a fixture journal rather than wording against a template.
 
 
-@BOTH
-def test_effective_hours_is_declined_rather_than_guessed(path: Path):
-    """`effective_hours` overrides the wall-clock derivation. It exists to strip
-    human idle time, which an unattended run does not have — so supplying any
-    value replaces a real measurement with an invented one."""
-    text = workflow(path).get("on_complete", "")
-    assert "effective_hours" in text
-    assert "do NOT supply" in text
+def test_only_the_bcp_variant_carries_scoring():
+    """Same rule as every other template pair here: a project with scoring off
+    never receives the instruction at all, not even as text that checks and
+    skips.
 
-
-@BOTH
-def test_halts_may_not_be_invented(path: Path):
-    """The asymmetry: halts are SUBTRACTED from actual_hours. A missing halt
-    costs precision on one story; a fabricated one inflates that story's
-    leverage and then poisons the category baseline behind it."""
-    text = workflow(path).get("on_complete", "")
-    assert "Never invent" in text
-    assert "SUBTRACTED" in text
+    Scoring stayed in the template while closing moved to the plugin, and the
+    asymmetry is the point: scoring must happen BEFORE implementation, which is
+    a moment only the workflow can see (end of step-02, spec at
+    `ready-for-dev`). Closing must happen AFTER review, which only the
+    orchestrator can see. Each half sits where its moment is observable.
+    """
+    assert "bmad-bcp-score" in steps_text(BCP)
+    assert "bmad-bcp-score" not in all_text(PLAIN)
 
 
 # ── 3. planning is not implementation ────────────────────────────────────────
@@ -172,16 +214,6 @@ def test_unresolved_story_key_skips_without_erroring(path: Path):
 # ── the BCP variant additionally scores, and scores before implementing ──────
 
 
-def test_only_the_bcp_variant_carries_scoring():
-    """Same rule as every other template pair here: a project with scoring off
-    never receives the instruction at all, not even as text that checks and
-    skips."""
-    assert "bmad-bcp-score" in steps_text(BCP)
-    assert "bmad-bcp-score" not in all_text(PLAIN)
-    assert "bmad-bcp-recalibrate" in workflow(BCP).get("on_complete", "")
-    assert "bmad-bcp-recalibrate" not in all_text(PLAIN)
-
-
 def test_scoring_happens_before_implementation():
     """BCP is an a-priori estimate. Scored after the work, it anchors on how hard
     the story turned out to be — which is not an estimate at all, and it enters
@@ -200,10 +232,27 @@ def test_an_already_scored_story_is_not_rescored():
 
 
 def test_recalibrate_waits_for_actual_hours():
-    """`actual_hours` is written by track-done. Recalibrating before it lands
-    reads a field that does not exist yet, and the sample is silently skipped —
-    the baseline simply never learns from the story."""
-    text = workflow(BCP).get("on_complete", "")
-    assert "actual_hours" in text
-    assert "STEP 1" in text and "STEP 2" in text
-    assert text.index("STEP 1") < text.index("STEP 2")
+    """`actual_hours` is written when the measurement closes. Recalibrating
+    before that reads a field that does not exist yet — or, worse, one written
+    too early.
+
+    The ordering used to be expressed as prose inside `on_complete` ("STEP 1
+    ... STEP 2, only after STEP 1 has fully completed"), which made it a request
+    an agent could misread. It is now structural: recalibration is a function
+    call after the write, inside the same script, so there is no ordering left
+    to get wrong.
+
+    Asserted here rather than in the plugin tests because this is the template's
+    obligation — it must NOT carry a recalibrate step of its own, which would
+    run against the pre-review `actual_hours` and feed the category baseline a
+    number that prices every story scored afterwards.
+    """
+    assert "recalibrate" not in all_text(BCP), (
+        "the template still recalibrates — it would use the wrong actual_hours"
+    )
+    plugin = TEMPLATES.parent / "loop-plugin/track-done-from-journal.py"
+    assert plugin.exists(), "the plugin that owns recalibration is missing"
+    src = plugin.read_text(encoding="utf-8")
+    assert "def recalibrate(" in src
+    # the call has to come after the write, not before it
+    assert src.index("write_fields(status_path") < src.index("recalibrate(repo")

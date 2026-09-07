@@ -5,45 +5,49 @@
 # regenerate, which overwrites your edits.
 #
 # Emitted INSTEAD OF `bmad-build-auto.toml` when `pulse_estimation_method = "bcp"`.
-# The two files share a destination; only one is ever written. A project that
-# does not use BCP scoring never receives the scoring or recalibrate steps at
-# all — not even as instructions that check and skip.
+# The two files share a destination; only one is ever written.
 #
 # WHY THIS FILE EXISTS. `bmad-build-auto` is the skill an orchestrator (e.g.
 # `bmad-loop`) invokes to run a story unattended. It is a DIFFERENT skill
 # directory from `bmad-build`, and customization resolves per skill name —
-# `load_customization()` reads `_bmad/custom/<skill-name>.toml`. A project with
-# `bmad-build.bcp.toml` installed and no file here gets neither measurement nor
-# scoring on the automated route: the story ships, PULSE never hears about it,
-# and its BCP estimate keeps the seed factor forever. Nothing errors, because an
-# absent customization file is a valid state.
+# `load_customization()` reads `_bmad/custom/<skill-name>.toml`. Without this
+# file an orchestrated run gets neither measurement nor scoring: the story
+# ships, PULSE never hears about it, and its estimate keeps the seed factor
+# forever. Nothing errors, because an absent customization file is a valid state.
 #
 # THE SCORING WINDOW ON THIS ROUTE. BCP must be scored BEFORE implementation:
 # it is an a-priori estimate, and scoring after the fact anchors on how hard the
 # work turned out to be, which poisons the per-category baseline. On the
 # interactive route that window is `bmad-create-story`. Here it is the end of
 # step-02 (plan): the spec is written and status is `ready-for-dev`, and step-03
-# has not started. With `spec_checkpoint` enabled the workflow even halts there
-# — a planning leg that implements nothing — which is the cleanest possible
-# a-priori window, since the estimate exists and no code does.
+# has not started. With `spec_checkpoint` enabled the workflow even halts there —
+# a planning leg that implements nothing — which is the cleanest a-priori window
+# there is, since the estimate exists and no code does.
 #
-# THE UNATTENDED RUN IS THE BETTER MEASUREMENT, not a degraded one. `track-done`
-# asks a human three questions because in an interactive session only the human
-# knows the answers. Here the workflow itself does:
+# WHAT MOVED OUT OF THIS FILE, AND WHY. Both closing steps — `track-done` and
+# `bcp-recalibrate` — now live in the loop plugin at `post_story`, see
+# `assets/loop-plugin/`.
 #
-#   - `review_cycles` is recorded, pass by pass, in the `## Review Triage Log`
-#     section this workflow appends to `{spec_file}`.
-#   - `effective_hours` exists to strip human idle time out of wall-clock. There
-#     is no human in the loop, so wall-clock already IS effective time.
-#   - `halts` are approval waits, incidents and user pauses. Nobody is being
-#     asked for approval, so on a clean run there are genuinely none.
+# The first version closed them from `on_complete`, copying `bmad-build.bcp.toml`
+# where that is correct and says so: "review has already run inside this workflow
+# via workflow.review_layers". Under the loop it is FALSE. `on_complete` fires at
+# the end of the DEV session, and the orchestrator runs review afterwards as
+# independent sessions. Measured on a real story: `end_ts` stamped at 02:45:25
+# while review ran 02:48:07 → 04:45:01 — 1.05h recorded against a 3.05h span,
+# `first_pass: true` on three review cycles, under-measured by 2.9x.
 #
-# The one thing the workflow must not do is invent: a fabricated halt is
-# subtracted from `actual_hours` and silently inflates leverage.
+# Recalibration had to move with it, and not only for tidiness: it reads
+# `actual_hours`, which only exists once track-done has run. Left here, it would
+# read the *wrong* `actual_hours` — and feed that number into the per-category
+# baseline that prices every story scored afterwards. A silently wrong ruler is
+# worse than no ruler.
 #
-# WHY THE `on_complete` STEPS ARE IN ONE STRING. `on_complete` is a scalar: an
-# override REPLACES it rather than appending. Both halves live here, in order,
-# authored as one sequence. The ordering is not a request — it is the file.
+# IF YOU DRIVE `bmad-build-auto` WITHOUT `bmad-loop`, the plugin never fires and
+# stories will carry `start_ts` with no `end_ts`, and no recalibration sample.
+# Close them with `/bmad-pulse-track-done <story_id>` then
+# `/bmad-bcp-recalibrate --story <path> --actual-hours <h>`, or use
+# `bmad-pulse-track-backfill` after the fact. An open measurement is visible and
+# fixable; a wrong one is neither.
 
 [workflow]
 
@@ -52,4 +56,4 @@ activation_steps_append = [
   "PULSE auto-tracking — DEFERRED TRIGGER, register it now and fire it later. Milestone: in step-03 (implement), at the point where the workflow follows `sync-sprint-status.md` with `target_status` = `in-progress`, and BEFORE executing the implementation handoff, invoke the bmad-pulse-track-start skill passing the story_id explicitly (e.g. /bmad-pulse-track-start 15.3). Derive the story_id from the frontmatter of `{spec_file}` — never from the `in-progress` field of sprint-status, because this workflow just wrote that field and reading it back would be circular. The skill is idempotent: if a start_ts already exists for this story it asks before overwriting, and in an unattended run the answer is to keep the existing value. SKIP the invocation entirely, without error, when any of these hold: this run is a planning leg that ends at `ready-for-dev` without implementing (implementation has not started, and stamping it here would count the checkpoint wait as development time); `story_key` could not be resolved; or the story is exploratory/read-only with no real implementation.",
 ]
 
-on_complete = "Run these two steps in order; the second depends on the first having finished.\n\nSTEP 1 — PULSE track-done. Invoke the bmad-pulse-track-done skill, passing the story_id of the just-built story as argument (e.g. /bmad-pulse-track-done 15.3). It records end_ts, calculates the AI Leverage Ratio and writes actual_hours.\n\nThe skill will ask three questions that normally need a human. This run is unattended, and you have better answers than a human would — supply them from what the run actually did, and never from a guess:\n\n- `review_cycles`: count the entries this run appended to the `## Review Triage Log` section of `{spec_file}` — one per review pass. That log is the record of what happened; do not estimate. If the review step ran once and passed, the answer is 1. A resumed or follow-up pass counts the passes THIS run performed, not rows carried over from an earlier one.\n- `effective_hours`: do NOT supply a value. This field exists to strip human idle time out of wall-clock, and an unattended run has none — wall-clock already is the effective working time. Supplying a number here would override a good measurement with an invented one.\n- halts: report the ones the run actually recorded, and only those. A halt is a blocking pause over two minutes — an approval wait, an incident, an external pause. An unattended run asks nobody for approval, so on a clean run the honest answer is none. Never invent one to look thorough: halts are SUBTRACTED from actual_hours, so a fabricated halt inflates the leverage ratio and corrupts the baseline for every story scored after it.\n\nSkip STEP 1 entirely, without error, when `story_key` never resolved, or when this run implemented nothing (a planning-only leg has no completion to record).\n\nSTEP 2 — BCP recalibrate. Only after STEP 1 has fully completed, including the write of actual_hours to sprint-status. Check whether the story carries `bcp.total` in its frontmatter. If it does, read `actual_hours` from the pulse_metrics section of sprint-status (keyed by the story's story_key or story_id) — that field only exists once track-done has finished. If actual_hours is present and is a valid number, invoke the bmad-bcp-recalibrate skill passing the story path and --actual-hours with the value read (e.g. /bmad-bcp-recalibrate --story path/to/story.md --actual-hours 0.48). Recalibration is idempotent — samples already applied are skipped by story id. If `bcp.total` is absent, actual_hours is not found, or STEP 1 did not run, skip silently: no error, no recalibration attempt."
+on_complete = ""
