@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.4](https://github.com/nidelson/bmad-module-pulse/compare/v0.9.3...v0.9.4) (2026-09-07)
+
+
+### Bug Fixes
+
+* **setup:** close the measurement after review, not at the end of dev ([#109](https://github.com/nidelson/bmad-module-pulse/issues/109)) ([df9ee37](https://github.com/nidelson/bmad-module-pulse/commit/df9ee374e6f47d3a5405b93c6015998a06914f64))
+
 ## [0.9.3](https://github.com/nidelson/bmad-module-pulse/compare/v0.9.2...v0.9.3) (2026-09-07)
 
 
