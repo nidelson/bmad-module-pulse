@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.5](https://github.com/nidelson/bmad-module-pulse/compare/v0.9.4...v0.9.5) (2026-09-07)
+
+
+### Documentation
+
+* **pulse:** add RFC for token telemetry adapter ([#50](https://github.com/nidelson/bmad-module-pulse/issues/50)) ([f408dc8](https://github.com/nidelson/bmad-module-pulse/commit/f408dc833313c09da41e4ab9debd395e79914688))
+
 ## [0.9.4](https://github.com/nidelson/bmad-module-pulse/compare/v0.9.3...v0.9.4) (2026-09-07)
 
 
