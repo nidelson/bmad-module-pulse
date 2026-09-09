@@ -125,7 +125,71 @@ error measures the estimator.
 2. Extract all entries from the `pulse_metrics:` section
 3. Group by epic — infer epic_id from the numeric prefix of story_id (e.g. `15.3` → epic 15, `4.4.1` → epic 4)
 4. **Enumerate the scored backlog** (v0.8 forecast input — read-only): scan the story files in the implementation-artifacts folder for stories that carry a `bcp:` block (with `bcp.total`) but have **no entry** in `pulse_metrics:` (i.e. scored but not yet started). These are the remaining work. Sum `bcp.total` by `category` → `remaining_bcp_by_category` (and `remaining_bcp_total`). If the story files cannot be enumerated, fall back to an optional manual total `pulse_forecast_remaining_bcp` (category-less). PULSE reads story files **read-only** — it never writes them, the BCP baseline, or any estimate. An empty backlog → no forecast.
-5. Calculate aggregations:
+5. **Compute every aggregation with the deterministic script — do NOT calculate by hand:**
+
+   ```bash
+   python3 {skill-root}/scripts/pulse_dashboard_data.py \
+     --sprint-status {sprint_status_file} \
+     --remaining-bcp '{"category": bcp, ...}' \
+     --json
+   ```
+
+   The script returns every number this template renders: `predictability`,
+   `h_per_bcp`, `leverage_vs_reference`, `segment_split`, `reference_regime`,
+   `process_health` (first-pass, review cycles, halts, `vs_plano`),
+   `drift_watchlist` and `forecast`. Pass `remaining_bcp_by_category` from step
+   4; omit it and the forecast section is skipped.
+
+   **Why a script and not prose:** an LLM computing a median is
+   non-deterministic — same input, two possible answers — and it fails
+   *silently*, because a plausible median is indistinguishable from a correct
+   one. The arithmetic is now reproducible and unit-tested (`test_pulse_stats`,
+   `test_pulse_aggregations`, `test_pulse_process`, `test_pulse_forecast`,
+   `test_pulse_dashboard_data` — 129 tests).
+
+   **Division of labour:** the script owns the numbers; you own the prose, the
+   insights, the anti-Goodhart framing, and the judgement about what is worth
+   saying. Do not recompute what the script returns and do not "sanity check" a
+   value by estimating it — if a number looks wrong, the fix is a failing test
+   in the module, not a correction in the narrative.
+
+   **Placeholder map** — this template uses flat names; the script returns
+   nested JSON. Read each placeholder from this path, and never invent a value
+   for one that is `null` (render `—`, or omit its conditional section):
+
+   | template placeholder | path in the `--json` output |
+   | --- | --- |
+   | `{predictability_score}` / `{predictability_error}` | `predictability.score` / `.median_error_pct` |
+   | `{trend_arrow}` | `predictability.trend` (`converging` → `↑`, `diverging` → `↓`, `stable` → `→`) |
+   | `{avg_leverage_vs_reference}` | `leverage_vs_reference.mean` |
+   | `{segment_split}` | `segment_split` |
+   | `{h_per_bcp_by_category}` | `h_per_bcp.by_category[cat].pooled.geo_mean` (+ `.segments[micro\|story]`) |
+   | `{n_degen}` / `{n_degen_bcp}` | `leverage_vs_reference.excluded_below_effort_floor` / `h_per_bcp.excluded_below_effort_floor` |
+   | first-pass `{rate}` | `process_health.first_pass.rate` (+ `.passed` / `.total`) |
+   | `{total_approval_wait_count}` / `{total_approval_wait_minutes}` | `process_health.halts.approval_wait_count` / `.approval_wait_minutes` |
+   | `{total_pre_approved_batch_count}` / `{legacy_halt_string_count}` | `process_health.halts.pre_approved_batch_count` / `.legacy_halt_string_count` |
+   | `{cohort_label}`, `{median_abs_drift_pct}`, `{n}`, `{trend}` | `drift_watchlist[]` |
+   | `{forecast_total}` / `{forecast_low_90}` / `{forecast_high_90}` | `forecast.point` / `.low_90` / `.high_90` |
+   | `{forecast_precision}` / `{pooled_bcp}` / `{pooled_pct}` | `forecast.precision` / `.pooled_bcp` / `.pooled_pct` |
+   | `{remaining_bcp_cat}`, `{hours_cat}`, `{low_cat}`, `{high_cat}`, `{n_cat}` | `forecast.by_category[cat]` |
+
+   `{avg_leverage_ratio}` and the vs-PLANO row are **not** rendered (see the
+   anti-Goodhart invariant); the script returns them under
+   `process_health.vs_plano` with `render: false`.
+
+   Two fields report **data defects** rather than fixing them — PULSE is
+   read-only over consumer data. `reference_regime.single_regime == false` means
+   the frozen reference rate is inconsistent across stories;
+   `process_health.halts.approval_wait_unknown_minutes` counts legacy halts
+   whose duration is unknowable. Surface both in the insights when present.
+
+6. **Reference specification** — what the script implements, kept as the
+   normative description of each aggregation (invariants locked by
+   `test_honest_engine.py`, `test_invert_speedometer.py`, `test_forecast.py`,
+   `test_action_alert.py`, `test_rescore_denominator.py`). Read it to understand
+   or review a number; **do not execute it by hand** — step 5 is the operative
+   instruction.
+   Aggregations computed:
    - Total stories measured
    - **`predictability_score`** — the v0.6 **hero metric**, rendered as **accuracy** (higher is better; **target 100%**). First compute the median per-story estimate **error** `E` across all stories with `pulse_metrics`: prefer each story's **persisted `estimate_error_pct`** (written by track-done/backfill) when present; for older entries without it, recompute `|actual_hours - estimated_hours| / estimated_hours` (floor `estimated_hours` at 0.01 to avoid divide-by-zero) — the two are identical by definition. Then `predictability_score = max(0, 100 - E)` (clamp at 0 — an estimate off by ≥100% reads as 0% predictable). Always surface the margin of error `E` alongside in parentheses so the raw signal stays visible ("X% (margem de erro Y%)"). Method-agnostic: for BCP stories `E` equals `|bcp_recorded.drift_pct|` (the BCP totals cancel), so it works whether or not the project uses BCP. Compute global and per category. Median (not mean) for the same reason the v0.5 baseline is geometric — resist outliers. Pair it with a **trend arrow** from the first-half vs second-half median error (story-order, chronological proxy): error **falling** → accuracy rising → `↑ converging`; error **rising** → accuracy falling → `↓ diverging`; within tolerance → `→ stable`. (The glyph tracks the accuracy direction — up is good — while the word tracks whether estimates are converging on reality.) Needs `>= 4` stories for a trend; fewer → no arrow.
    - **`estimate_regime`** (v0.6 regime detection) — the basis each `estimated_hours` was derived from, read **read-only** from the story's `estimated_hours_basis` frontmatter field when present (`bcp` / `hours` / `story_points` / `tshirt`), falling back to `{pulse_estimation_method}` when the field is absent. PULSE **never writes** `estimated_hours_basis` and **never derives hours from it** — it only labels what each multiplier is measured *against* (so "5x" reads "vs PLAN (bcp)" not an unqualified number). Report the dominant regime across stories for the leverage context line; annotate a story in the breakdown when its regime differs from the project default. (`estimated_hours_pre_bcp` stays ignored.)
