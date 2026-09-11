@@ -32,9 +32,13 @@ reasons, in order of how much they cost when ignored:
      during the SIP work, each time with a silent 73-byte stderr. A measurement
      step that can fail that way is a measurement step that will be missing
      exactly when the run was long enough to matter.
-  3. It runs at `post_story`, which the engine emits after `story-done` and after
-     worktree integration — including on the resumed path (`engine.py`: "a
-     resumed story that just reached DONE gets the same post-story hook").
+  3. It runs at `post_commit`, which the engine emits from
+     `_finalize_commit_phase` right after the journal records `story-done`,
+     reached only via `_commit` — so the review loop has converged and the task
+     is COMMITTING, which cannot defer back into review. NOT `post_story`: that
+     fires after `unit-merged` has deleted the worktree, and the loop launches
+     declarative hooks with the worktree as cwd, so the process dies with ENOENT
+     before this file is read (bmad-loop#779).
 
 WHAT IT DELIBERATELY DOES NOT DO. It never writes `start_ts` — that belongs to
 `track-start`, which fires inside step-03 when the workflow marks `in-progress`.

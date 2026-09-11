@@ -17,10 +17,39 @@
 # recorded against a 3.05h span, `first_pass: true` on a story that took three
 # review cycles. Under-measured by 2.9x, and the wrong numbers look plausible.
 #
-# `post_story` is the correct seam. The engine emits it after `story-done` and
-# after worktree integration, including on the resumed path — `engine.py` says
-# so: "a resumed story that just reached DONE gets the same post-story hook the
-# _loop path fires".
+# `post_commit` is the correct seam. The engine emits it from
+# `_finalize_commit_phase`, on the line immediately after the journal records
+# `story-done` — and that function is reached only through `_commit`, which runs
+# after the review loop converged. `_commit` advances the task to COMMITTING,
+# and the engine's own comment says COMMITTING cannot defer: there is no path
+# back into review from there. Verified across 8 real runs in the SIP repo,
+# three of them with multiple review cycles: `story-done` follows the LAST
+# `review-result` every time, zero exceptions.
+#
+# WHY NOT `post_story`, WHICH READS AS THE OBVIOUS CHOICE. It satisfies the
+# "after review" requirement too — it was this plugin's seam until 2026-09-10 —
+# but it is structurally unable to RUN. The loop launches a declarative hook
+# with `cwd = ctx.worktree or ctx.repo_root` (`plugins/bus.py`), and by
+# `post_story` the worktree has been deleted by `unit-merged`, so `subprocess`
+# fails with ENOENT before the command's first byte:
+#
+#     23:18:53  review-result
+#     23:19:15  story-done       <- post_commit fires here, worktree alive
+#     23:19:15  unit-merged      <- worktree removed
+#     23:19:36  plugin-hook-error   "[Errno 2] ... /worktrees/<key>"
+#
+# The run still reported `1 done` and the measurement was simply lost — the
+# failure mode this plugin exists to prevent, arriving by a different door.
+# Nothing the plugin writes can survive that: `cwd` is applied by the kernel at
+# fork/exec, so `cd`, an absolute path and `env -C` all die identically, and a
+# `cwd` key in the hook table would be ignored (the loop's manifest parser reads
+# only `cmd`, `timeout_sec`, `blocking`, `fail_closed`). Reported upstream as
+# bmad-loop#779. This plugin does not wait for that fix — `post_commit` is
+# correct on its own terms, not a workaround.
+#
+# WHY NOT `pre_commit` OR `post_review_result`. Both can fire while the story
+# can still take another review cycle, which would capture `review_cycles` and
+# `actual_hours` mid-flight — the 2.9x under-measurement again, renamed.
 #
 # WHY NOT `pre_story` FOR track-start. It fires before everything, including the
 # planning leg of a `spec_checkpoint` run. Stamping `start_ts` there would book
@@ -39,7 +68,7 @@ api_version = 1
 version = "1.0.0"
 description = "Closes PULSE measurement from the loop journal, after review"
 
-[hooks.post_story]
+[hooks.post_commit]
 # Deterministic: reads the journal, writes the fields. No agent session, so it
 # costs no tokens, needs no auth, and cannot invent a value. An OAuth session
 # expiring mid-run killed four separate processes during the work that produced

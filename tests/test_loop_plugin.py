@@ -11,7 +11,7 @@ The premise came from `bmad-build.toml`, where it is TRUE and says so:
 "review has already run inside this workflow via workflow.review_layers".
 Copying the hook carried that sentence across an architecture boundary where it
 does not hold. The tests below pin the boundary itself, not the prose:
-`post_story` for closing, never `pre_story`, and never the dev-session hook.
+`post_commit` for closing, never `pre_story`, and never the dev-session hook.
 
 The existing template tests assert the CONTENT of an instruction. They cannot
 catch this class of bug, because the text was correct — the firing point was
@@ -40,14 +40,50 @@ def manifest() -> dict:
     return tomllib.loads(MANIFEST.read_text(encoding="utf-8"))
 
 
-# ── the seam: post_story, and nothing earlier ────────────────────────────────
+# ── the seam: post_commit — after review, before the worktree is destroyed ───
 
 
-def test_closing_hook_is_post_story(manifest: dict):
-    """`post_story` is emitted after `story-done` AND after worktree
-    integration, on both the normal and the resumed path. Any earlier stage
-    fires while review is still ahead."""
-    assert list(manifest["hooks"]) == ["post_story"]
+def test_closing_hook_is_post_commit(manifest: dict):
+    """`post_commit` is emitted from `_finalize` on the line right after the
+    journal records `story-done` (`engine.py`), and it is reached only through
+    `_review_and_commit` — so review has run and every field this plugin needs
+    is already on disk.
+
+    It replaced `post_story`, which is emitted later and is structurally unable
+    to run: the loop launches a declarative hook with
+    `cwd = ctx.worktree or ctx.repo_root` (`plugins/bus.py`), and by `post_story`
+    the worktree has been deleted by `unit-merged`, so `subprocess.run` dies with
+    ENOENT before the command's first byte. Measured on SIP story 22.2, run
+    20260910-213338-52e4:
+
+        23:18:53  review-result
+        23:19:15  story-done       <- post_commit fires here, worktree alive
+        23:19:15  unit-merged      <- worktree removed
+        23:19:36  plugin-hook-error   "[Errno 2] ... /worktrees/2"
+
+    The run still reported `1 done`. Reported upstream as bmad-loop#779; this
+    hook does not wait for that fix, because `post_commit` is a correct seam on
+    its own terms — it is simply earlier than the destruction.
+    """
+    assert list(manifest["hooks"]) == ["post_commit"]
+
+
+def test_the_plugin_never_binds_a_stage_that_precedes_review(manifest: dict):
+    """The bug this plugin exists to fix was a hook that closed the measurement
+    before review had run. `post_dev_phase` and `post_review_result` both fire
+    while the story can still take another review cycle — binding either would
+    reintroduce the 2.9x under-measurement with a different name."""
+    for stage in ("post_dev_phase", "post_review_result", "pre_commit"):
+        assert stage not in manifest["hooks"], (
+            f"{stage} can fire before the story is final — review_cycles and "
+            "actual_hours would be captured mid-flight"
+        )
+
+
+def test_the_plugin_never_binds_post_story(manifest: dict):
+    """Regression pin for bmad-loop#779. `post_story` reads as the natural seam
+    and is what this plugin used to declare; the worktree is gone by then."""
+    assert "post_story" not in manifest["hooks"]
 
 
 def test_the_plugin_never_claims_pre_story(manifest: dict):
@@ -63,7 +99,7 @@ def test_the_plugin_never_claims_pre_story(manifest: dict):
 def test_hook_does_not_block_the_run(manifest: dict):
     """A missing measurement is a gap in the baseline; a failed build is a gap
     in the product. An observability hook never gets to cause the second."""
-    h = manifest["hooks"]["post_story"]
+    h = manifest["hooks"]["post_commit"]
     assert h.get("blocking", False) is False
     assert h.get("fail_closed", False) is False
 
@@ -74,7 +110,7 @@ def test_command_is_deterministic_not_an_agent(manifest: dict):
     plugin an expiring OAuth session killed four separate processes, each with
     a silent 73-byte stderr — a measurement that fails that way is missing
     exactly when the run was long enough to matter."""
-    cmd = manifest["hooks"]["post_story"]["cmd"]
+    cmd = manifest["hooks"]["post_commit"]["cmd"]
     assert "claude" not in cmd
     assert "track-done-from-journal.py" in cmd
     assert "{scripts}" in cmd, "must use the loop's own placeholder for its dir"
@@ -103,7 +139,7 @@ def test_manifest_parses_with_the_loops_own_loader(tmp_path: Path):
     found = loader.load_plugins(tmp_path)
     assert "pulse" in found, "the loop's loader did not discover the plugin"
     p = found["pulse"]
-    assert [h.stage for h in p.hooks] == ["post_story"]
+    assert [h.stage for h in p.hooks] == ["post_commit"]
     assert p.render(p.hooks[0].cmd).endswith("track-done-from-journal.py")
 
 
@@ -265,4 +301,34 @@ def test_the_write_is_surgical(tmp_path: Path):
     assert "  outra-story:" in after and "    actual_hours: 9.99" in after
     assert len(removed) + len(added) <= 12, (
         f"{len(removed)} removed / {len(added)} added — expected a handful"
+    )
+
+
+# ── the hook must survive a worktree that is already gone ────────────────────
+#
+# WHY. `bmad-loop` runs a declarative hook with `cwd = ctx.worktree or
+# ctx.repo_root` (`plugins/bus.py`). At `post_story` the worktree has ALREADY
+# been removed by `unit-merged`, so that cwd does not exist and the subprocess
+# dies with ENOENT before the script runs a single line. Observed on SIP story
+# 22.2, run 20260910-213338-52e4:
+#
+#     23:19:15  unit-merged          <- worktree removed here
+#     23:19:36  plugin-hook-error    <- pulse, 21s too late
+#     "[Errno 2] No such file or directory: .../worktrees/2"
+#
+# The measurement was lost and the run still reported "1 done". The script
+# itself was never at fault — it resolves everything from BMAD_LOOP_REPO_ROOT,
+# which outlives the merge. What matters is that it must not NEED the worktree
+# as a working directory, and must not read anything relative to it.
+
+
+def test_script_never_resolves_paths_relative_to_the_worktree():
+    """The worktree is gone at `post_story`. Anything the script needs must be
+    resolved from BMAD_LOOP_REPO_ROOT or BMAD_LOOP_RUN_DIR, both of which
+    survive `unit-merged`. A `BMAD_LOOP_WORKTREE` read would reintroduce the
+    ENOENT class even if cwd were fixed."""
+    src = SCRIPT.read_text(encoding="utf-8")
+    assert "BMAD_LOOP_WORKTREE" not in src, (
+        "the worktree does not exist when post_story fires — resolve from "
+        "BMAD_LOOP_REPO_ROOT instead"
     )
