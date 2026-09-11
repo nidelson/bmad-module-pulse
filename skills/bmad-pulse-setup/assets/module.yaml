@@ -10,6 +10,36 @@ description: >-
   forecasts.
 module_version: 0.9.5
 default_selected: false
+# Rendered by the BMAD installer as a blocking "⚑ Action needed" panel the user
+# must acknowledge, on install AND on update (`installer.js`
+# `_displayPostInstallMessages`, called from `install()`, which is also the
+# update path).
+#
+# WHY PULSE NEEDS ONE. Part of this module is installed by copy, not by the
+# installer: `bmad-pulse-setup` writes files into the user's project, and a
+# module update refreshes `skills/` without touching them. Those copies stay at
+# the version that was current on the day setup last ran. #123 is the worked
+# example — a fixed file shipped, and every existing project kept the broken
+# one.
+#
+# KEEP THE TEXT ABOUT PULSE. An earlier draft opened with "If this project is
+# driven by bmad-loop" and led with plugin paths. That reads as someone else's
+# problem and gets skipped: the reader has to already know what the loop is, and
+# whether they use it, before deciding the message applies to them. The action
+# is the same for everyone and is harmless to repeat — so state it plainly and
+# leave the internals out. Naming specific files here also dates the message the
+# next time setup writes somewhere new.
+post_install_message: >
+  Re-run `/bmad-pulse-setup` to finish this update.
+
+  PULSE does not live entirely in the skills the installer just refreshed: setup
+  also writes files into your project, and those copies stay at the version that
+  was current when you first ran it. Re-running the setup skill brings them to
+  the version you just installed. It is safe to re-run at any time and keeps
+  your existing answers as defaults.
+
+  Skipping this leaves the old files in place. They fail quietly rather than
+  loudly, so nothing in your next run will point back here.
 module_greeting: >
   PULSE installed successfully! Against facts, there are no arguments.
 

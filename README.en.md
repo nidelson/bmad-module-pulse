@@ -128,6 +128,18 @@ Then in your BMAD project:
 
 PULSE attaches to your existing BMAD story files — no schema migrations, no separate database.
 
+> **After updating PULSE, re-run `/bmad-pulse-setup`.**
+> Not all of PULSE arrives through the installer. Setup also writes files into
+> your project, and a module update refreshes the skills without touching those
+> — they stay at the version that was current the last time you ran setup.
+> Re-running it brings everything to the version you just installed; it is safe
+> to re-run at any time and keeps your existing answers as defaults.
+>
+> Stale files fail quietly rather than loudly, so nothing in a later run points
+> back at the update as the cause. The installer raises an "Action needed" panel
+> about this at the end of install and update
+> ([#124](https://github.com/nidelson/bmad-module-pulse/issues/124)).
+
 ---
 
 ## Included Skills
