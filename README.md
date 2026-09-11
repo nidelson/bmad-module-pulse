@@ -118,6 +118,19 @@ Depois, no seu projeto BMAD:
 
 PULSE se conecta aos seus arquivos de story BMAD existentes — sem migrations, sem banco separado.
 
+> **Depois de atualizar o PULSE, rode `/bmad-pulse-setup` de novo.**
+> Nem todo o PULSE chega pelo instalador. O setup também grava arquivos dentro
+> do seu projeto, e uma atualização do módulo renova as skills sem tocar neles —
+> eles continuam na versão que era a atual da última vez que você rodou o setup.
+> Rodar de novo traz tudo para a versão que você acabou de instalar; é seguro
+> repetir a qualquer momento e mantém suas respostas anteriores como padrão.
+>
+> Arquivos desatualizados falham de forma silenciosa, não barulhenta — então
+> nada numa execução posterior vai apontar a atualização como causa. O
+> instalador exibe um painel "Action needed" sobre isso ao fim da instalação e
+> da atualização
+> ([#124](https://github.com/nidelson/bmad-module-pulse/issues/124)).
+
 ---
 
 ## Skills inclusas

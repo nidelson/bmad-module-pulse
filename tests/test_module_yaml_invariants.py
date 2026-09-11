@@ -78,3 +78,69 @@ def test_path_results_use_value_token():
         assert "{value}" in entry["result"], (
             f"{key}: result template must contain {{value}} to honor user input"
         )
+
+
+# ── post_install_message: the only signal a stale loop plugin ever gets ──────
+#
+# The loop plugin is a COPY, made by bmad-pulse-setup:
+#
+#     cp ./assets/loop-plugin/* "{project-root}/.bmad-loop/plugins/pulse/"
+#
+# A BMAD module update refreshes `skills/` and never touches that copy, so it
+# stays frozen at whatever shipped on install day. #123 proved the cost: the
+# closing hook moved from `post_story` to `post_commit` (the former cannot run
+# at all — bmad-loop#779), and every existing install kept the broken seam. The
+# hook is non-blocking by design, so the failure is silent: the run reports
+# "1 done" and the story's metrics are simply never written.
+#
+# The BMAD installer reads `post_install_message` from the module manifest and
+# renders a blocking "⚑ Action needed" panel that the user must acknowledge
+# (`installer.js` `_displayPostInstallMessages`, reached from `install()` —
+# which is also the update path). That panel is the only place this can be said.
+
+
+def test_manifest_carries_a_post_install_message():
+    """Without this field the installer shows nothing (`if (!message) continue`),
+    and a user updating BMAD has no way to learn the loop plugin went stale."""
+    data = _load_module_yaml()
+    assert data.get("post_install_message"), (
+        "module.yaml must declare post_install_message — it is the installer's "
+        "only 'Action needed' channel, and it fires on update as well as install"
+    )
+
+
+def test_post_install_message_names_the_command_that_fixes_it():
+    """A notice that does not say what to run is a notice that gets dismissed.
+    The setup skill is already the supported re-run/migration path (#73)."""
+    msg = _load_module_yaml().get("post_install_message", "")
+    assert "/bmad-pulse-setup" in msg
+
+
+def test_post_install_message_states_the_consequence_of_ignoring_it():
+    """The whole problem is that the failure is invisible. If the panel does not
+    say the stale files fail without complaining, the reader has no reason to
+    act on a message that otherwise reads like routine post-install noise."""
+    msg = _load_module_yaml().get("post_install_message", "").lower()
+    assert any(w in msg for w in ("quietly", "silent", "silently", "without warning"))
+
+
+def test_post_install_message_is_not_conditional_on_another_tool():
+    """The message is about PULSE. An earlier draft opened with "If this project
+    is driven by bmad-loop" and led with plugin paths — which makes the reader
+    decide whether they are in scope before they know what the message is about,
+    and gets skipped by exactly the people who needed it. The action is the same
+    for everyone and harmless to repeat, so it is stated unconditionally.
+
+    Naming internals here also dates the text the next time setup writes
+    somewhere new: the reason to re-run is 'setup put files in your project',
+    not any one file's path."""
+    msg = _load_module_yaml().get("post_install_message", "").lower()
+    for leak in ("bmad-loop", ".bmad-loop", "plugin"):
+        assert leak not in msg, (
+            f"{leak!r} makes the panel look like it applies to someone else — "
+            "keep the message about PULSE and the action the user must take"
+        )
+    assert not msg.lstrip().startswith("if "), (
+        "do not open with a condition the reader has to evaluate before they "
+        "know what the message is for"
+    )

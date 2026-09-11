@@ -146,6 +146,28 @@ def test_no_workflow_claims_the_port_is_unfinished():
         assert not found, f"{path.relative_to(REPO_ROOT)} still says {found}"
 
 
+def test_readmes_tell_the_reader_to_re_run_setup_after_an_update():
+    """Both READMEs, not just one. PULSE ships a Portuguese README.md and an
+    English README.en.md, and this notice was first written into the English one
+    alone — where most readers of the repo's front page would never see it.
+
+    The notice itself exists because part of PULSE is installed by copy: setup
+    writes files into the user's project and a module update leaves them at the
+    version they were installed at (#124). Since stale files fail quietly, the
+    README is one of the two places that can warn anyone at all — the other is
+    the installer's post_install_message panel.
+    """
+    for readme in READMES:
+        text = readme.read_text(encoding="utf-8")
+        assert "/bmad-pulse-setup" in text, (
+            f"{readme.name} must name the command that refreshes the copies"
+        )
+        assert "124" in text, (
+            f"{readme.name} must carry the update notice (issue #124) — a "
+            "translation that silently drops it strands that language's readers"
+        )
+
+
 def test_readmes_document_the_estimation_switch():
     """The feature is invisible if the front door does not mention it.
 
