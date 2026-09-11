@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.9.6](https://github.com/nidelson/bmad-module-pulse/compare/v0.9.5...v0.9.6) (2026-09-11)
+
+
+### Features
+
+* **dashboard:** core aggregations — predictability, h/BCP, leverage ([#111](https://github.com/nidelson/bmad-module-pulse/issues/111)) ([#116](https://github.com/nidelson/bmad-module-pulse/issues/116)) ([59491ce](https://github.com/nidelson/bmad-module-pulse/commit/59491cee962a7b95b77d7ded8c90e49de5c79fcc))
+* **dashboard:** deterministic statistical core for the arithmetic ([#111](https://github.com/nidelson/bmad-module-pulse/issues/111)) ([#114](https://github.com/nidelson/bmad-module-pulse/issues/114)) ([7785954](https://github.com/nidelson/bmad-module-pulse/commit/7785954caa282c821fb0cceac7829a085f733bd1))
+* **dashboard:** forecast and drift detection ([#111](https://github.com/nidelson/bmad-module-pulse/issues/111)) ([#118](https://github.com/nidelson/bmad-module-pulse/issues/118)) ([50b0119](https://github.com/nidelson/bmad-module-pulse/commit/50b0119cef16e74634e7d850617d1a62ceee82de))
+* **dashboard:** process health — first-pass, cycles, halts ([#111](https://github.com/nidelson/bmad-module-pulse/issues/111)) ([#117](https://github.com/nidelson/bmad-module-pulse/issues/117)) ([bbcb0db](https://github.com/nidelson/bmad-module-pulse/commit/bbcb0dbdce2e76e2a037018d01066f8cd530f016))
+* **dashboard:** single entry point; workflow calls the script ([#111](https://github.com/nidelson/bmad-module-pulse/issues/111)) ([#119](https://github.com/nidelson/bmad-module-pulse/issues/119)) ([d2c70ae](https://github.com/nidelson/bmad-module-pulse/commit/d2c70aeb1f132ee036111a9eddfd12f9ec49e0b1))
+
+
+### Bug Fixes
+
+* **loop-plugin:** move the closing hook from post_story to post_commit ([#123](https://github.com/nidelson/bmad-module-pulse/issues/123)) ([cdb9dd0](https://github.com/nidelson/bmad-module-pulse/commit/cdb9dd0c0064ef7d37c2f26b21a55e5796eb0cdd)), closes [#112](https://github.com/nidelson/bmad-module-pulse/issues/112)
+* **setup:** warn on update that setup must be re-run ([#125](https://github.com/nidelson/bmad-module-pulse/issues/125)) ([87b0596](https://github.com/nidelson/bmad-module-pulse/commit/87b0596e4f0a6f20f985bd803ea514a72a827a23))
+
 ## [0.9.5](https://github.com/nidelson/bmad-module-pulse/compare/v0.9.4...v0.9.5) (2026-09-07)
 
 
