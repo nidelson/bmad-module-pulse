@@ -126,22 +126,36 @@ def find_entry(metrics: dict, story_key: str, spec_folder: str) -> str | None:
     identifies the measurement, the `identity` block identifies the story. So the
     lookup goes through `identity`.
 
-    THE MATCH MUST BE ANCHORED ON THE SPEC FOLDER, not on the story key alone.
-    In stories mode the key is a bare ordinal (`3`), which is not unique across
-    the repo: an epic story numbered `0.4.3` also ends in `3`. A first version of
-    this function compared `story_id.split(".")[-1]` and, run against the real
-    SIP status file, closed `0-4-3-limpeza-gate-neutral` with **319.54 hours** —
-    a story from another epic that had a stale `start_ts`. It would have written
-    a plausible-looking row into the baseline that prices every later story.
+    WHICH MODE ARE WE IN. The two queue modes key the journal differently, and
+    the difference decides the whole lookup:
 
-    So: same spec folder AND same trailing id. A story from a spec folder is only
-    ever closed by the run that owns that folder, and `BMAD_LOOP_SPEC_FOLDER` is
-    what makes the pair unique. Without a spec folder in env there is no way to
-    disambiguate, and the function refuses rather than guessing.
+    * sprint-status mode: the journal `story_key` IS the full pulse_metrics
+      key (e.g. `22-1-fundacao-orchestrator-contrato-leitura` — SIP run
+      20260907-183942). Exact match, no disambiguation ever needed, and the
+      trailing-id match below must NOT run: a suffix match here is exactly
+      the 319-hour bug.
+    * stories mode (spec folder): the journal key is a bare ordinal (`3`),
+      which is not unique across the repo. The pair (spec folder, trailing
+      id) is what disambiguates.
+
+    THE MATCH MUST BE ANCHORED ON THE SPEC FOLDER IN STORIES MODE, not on the
+    story key alone. A first version of this function compared
+    `story_id.split(".")[-1]` and, run against the real SIP status file,
+    closed `0-4-3-limpeza-gate-neutral` with **319.54 hours** — a story from
+    another epic that had a stale `start_ts`. It would have written a
+    plausible-looking row into the baseline that prices every later story.
+
+    So: same spec folder AND same trailing id. A story from a spec folder is
+    only ever closed by the run that owns that folder. Without a spec folder
+    in stories mode there is no way to disambiguate, and the function refuses
+    rather than guessing.
     """
+    want = str(story_key)
+    # sprint-status mode: the journal key is the pulse_metrics key itself
+    if want in metrics and isinstance(metrics.get(want), dict):
+        return want
     if not spec_folder:
         return None
-    want = str(story_key)
     for k, v in metrics.items():
         if not isinstance(v, dict):
             continue
@@ -168,19 +182,36 @@ def write_fields(path: Path, key: str, updates: dict) -> None:
     So the update is textual and anchored: find the entry, then replace or append
     each field inside its block. Indentation is read from the block rather than
     assumed, because the writer is a consumer of someone else's file.
+
+    THE SEARCH STOPS AT THE `pulse_metrics:` SECTION. The same key legitimately
+    exists in `development_status` — 21 of 36 entries in the real SIP file do,
+    and `development_status` comes first in the file. The first version matched
+    the first line starting with the key anywhere, appended fields under the
+    scalar status value (`... in-progress`), and produced YAML that no longer
+    parsed while the caller printed `closed` and exited 0. The preflight of
+    2026-09-11 reproduced it byte-for-byte on a copy of the real file.
     """
     lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
-    # locate `  <key>:` and the extent of its block
+    # locate the `pulse_metrics:` section, then `  <key>:` INSIDE it
+    section = None
     start = None
     indent = ""
     for i, ln in enumerate(lines):
         stripped = ln.lstrip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if not ln.startswith((" ", "\t")):
+            # a top-level key: track whether we are inside the section
+            section = stripped.split(":", 1)[0] if stripped.endswith(":\n") or ":" in stripped else None
+            continue
+        if section != "pulse_metrics":
+            continue
         if stripped.startswith(f"{key}:"):
             indent = ln[: len(ln) - len(stripped)]
             start = i
             break
     if start is None:
-        raise KeyError(f"entry {key!r} not found in {path}")
+        raise KeyError(f"entry {key!r} not found inside pulse_metrics in {path}")
 
     field_indent = indent + "  "
     end = len(lines)
@@ -213,6 +244,33 @@ def yaml_scalar(v) -> str:
     return s if s.replace("-", "").replace(":", "").replace("T", "").replace(".", "").replace("_", "").isalnum() else repr(s)
 
 
+def resolve_spec_folder(run_dir: Path) -> str:
+    """The spec folder for a stories-mode run, from wherever it actually is.
+
+    The plugin bus (`plugins/bus.py`, bmad-loop 0.11.1) exports run identity
+    fields to the hook env but NOT `BMAD_LOOP_SPEC_FOLDER` — the gap reported
+    upstream as bmad-loop#779. Reading it from the environment worked only when
+    the operator's shell happened to carry it, which the SIP preflight of
+    2026-09-11 proved is not something the bus provides.
+
+    The run's own `state.json` carries the spec folder at top level, and the bus
+    DOES export `BMAD_LOOP_RUN_DIR`. For sprint-status runs the field is an
+    empty string, which is the correct answer there: model A keys the journal
+    by the full pulse_metrics key and needs no folder.
+    """
+    env_folder = os.environ.get("BMAD_LOOP_SPEC_FOLDER", "")
+    if env_folder:
+        return env_folder
+    state = run_dir / "state.json"
+    if not state.exists():
+        return ""
+    try:
+        data = json.loads(state.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ""
+    return str(data.get("spec_folder") or "")
+
+
 def main() -> int:
     run_dir = Path(os.environ.get("BMAD_LOOP_RUN_DIR", ""))
     story_key = os.environ.get("BMAD_LOOP_STORY_KEY", "")
@@ -242,10 +300,16 @@ def main() -> int:
     text = status_path.read_text(encoding="utf-8")
     data = yaml.safe_load(text) or {}
     metrics = data.get("pulse_metrics") or {}
-    spec_folder = os.environ.get("BMAD_LOOP_SPEC_FOLDER", "")
+    spec_folder = resolve_spec_folder(run_dir)
     key = find_entry(metrics, story_key, spec_folder)
     if key is None:
-        log(f"no pulse_metrics entry for story {story_key} — track-start never ran")
+        if metrics:
+            log(
+                f"story {story_key} not identified in pulse_metrics "
+                f"(spec_folder={spec_folder or 'none'}) — refusing to guess"
+            )
+        else:
+            log(f"no pulse_metrics entry for story {story_key} — track-start never ran")
         return EXIT_SKIP
 
     entry = metrics[key]
