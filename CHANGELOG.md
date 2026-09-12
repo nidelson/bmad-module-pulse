@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.7](https://github.com/nidelson/bmad-module-pulse/compare/v0.9.6...v0.9.7) (2026-09-12)
+
+
+### Bug Fixes
+
+* **loop-plugin:** resolve identity from state.json and scope the write to pulse_metrics ([#127](https://github.com/nidelson/bmad-module-pulse/issues/127)) ([93a0552](https://github.com/nidelson/bmad-module-pulse/commit/93a05527244c1c22faf09400d8e50f633aa6e471))
+
+
+### Documentation
+
+* **rfc:** storage-agnostic metrics — frontmatter as source of truth ([#126](https://github.com/nidelson/bmad-module-pulse/issues/126)) ([daff36a](https://github.com/nidelson/bmad-module-pulse/commit/daff36a4d84e9f584036d06e055cbe2cd443a69e))
+
 ## [0.9.6](https://github.com/nidelson/bmad-module-pulse/compare/v0.9.5...v0.9.6) (2026-09-11)
 
 

@@ -8,7 +8,7 @@ description: >-
   Metrics module that calculates AI Leverage Ratio, first-pass rate, and process
   health per story. Generates cumulative dashboards with trends and capacity
   forecasts.
-module_version: 0.9.6
+module_version: 0.9.7
 default_selected: false
 post_install_message: >
   Re-run `/bmad-pulse-setup` to finish this update.
